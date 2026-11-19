@@ -1,7 +1,7 @@
 import { ACTIONS, createBattle, neighbors, playTurn } from './combat.mjs';
 import { RAMPART_EDGE, rampartTile, stairConnects } from './rampart.mjs';
 
-export const MAP = Object.freeze({ columns: 42, rows: 20 });
+export const MAP = Object.freeze({ columns: 42, rows: 26 });
 export const toCell = (col, row) => row * MAP.columns + col;
 export const toPoint = (cell) => ({ col: cell % MAP.columns, row: Math.floor(cell / MAP.columns) });
 export const SPAWN = toCell(9, 10);

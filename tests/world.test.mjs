@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { moveTargets, neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
-import { chooseRampartFrame, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
+import { chooseRampartFrame, RAMPART_EDGE, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
   createWorld, fight, findPath, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk,
@@ -14,22 +14,35 @@ function enterHunt() {
   return world;
 }
 
-test('wolves approach the clear strip outside the northern palisade', () => {
+test('wolves approach the clear strip to the west of the palisade', () => {
   const world = createWorld();
-  for (const { col, row, startRow } of RAMPART_WOLVES) {
-    assert.ok(startRow < row);
+  for (const { col, row, startCol } of RAMPART_WOLVES) {
+    assert.ok(startCol < col);
     assert.equal(TERRAIN[toCell(col, row)].rampart.family, 'mud');
-    assert.equal(TERRAIN[toCell(col, row - 1)].rampart.ornaments.length, 0);
-    assert.equal(isWalkable(toCell(col, row + 1)), false);
-    assert.equal(TERRAIN[toCell(col, row + 2)].rampart.elevation, 1);
+    assert.equal(TERRAIN[toCell(col - 1, row)].rampart.ornaments.length, 0);
+    assert.equal(isWalkable(toCell(col + 1, row)), false);
+    assert.equal(TERRAIN[toCell(col + 2, row)].rampart.elevation, 1);
     assert.deepEqual(findPath(world, toCell(col, row)), []);
+  }
+});
+
+test('the west palisade runs longer than the north palisade and joins the south wall', () => {
+  const westCol = RAMPART_WOLVES[0].col + 1;
+  const southRow = MAP.rows - 3;
+  assert.ok(southRow - 4 > RAMPART_EDGE - westCol);
+  for (let row = 5; row < southRow; row++) {
+    assert.equal(TERRAIN[toCell(westCol, row)].rampart.ornaments[0].frame, 'palisade-west');
+    assert.equal(isWalkable(toCell(westCol, row)), false);
+  }
+  for (let col = westCol; col <= RAMPART_EDGE; col++) {
+    assert.equal(isWalkable(toCell(col, southRow)), false);
   }
 });
 
 test('the path across the village gate leads through the forest on the same large grid', () => {
   let world = createWorld();
   const path = findPath(world, TRAIL_ENTRY);
-  assert.equal(TERRAIN.length, 42 * 20);
+  assert.equal(TERRAIN.length, 42 * 26);
   assert.equal(world.player.cell, SPAWN);
   assert.ok(path.includes(GATE));
   assert.ok(path.every(isWalkable));

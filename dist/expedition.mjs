@@ -1,7 +1,9 @@
 import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
 import { createHeroMotion } from './hero-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
-import { chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_DEPTH, RAMPART_WOLVES } from './rampart.mjs';
+import {
+  chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_WOLVES, westForestFamily,
+} from './rampart.mjs';
 import {
   CONTINUE, FIELD_ACTIONS, GATE, MAP, TERRAIN, TRAIL_ENTRY,
   createWorld, fight, findPath, insideHunt, locationOf, retryEncounter, toPoint, walk,
@@ -109,7 +111,7 @@ function surfaceTexture() {
   }
 }
 
-function drawRampartOrnament(layer, cell, { frame: id, flip, width, height, uphill }) {
+function drawRampartOrnament(layer, cell, { frame: id, flip, flipY, width, height, uphill }) {
   const { col, row } = toPoint(cell);
   const frame = atlas.frames[id];
   const node = document.createElement('span');
@@ -122,7 +124,7 @@ function drawRampartOrnament(layer, cell, { frame: id, flip, width, height, uphi
   node.style.width = `calc(var(--tile) * ${(width ?? frame.width / atlas.tileSize) - 2 * insetX})`;
   node.style.height = `calc(var(--tile) * ${(height ?? frame.height / atlas.tileSize) - 2 * insetY})`;
   if (uphill) node.style.zIndex = '1';
-  if (flip) node.style.transform = 'scaleX(-1)';
+  if (flip || flipY) node.style.transform = `scale(${flip ? -1 : 1}, ${flipY ? -1 : 1})`;
   paintRampartFrame(node, id);
   layer.append(node);
 }
@@ -130,13 +132,14 @@ function drawRampartOrnament(layer, cell, { frame: id, flip, width, height, uphi
 function createMap() {
   plane.style.setProperty('--columns', MAP.columns);
   const forest = byId('rampart-forest');
-  for (let row = -RAMPART_FOREST_DEPTH; row < 0; row++) {
-    for (let col = 0; col < MAP.columns; col++) {
+  forest.style.setProperty('--forest-width', RAMPART_FOREST_WIDTH);
+  for (let row = 0; row < MAP.rows; row++) {
+    for (let col = -RAMPART_FOREST_WIDTH; col < 0; col++) {
       const tile = document.createElement('span');
       tile.className = 'map-ornament';
       tile.style.position = 'static';
       forest.append(tile);
-      rampartSurfaces.push({ tile, family: 'bamboo', cell: row * MAP.columns + col });
+      rampartSurfaces.push({ tile, family: westForestFamily(col, row), cell: row * MAP.columns + col });
     }
   }
   const fragment = document.createDocumentFragment();
@@ -233,17 +236,18 @@ function place(node, cell, size) {
 }
 
 function aimCamera() {
-  const size = Number.parseFloat(getComputedStyle(field).getPropertyValue('--tile'));
-  if (!size || !field.clientWidth) return;
   const { cell } = world.player;
   const { col, row } = toPoint(cell);
+  const nearRampart = col <= RAMPART_EDGE;
+  field.classList.toggle('rampart-view', nearRampart);
+  const size = Number.parseFloat(getComputedStyle(field).getPropertyValue('--tile'));
+  if (!size || !field.clientWidth) return;
   const offset = (point, screen, length, min = 0) =>
     Math.min(Math.max(0, length * size - screen), Math.max(min, (point + 0.5) * size - screen / 2));
-  const x = offset(col, field.clientWidth, MAP.columns);
-  const nearRampart = col <= RAMPART_EDGE;
-  const lookTowardRampart = nearRampart ? Math.max(0, 4.6 - Math.max(0, row - 10)) : 0;
-  const northEdge = nearRampart ? -RAMPART_FOREST_DEPTH * size : 0;
-  const y = offset(row - lookTowardRampart, field.clientHeight, MAP.rows, northEdge);
+  const lookWest = 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
+  const westEdge = nearRampart ? -RAMPART_FOREST_WIDTH * size : 0;
+  const x = offset(col - lookWest, field.clientWidth, MAP.columns, westEdge);
+  const y = offset(row, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
   place(byId('gate-marker'), GATE, size);

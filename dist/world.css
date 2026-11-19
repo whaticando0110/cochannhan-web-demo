@@ -2,7 +2,7 @@
 .field-window:focus-visible { outline: 2px solid #eed093; outline-offset: -3px; }
 .field-world { position: absolute; top: 0; left: 0; width: max-content; transform-origin: top left; }
 .field-tiles { display: grid; grid-template-columns: repeat(var(--columns), var(--tile)); }
-.rampart-forest { position:absolute; bottom:100%; left:0; display:grid; grid-template-columns:repeat(var(--columns), var(--tile)); grid-auto-rows:var(--tile); }
+.rampart-forest { position:absolute; top:0; right:100%; display:grid; grid-template-columns:repeat(var(--forest-width), var(--tile)); grid-auto-rows:var(--tile); }
 .world-tile { width: var(--tile); height: var(--tile); position: relative; overflow: hidden; border: 0; border-radius: 0; padding: 0; cursor: pointer; background: #3f4935 no-repeat; background-position: var(--tile-x) center; background-size: 800% 100%; image-rendering: pixelated; }
 .world-tile::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: solid #171b183e; border-width: 0 1px 1px 0; }
 .world-tile.stone { background-image: url("assets/world/stone.png"); }
@@ -97,6 +97,7 @@
   .journey .turn { padding:0; background:none; }
   .journey .utilities { flex-shrink:0; gap:4px; }
   .field-window { --tile:43px; height:clamp(260px, calc(100svh - 188px), 740px); }
+  .field-window.rampart-view { --tile:34px; }
   .field-window.in-battle { height:clamp(236px, calc(100svh - 285px), 540px); }
   .field-status { width:157px; top:5px; left:5px; padding:5px 7px 6px 34px; }
   .hero-heading h2 { font-size:.92rem; white-space:nowrap; }
@@ -106,6 +107,9 @@
   .world-actions .action-card { padding:5px; }
   .world-actions .action-meta span { display:none; }
   .encounter-intent p { width:100%; }
+}
+@media(max-width:360px) {
+  .field-window.rampart-view { --tile:27px; }
 }
 @media(prefers-reduced-motion:reduce) {
   .field-window .field-world, .field-window.ready .field-unit { transition:none !important; }

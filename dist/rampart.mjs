@@ -15,12 +15,18 @@ const fenceRow = 4;
 const deckBottom = 6;
 const deckRight = 5;
 
-export const RAMPART_FOREST_DEPTH = 2;
+export const RAMPART_FOREST_WIDTH = 5;
 export const RAMPART_WOLVES = Object.freeze([
-  { col: 7, row: fenceRow - 1, startCol: 6, startRow: -0.3 },
-  { col: 9, row: fenceRow - 1, startCol: 10, startRow: -0.2 },
-  { col: 11, row: fenceRow - 1, startCol: 13, startRow: 0.5 },
+  { col: fenceCol - 1, row: 7, startCol: -2.6, startRow: 6.1 },
+  { col: fenceCol - 1, row: 10, startCol: -2, startRow: 10.2 },
+  { col: fenceCol - 1, row: 13, startCol: -3.3, startRow: 14.2 },
 ]);
+
+export function westForestFamily(col, row) {
+  const distance = Math.abs(row - 11);
+  const fringe = distance < 4 ? -3 : distance <= 7 ? -1 : 2;
+  return col < fringe ? 'bamboo' : 'mud';
+}
 
 function stairAt(col, row) {
   return STAIRS.find(stair =>
@@ -31,25 +37,29 @@ function stairAt(col, row) {
 export function rampartTile(col, row, mapRows, gateRow) {
   const entrance = Math.abs(row - gateRow) <= 1;
   const boundary = row === 0 || row === mapRows - 1 || col === 0;
-  const frontClearing = row < fenceRow && col >= 4 && col < RAMPART_EDGE;
-  const canopy = col <= 1 || (!frontClearing && row <= 1) || row === mapRows - 1;
-  const inside = row > fenceRow && col > fenceCol;
+  const southWall = mapRows - 3;
+  const westFace = col < fenceCol && row > fenceRow && row < southWall;
+  const canopy = westFace ? westForestFamily(col, row) === 'bamboo' : col <= 1 || row <= 1 || row === mapRows - 1;
+  const inside = row > fenceRow && row < southWall && col > fenceCol;
   const stair = stairAt(col, row);
   const rail = stair && (stair.uphill === 'north' ? col !== stair.col + 1 : row !== stair.row + 1);
   const wolfAtRest = RAMPART_WOLVES.some(wolf => col === wolf.col && row === wolf.row);
   let family = inside ? 'stone' : canopy ? 'bamboo' : 'mud';
   let elevation = 0;
-  let blocked = boundary || canopy || (frontClearing && row === 1) || wolfAtRest;
+  let blocked = boundary || canopy || wolfAtRest;
   const ornaments = [];
 
-  if (row === fenceRow && col >= fenceCol) {
+  if ((row === fenceRow || row === southWall) && col >= fenceCol) {
     const corner = col === fenceCol || col === RAMPART_EDGE;
-    ornaments.push({ frame: corner ? 'palisade-corner-nw' : 'palisade-north', flip: col === RAMPART_EDGE });
+    ornaments.push({
+      frame: corner ? 'palisade-corner-nw' : 'palisade-north',
+      flip: col === RAMPART_EDGE, flipY: row === southWall,
+    });
     blocked = true;
-  } else if (col === fenceCol && row > fenceRow && !boundary) {
+  } else if (col === fenceCol && row > fenceRow && row < southWall) {
     ornaments.push({ frame: 'palisade-west' });
     blocked = true;
-  } else if (col === RAMPART_EDGE && row > fenceRow && !entrance && !boundary) {
+  } else if (col === RAMPART_EDGE && row > fenceRow && row < southWall && !entrance) {
     ornaments.push({ frame: 'palisade-west', flip: true });
     blocked = true;
   } else if (inside && !boundary && col < RAMPART_EDGE) {
@@ -63,14 +73,13 @@ export function rampartTile(col, row, mapRows, gateRow) {
   }
 
   if (!inside && !canopy) {
-    if (row === 2 && !frontClearing) ornaments.push({ frame: 'bamboo-edge-south' });
-    if (col === 2) ornaments.push({ frame: 'bamboo-edge-east' });
-  }
-  if (frontClearing && (row === 0 || row === 1) && (col === 4 || col === 13)) {
-    ornaments.push({ frame: 'bamboo-fringe', flip: col === 13 });
+    if (row === 2) ornaments.push({ frame: 'bamboo-edge-south' });
+    if (col === 2 && (!westFace || westForestFamily(col - 1, row) === 'bamboo')) {
+      ornaments.push({ frame: 'bamboo-edge-east' });
+    }
   }
   if (stair && stair.col === col && stair.row === row) ornaments.push(stair);
-  if (boundary && !frontClearing) family = 'bamboo';
+  if (boundary && !westFace) family = 'bamboo';
   if (col === RAMPART_EDGE && entrance) family = 'stone';
   return { family, elevation, blocked: blocked || Boolean(rail), stair, ornaments };
 }

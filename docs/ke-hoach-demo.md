@@ -1,6 +1,6 @@
 # Kế hoạch demo web Cổ Chân Nhân
 
-Bản hiện tại chơi được từ Cổ Nguyệt Sơn Trại qua đường rừng đến cuộc chạm trán một con sói. Bản đồ 42 × 20 ô đã có tìm đường, đi bộ, chạy, lối giữa cầu thang và chuyển sang đánh theo lượt ngay trên bản đồ. Trận Đấu nhanh ở Thềm Hứng Mây dùng để thử bộ chiến đấu riêng.
+Bản hiện tại chơi được từ Cổ Nguyệt Sơn Trại qua đường rừng đến cuộc chạm trán một con sói. Bản đồ 42 × 26 ô đã có tìm đường, đi bộ, chạy, lối giữa cầu thang và chuyển sang đánh theo lượt ngay trên bản đồ. Trận Đấu nhanh ở Thềm Hứng Mây dùng để thử bộ chiến đấu riêng.
 
 ## Mạch của bản demo
 
