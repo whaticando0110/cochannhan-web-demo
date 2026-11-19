@@ -1,0 +1,275 @@
+{
+  "moon": {
+    "name": "Đội trưởng",
+    "role": "Mở đường",
+    "gu": "Nguyệt Mang",
+    "file": "moon-motion.png",
+    "cellSize": [
+      128,
+      128
+    ],
+    "grid": [
+      4,
+      3
+    ],
+    "baseline": 121,
+    "facing": "right",
+    "clips": {
+      "walk": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "times": [
+          0,
+          145,
+          300,
+          445
+        ],
+        "duration": 600
+      },
+      "skill": {
+        "frames": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "times": [
+          0,
+          135,
+          305,
+          475
+        ],
+        "duration": 680,
+        "releaseFrame": 6,
+        "releaseAt": 305,
+        "releaseOrigin": [
+          106,
+          60
+        ]
+      },
+      "idle": {
+        "frames": [
+          8
+        ],
+        "times": [
+          0
+        ],
+        "duration": 260
+      },
+      "hit": {
+        "frames": [
+          8,
+          9,
+          10,
+          8
+        ],
+        "times": [
+          0,
+          75,
+          165,
+          315
+        ],
+        "duration": 390
+      },
+      "signal": {
+        "frames": [
+          8,
+          11,
+          8
+        ],
+        "times": [
+          0,
+          105,
+          415
+        ],
+        "duration": 530
+      }
+    }
+  },
+  "pine": {
+    "name": "Cổ sư tuần rừng",
+    "role": "Ép sườn",
+    "gu": "Tùng Châm",
+    "file": "pine-motion.png",
+    "cellSize": [
+      128,
+      128
+    ],
+    "grid": [
+      4,
+      3
+    ],
+    "baseline": 121,
+    "facing": "right",
+    "clips": {
+      "walk": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "times": [
+          0,
+          145,
+          300,
+          445
+        ],
+        "duration": 600
+      },
+      "skill": {
+        "frames": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "times": [
+          0,
+          135,
+          305,
+          475
+        ],
+        "duration": 680,
+        "releaseFrame": 6,
+        "releaseAt": 305,
+        "releaseOrigin": [
+          79,
+          58
+        ]
+      },
+      "idle": {
+        "frames": [
+          8
+        ],
+        "times": [
+          0
+        ],
+        "duration": 260
+      },
+      "hit": {
+        "frames": [
+          8,
+          9,
+          10,
+          8
+        ],
+        "times": [
+          0,
+          75,
+          165,
+          315
+        ],
+        "duration": 390
+      },
+      "signal": {
+        "frames": [
+          8,
+          11,
+          8
+        ],
+        "times": [
+          0,
+          105,
+          415
+        ],
+        "duration": 530
+      }
+    }
+  },
+  "raiment": {
+    "name": "Cổ sư hộ vệ",
+    "role": "Giữ hậu",
+    "gu": "Nguyệt Nghê Thường",
+    "file": "raiment-motion.png",
+    "cellSize": [
+      128,
+      128
+    ],
+    "grid": [
+      4,
+      3
+    ],
+    "baseline": 121,
+    "facing": "right",
+    "clips": {
+      "walk": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "times": [
+          0,
+          145,
+          300,
+          445
+        ],
+        "duration": 600
+      },
+      "skill": {
+        "frames": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "times": [
+          0,
+          135,
+          305,
+          475
+        ],
+        "duration": 680,
+        "releaseFrame": 6,
+        "releaseAt": 305,
+        "releaseOrigin": [
+          98,
+          64
+        ]
+      },
+      "idle": {
+        "frames": [
+          8
+        ],
+        "times": [
+          0
+        ],
+        "duration": 260
+      },
+      "hit": {
+        "frames": [
+          8,
+          9,
+          10,
+          8
+        ],
+        "times": [
+          0,
+          75,
+          165,
+          315
+        ],
+        "duration": 390
+      },
+      "signal": {
+        "frames": [
+          8,
+          11,
+          8
+        ],
+        "times": [
+          0,
+          105,
+          415
+        ],
+        "duration": 530
+      }
+    }
+  }
+}
