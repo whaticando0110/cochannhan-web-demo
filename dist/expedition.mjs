@@ -17,6 +17,7 @@ const beast = byId('wolf-unit');
 const cursor = byId('target-cursor');
 const guide = byId('guide');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
+const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Bấm ô để đi';
 const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
 
 const keys = {
@@ -196,7 +197,7 @@ function renderObjective() {
   const inBattle = world.mode === 'battle';
   const pastGate = toPoint(world.player.cell).col >= 14;
   let title = 'Ra cổng đông';
-  let detail = 'Thử lên sàn lũy bằng cầu thang hoặc đi qua cổng đông để tới đường rừng.';
+  let detail = 'Qua cổng đông để vào đường rừng.';
   let button = 'Đi tới cổng';
   if (world.mode === 'defeat') {
     title = 'Thử lại cuộc săn';
@@ -294,7 +295,7 @@ function step(target) {
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
   if (delta) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
-  const duration = onStairs ? 215 : 165;
+  const duration = onStairs ? 630 : 485;
   field.style.setProperty('--step-time', duration + 'ms');
   nextStepAt = performance.now() + duration;
   heroMotion.travel(onStairs, duration);
@@ -324,7 +325,7 @@ function go(target) {
   if (target === world.player.cell) return;
   route = findPath(world, target);
   if (route.length) {
-    byId('field-hint').textContent = 'Bấm ô để đi, hoặc dùng WASD và phím mũi tên.';
+    byId('field-hint').textContent = walkHint;
     followRoute();
   } else {
     setHint('Ô này bị chắn hoặc chưa có đường tới.', true);
@@ -379,11 +380,12 @@ function reset() {
   hero.style.removeProperty('--face');
   heroMotion.stand();
   render();
-  byId('field-hint').textContent = 'Bấm ô để đi, hoặc dùng WASD và phím mũi tên.';
+  byId('field-hint').textContent = walkHint;
   field.focus({ preventScroll: true });
   announce('Bạn đang ở Cổ Nguyệt Sơn Trại.');
 }
 
+byId('field-hint').textContent = walkHint;
 createMap();
 createActions();
 render();

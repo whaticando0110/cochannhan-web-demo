@@ -182,3 +182,25 @@ dialog li + li { margin-top: 6px; }
   .action-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .action-card { min-height: 63px; }
 }
+
+/* Pixel cels are sampled directly to keep soles, hair and sleeve outlines sharp. */
+.sprite.at-rest, .sprite.striding {
+  background-image: url("assets/huyen-bao-travel.png");
+  background-size: 800% 300%;
+  animation: hero-cels 2.8s steps(8, end) infinite;
+  background-position-y: 100%;
+}
+.sprite.striding { animation-duration: var(--gait-period); background-position-y: 0%; }
+.sprite.climbing { background-position-y: 50%; }
+@keyframes hero-cels { from { background-position-x: 0%; } to { background-position-x: 114.285714%; } }
+.combat-layout { grid-template-rows: auto auto auto; grid-template-areas: "arena intent" "arena actions" "arena log"; align-content: start; align-items: start; }
+.combat-layout .actions-heading span { display: none; }
+.combat-layout .action-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.combat-layout .action-card { min-height: 48px; }
+.combat-log { display: block; }
+.combat-log summary { padding: 10px 14px; color: #d8c899; cursor: pointer; }
+.combat-log ol { max-height: 155px; }
+@media(max-width:760px) {
+  .combat-layout { grid-template-areas: "arena" "intent" "actions" "log"; }
+  .combat-layout .action-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}

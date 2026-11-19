@@ -1,7 +1,6 @@
 // Huyền bào tay rộng, from the approved Activity atlas at 5738f80f.
 // Each pair is [time in milliseconds, atlas frame]. The movement clips
 // omit the ready pose before and after the actual dash or dodge.
-const idleFrames = [[0, 0], [460, 1], [660, 2], [890, 3], [1130, 4], [1340, 5], [1510, 0]];
 const guardEnter = [[0, 0], [250, 6], [315, 7], [390, 8], [445, 9], [500, 10], [550, 11], [615, 12], [685, 13]];
 const guardExit = [[0, 14], [75, 11], [150, 15], [215, 16], [285, 17], [360, 7], [430, 18], [505, 0]];
 const forward = [[0, 7], [20, 19], [60, 20], [70, 21], [100, 22], [120, 23], [140, 24], [170, 25], [180, 26],
@@ -19,8 +18,6 @@ function keyframes(cels, duration) {
   return frames;
 }
 
-const idleDuration = 1950;
-const idle = keyframes(idleFrames, idleDuration);
 const guardDuration = 740;
 const guard = keyframes([
   ...guardEnter.map(([time, frame]) => [time * 340 / 685, frame]),
@@ -34,7 +31,7 @@ export function createHeroMotion(sprite, reducedMotion) {
 
   function stop() {
     clearTimeout(restTimer);
-    sprite.classList.remove('striding', 'climbing');
+    sprite.classList.remove('at-rest', 'striding', 'climbing');
     if (!current) return;
     current.onfinish = null;
     current.cancel();
@@ -43,7 +40,7 @@ export function createHeroMotion(sprite, reducedMotion) {
 
   function stand() {
     stop();
-    if (!reducedMotion.matches) current = sprite.animate(idle, { duration: idleDuration, iterations: Infinity });
+    if (!reducedMotion.matches) sprite.classList.add('at-rest');
   }
 
   function travel(onStairs, duration) {
@@ -53,8 +50,9 @@ export function createHeroMotion(sprite, reducedMotion) {
       sprite.classList.add('striding');
     }
     sprite.classList.toggle('climbing', onStairs);
+    sprite.style.setProperty('--gait-period', Math.round(duration * 0.68) + 'ms');
     clearTimeout(restTimer);
-    restTimer = setTimeout(stand, duration + 45);
+    restTimer = setTimeout(stand, duration + 32);
   }
 
   function playBattle(event, facing, columns, moveDuration) {
