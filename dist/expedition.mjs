@@ -1,5 +1,5 @@
 import { coordinate } from './combat.mjs';
-import { createHeroMotion } from './hero-motion.mjs';
+import { createHeroMotion, MOONLIGHT_RELEASE_MS, releasePalm } from './hero-motion.mjs';
 import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
@@ -17,6 +17,7 @@ const plane = byId('world-plane');
 const map = byId('map');
 const artwork = byId('map-ornaments');
 const hero = byId('hero-unit');
+const heroSprite = hero.querySelector('.sprite');
 const beast = byId('wolf-unit');
 const castButton = byId('cast-moon');
 const guide = byId('guide');
@@ -29,7 +30,7 @@ if (wearsAoReu) {
   document.body.classList.add('hero-ao-reu');
   byId('hero-name').textContent = 'Cổ sư Áo rêu';
 }
-const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion, wearsAoReu);
+const heroMotion = createHeroMotion(heroSprite, motion, wearsAoReu);
 const wolfMotion = createWolfMotion(beast, motion);
 const stepDurations = { walk: 485, run: 280, climb: 630 };
 
@@ -45,6 +46,7 @@ let trainingComplete = false;
 let castReadyAt = 0;
 let regenAt = Infinity;
 let castEpoch = 0;
+let pendingCast;
 let stepTimer;
 let nextStepAt = 0;
 let runEnabled = false;
@@ -323,7 +325,7 @@ function render() {
   byId('mode').textContent = fighting ? 'Giao chiến' : defeated ? 'Thất bại' : trainingComplete ? 'Khám phá' : 'Tập phòng thủ';
   meter('world-hp', world.player.hp, world.player.maxHp);
   meter('world-qi', world.player.qi, world.player.maxQi);
-  byId('training-marker').hidden = trainingComplete;
+  byId('training-marker').hidden = trainingComplete || world.player.cell === TRAINING_POST;
   byId('end-marker').hidden = !world.cleared;
   byId('gate-marker').hidden = !trainingComplete || toPoint(world.player.cell).col >= 22;
   byId('wolf-status').hidden = !fighting;
@@ -361,7 +363,7 @@ function step(target) {
   world = walk(world, target, performance.now());
   if (world === previous) return false;
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
-  if (delta) hero.style.setProperty('--face', Math.sign(delta));
+  if (delta && !pendingCast) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
   const gait = onStairs ? 'climb' : runEnabled ? 'run' : 'walk';
   const duration = stepDurations[gait];
@@ -427,15 +429,32 @@ function castMoon() {
   if (inHunt && !clearShot(world.player.cell, aim)) return setHint('Có vật cản trên đường bắn.');
   const facing = destination.col < col + .5 ? -1 : 1;
   hero.style.setProperty('--face', facing);
-  heroMotion.cast();
-  const from = { col: col + .5 + facing * .23, row: row + .26 };
+  pendingCast = {
+    training, aim, destination, facing, animation: heroMotion.cast(), releaseAt: now + MOONLIGHT_RELEASE_MS,
+  };
   castReadyAt = now + MOONLIGHT.cooldown;
   regenAt = now + 1050;
   world = { ...world, player: { ...world.player, qi: world.player.qi - MOONLIGHT.cost } };
+  render();
+}
+
+function releaseMoon({ training, aim, destination, facing }) {
+  const sprite = heroSprite.getBoundingClientRect();
+  const { left, top } = plane.getBoundingClientRect();
+  const tile = hero.getBoundingClientRect().width;
+  const [handX, handY] = releasePalm(wearsAoReu);
+  const from = {
+    col: (sprite.left - left + sprite.width * (facing > 0 ? handX : 1 - handX)) / tile,
+    row: (sprite.top - top + sprite.height * handY) / tile,
+  };
   if (training) rampartDefense.playerShot(from);
-  else {
+  else if (world.mode === 'battle') {
+    if (cellDistance(world.player.cell, aim) > MOONLIGHT.range || !clearShot(world.player.cell, aim)) {
+      setHint('Đường bắn bị chắn hoặc Điện Lang đã ngoài tầm.');
+      return;
+    }
     const epoch = castEpoch;
-    rampartDefense.shoot({ from, target: destination }, () => {
+    rampartDefense.shoot({ from, target: destination, windup: 0 }, () => {
       if (epoch !== castEpoch) return false;
       const next = hitHunt(world, aim, MOONLIGHT.damage);
       if (next === world) {
@@ -450,10 +469,17 @@ function castMoon() {
       return true;
     });
   }
-  render();
 }
 
 function tick(now) {
+  const castAnimation = pendingCast?.animation;
+  const atRelease = castAnimation && castAnimation.playState !== 'idle'
+    ? castAnimation.currentTime >= MOONLIGHT_RELEASE_MS : now >= pendingCast?.releaseAt;
+  if (pendingCast && atRelease) {
+    const cast = pendingCast;
+    pendingCast = undefined;
+    releaseMoon(cast);
+  }
   if (world.player.cell === TRAINING_POST && !trainingComplete && castButton.hidden && now >= nextStepAt) render();
   if (now >= regenAt && world.mode !== 'defeat') {
     const qi = Math.min(world.player.maxQi, world.player.qi + 1);
@@ -465,6 +491,7 @@ function tick(now) {
     && world.player.qi >= MOONLIGHT.cost) castButton.setAttribute('aria-disabled', 'false');
   const { state, event } = advanceHunt(world, now);
   if (state !== world) {
+    const damaged = state.player.hp < world.player.hp;
     world = state;
     render();
     if (event?.type === 'move') {
@@ -476,8 +503,10 @@ function tick(now) {
       wolfMotion.play('huntPounce', { direction: [dx, dy] });
       setHint(world.notice, true);
     } else if (event?.type === 'pounce') {
+      if (damaged) heroMotion.hit();
       setHint(world.notice, true);
       if (world.mode === 'defeat') {
+        pendingCast = undefined;
         stopWalk();
         byId('retry-encounter').focus();
       }
@@ -494,6 +523,7 @@ function reset() {
   castReadyAt = 0;
   regenAt = Infinity;
   castEpoch++;
+  pendingCast = undefined;
   world = newTrip();
   nextStepAt = 0;
   field.style.removeProperty('--step-time');
@@ -570,6 +600,7 @@ guide.addEventListener('click', () => {
 byId('reset-trip').addEventListener('click', reset);
 byId('retry-encounter').addEventListener('click', () => {
   castEpoch++;
+  pendingCast = undefined;
   castReadyAt = 0;
   regenAt = Infinity;
   world = retryEncounter(world, performance.now());

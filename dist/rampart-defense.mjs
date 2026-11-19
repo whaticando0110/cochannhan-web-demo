@@ -86,12 +86,12 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       235, () => blood.node.remove());
   }
 
-  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight' }, contact) {
+  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime }, contact) {
     const dx = target.col - from.col;
     const dy = target.row - from.row;
     const whirl = kind === 'whirl';
     const duration = Math.round(145 + Math.hypot(dx, dy) * 40 + (whirl ? 90 : 0));
-    const release = delay + releaseTime;
+    const release = delay + windup;
     const left = dx < 0;
     const angle = Math.atan2(-dy, -dx);
     if (sprite && !reducedMotion.matches) {
@@ -102,10 +102,10 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
         .map(([time, frame]) => ({ ...cel(frame, 3), offset: time / castDuration }));
       animate(sprite, poses, { duration: castDuration, delay });
     }
-    if (!reducedMotion.matches && kind !== 'needles') {
+    if (windup && !reducedMotion.matches && kind !== 'needles') {
       const charge = effect(`${kind} charge`, from, angle);
       animate(charge.node, [{ opacity: 0, scale: '.18' }, { opacity: .88, scale: '.32' }],
-        { duration: releaseTime - 120, delay: delay + 120 }, () => charge.node.remove());
+        { duration: windup - 120, delay: delay + 120 }, () => charge.node.remove());
     }
 
     const blade = effect(`${kind} blade`, from, angle);
@@ -159,6 +159,6 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     begin, shoot,
     trainingTarget: targets[midpoint],
     targetHp: () => health[midpoint],
-    playerShot: from => shoot({ from, target: targets[midpoint] }, () => damage(midpoint)),
+    playerShot: from => shoot({ from, target: targets[midpoint], windup: 0 }, () => damage(midpoint)),
   };
 }

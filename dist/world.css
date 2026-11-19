@@ -134,6 +134,26 @@
   background-image: url("assets/ao-reu-guard.png");
   background-size: 100% 100%;
 }
+.field-unit .sprite:is(.casting, .taking-hit) {
+  background-image: url("assets/huyen-bao-combat.png");
+  background-size: 800% 200%;
+}
+.hero-ao-reu .field-unit .sprite:is(.casting, .taking-hit) {
+  background-image: url("assets/ao-reu-combat.png");
+}
+.field-unit .sprite.casting::after {
+  content: ""; position: absolute; left: 67%; top: 58%; width: 14%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: url("assets/rampart/nguyet-quang.png") 0 0 / 800% 200% no-repeat;
+  opacity: 0; animation: gather-moon 330ms linear;
+}
+.hero-ao-reu .field-unit .sprite.casting::after { left: 69%; top: 57%; }
+@keyframes gather-moon {
+  0%, 30% { opacity: 0; scale: .46; }
+  69% { opacity: .85; scale: .82; }
+  90% { opacity: .95; scale: 1; }
+  100% { opacity: 0; scale: .65; }
+}
 .field-status { position: absolute; z-index: 5; top: 10px; left: 10px; pointer-events: none; display: grid;
   gap: 4px; width: 189px; padding: 8px 11px 8px 48px; background: linear-gradient(100deg,#101c18f7,#14221ee8);
   border-left: 2px solid #b39c64; box-shadow: 0 2px 6px #08130b70; }

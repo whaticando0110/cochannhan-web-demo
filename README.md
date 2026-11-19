@@ -28,6 +28,8 @@ Bấm **Shift** một lần để bật chạy khi khám phá, bấm lần nữa
 
 Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 chân nguyên và có thời gian hồi. Chân nguyên phục hồi dần khi ngừng bắn. Ở bãi săn, dùng WASD, phím mũi tên hoặc chạm ô để thoát vùng màu đỏ trước lúc Điện Lang vồ. Nếu gục, chọn **Thử lại trận** để về lúc sói xuất hiện. Nút **Chơi lại** đặt lại cả tutorial.
 
+Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
+
 ### Đấu nhanh
 
 Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với bộ Cổ riêng có Bạch Ngọc Cổ và Sinh Cơ Diệp.
