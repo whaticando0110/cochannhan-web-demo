@@ -2,10 +2,11 @@ import { actionBlock, coordinate, moveTargets, playTurn } from './combat.mjs';
 import { awakeningStorageKey } from './awakening-rules.mjs';
 import { REAR_POST, createBeastKingRaid, raidProgress } from './beast-king-raid.mjs';
 import {
-  FOREST_BOUNDS, FOREST_FOLLOW, FOREST_SCOUT, FOREST_TALK, atForestAlert, atForestReveal,
+  FOREST_BOUNDS, FOREST_FOLLOW, FOREST_SCOUT, atForestAlert, atForestReveal,
   forestCheckpoint, startForestBattle,
 } from './forest-encounter.mjs';
 import { REVEAL_MS, createForestTeam } from './forest-team.mjs';
+import { createForestEnding } from './forest-ending.mjs';
 import { createHeroMotion, MOONLIGHT_RELEASE_MS, releasePalm } from './hero-motion.mjs';
 import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
 import { FOREST_POST, canAdvanceRear, createReinforcements, rearCheckpoint } from './reinforcement-post.mjs';
@@ -40,13 +41,7 @@ const mentorDialog = byId('mentor-dialog');
 const mentorNext = byId('mentor-next');
 const rearDialog = byId('rear-dialog');
 const rearNext = byId('rear-next');
-const forestDialog = byId('forest-dialog');
-const forestNext = byId('forest-next');
 const forestButtons = [...document.querySelectorAll('#forest-command [data-action]')];
-const forestLines = [
-  'Làm tốt lắm. Bọn ta đã phá vòng vây. Ngươi từ sơn trại tới à?',
-  'Thú vương đang ở lũy tây sao? Rõ rồi. Để chúng ta về chi viện cho giáo tập.',
-];
 let rearLine = 0;
 const rearSpeech = {
   report: [
@@ -114,7 +109,7 @@ const keys = {
 function newTrip() {
   const trip = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0 });
   if (lesson.phase === 'complete') {
-    const rearSpawn = forestPhase === 'done' ? FOREST_TALK : forestPhase === 'regroup' ? FOREST_FOLLOW :
+    const rearSpawn = forestPhase === 'done' ? FOREST_FOLLOW :
       rearPhase === 'forest' ? GATE : rearPhase === 'trail' ? FOREST_POST : REAR_POST;
     trip.player = { ...trip.player, cell: raidStage === 'rear' ? rearSpawn : SUPPLY_POST, qi: trip.player.maxQi };
   }
@@ -123,7 +118,6 @@ function newTrip() {
 let world = newTrip();
 let forestBattle;
 let forestStart;
-let forestLine = 0;
 let forestUntil = 0;
 let selectedMove = false;
 let markedMoves = [];
@@ -367,7 +361,7 @@ function beginArrival() {
       moveReliefOffPost();
       rushRaidPack();
       raid.aftermath();
-      reinforcements.reset(forestPhase === 'regroup' || forestPhase === 'done' ? null : rearPhase, performance.now());
+      reinforcements.reset(forestPhase === 'done' ? null : rearPhase, performance.now());
       aimCamera();
     }
     return;
@@ -397,7 +391,8 @@ function aimCamera() {
   const lookWest = mentorDialog.open ? 0 : 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
   const westEdge = nearRampart ? -RAMPART_FOREST_WIDTH * size : 0;
   const turnWolf = forestPhase === 'battle' && forestBattle ? toPoint(forestBattle.rival.cell) : null;
-  const forestFocus = turnWolf ? [(col + turnWolf.col) / 2, (row + turnWolf.row) / 2] :
+  const forestFocus = forestPhase === 'ending' ? [33, 9.4] :
+    turnWolf ? [(col + turnWolf.col) / 2, (row + turnWolf.row) / 2] :
     forestPhase === 'warning' ? [(col + toPoint(forestBattle.rival.cell).col) / 2, row] : null;
   const [focusCol, focusRow] = raid.camera ?? forestTeam.camera(performance.now()) ?? forestFocus ?? [col - lookWest, row];
   const x = offset(focusCol, field.clientWidth, MAP.columns, westEdge);
@@ -411,7 +406,6 @@ function aimCamera() {
   place(byId('supply-marker'), SUPPLY_POST, size);
   place(byId('rear-marker'), REAR_POST, size);
   place(byId('forest-marker'), FOREST_POST, size);
-  place(byId('regroup-marker'), FOREST_TALK, size);
   place(rampartDefense.reliefUnit, reliefCell, size);
   if (!beast.hidden) place(beast, (forestBattle ?? world.battle).rival.cell, size);
 }
@@ -435,14 +429,9 @@ function renderObjective() {
   let detail = 'Qua cổng đông để vào đường rừng.';
   let button = 'Đi tới cổng';
   let interaction = false;
-  if (forestPhase === 'done') {
-    title = 'Đã gặp đội viện trợ';
-    detail = 'Đội viện trợ chuẩn bị trở về lũy tây. Hết đoạn chơi thử.';
-  } else if (forestPhase === 'regroup') {
-    const here = world.player.cell === FOREST_TALK;
-    title = 'Gặp đội viện trợ';
-    detail = here ? 'Bấm E hoặc chạm Trao đổi để báo tin thú vương.' : 'Tới chỗ đội trưởng ở mép đông nam bãi săn.';
-    button = here ? 'Trao đổi' : 'Tới đội trưởng';
+  if (forestPhase === 'ending' || forestPhase === 'done') {
+    title = 'Đội viện trợ đã phá vây';
+    detail = '';
   } else if (forestPhase === 'pan' || forestPhase === 'revealed') {
     title = 'Đội viện trợ đang phá vây';
     detail = 'Tiến tới bãi đất để xem tình hình.';
@@ -503,9 +492,8 @@ function renderObjective() {
   guide.disabled = interaction && !rearInteractionAvailable(performance.now());
   if (interaction) guide.setAttribute('aria-keyshortcuts', 'E');
   else guide.removeAttribute('aria-keyshortcuts');
-  byId('regroup-marker').hidden = forestPhase !== 'regroup' || world.player.cell === FOREST_TALK;
   guide.hidden = world.mode !== 'explore' || world.reached || raidStage === 'scene' ||
-    ['pan', 'warning', 'battle', 'done'].includes(forestPhase) ||
+    ['pan', 'warning', 'battle', 'ending', 'done'].includes(forestPhase) ||
     (lesson.phase === 'training' && atPost) || (lesson.phase === 'refill' && atSupply);
 }
 
@@ -518,7 +506,7 @@ function render() {
   const inTraining = world.player.cell === TRAINING_POST && lesson.phase === 'training' && now >= nextStepAt;
   const atSupply = world.player.cell === SUPPLY_POST;
   const absorbing = lesson.absorbUntil !== null;
-  runToggle.hidden = defeated || inTurns || forestPhase === 'warning' || forestPhase === 'pan' ||
+  runToggle.hidden = defeated || ['battle', 'warning', 'pan', 'ending', 'done'].includes(forestPhase) ||
     raidStage === 'scene' || (lesson.phase === 'refill' && atSupply);
   castButton.hidden = world.mode !== 'battle' && !inTraining;
   castButton.setAttribute('aria-disabled', String(world.player.qi < MOONLIGHT.cost || now < castReadyAt));
@@ -680,6 +668,7 @@ function forestAction(id, target) {
 }
 
 function tickForest(now) {
+  forestEnding.advance(now);
   if (forestPhase === 'pan' && now >= forestUntil) {
     forestPhase = 'revealed';
     setHint(walkHint);
@@ -694,12 +683,7 @@ function tickForest(now) {
   const rivalEvent = next.events.find(event => event.actor === 'rival');
   if (pendingTurn.responded) {
     pendingTurn = undefined;
-    if (next.result === 'win') {
-      forestPhase = 'regroup';
-      saveCheckpoint('forest-regroup');
-      setHint('Đi tới đội trưởng để báo tin.', true);
-      field.focus({ preventScroll: true });
-    } else if (next.result === 'loss') {
+    if (next.result === 'loss') {
       byId('retry-encounter').focus();
     }
     render();
@@ -710,8 +694,18 @@ function tickForest(now) {
   forestReport = next.report.filter(entry => entry.turn === (next.result ? next.turn : next.turn - 1))
     .map(entry => entry.text).join(' ');
   if (next.result === 'win') {
+    pendingTurn = undefined;
     wolfMotion.fall();
-  } else if (rivalEvent?.type === 'move') {
+    forestTeam.finishFight();
+    forestPhase = 'ending';
+    saveCheckpoint('forest-done');
+    setHint('Đội viện trợ vừa dứt trận. Một luồng khí tức từ trên trời ép xuống.', true);
+    render();
+    forestEnding.start(now);
+    return;
+  }
+  if (!next.result) forestTeam.exchange(next.turn);
+  if (rivalEvent?.type === 'move') {
     const [dx, dy] = direction(rivalEvent.to, rivalEvent.from);
     wolfMotion.run(dx, dy);
   } else if (rivalEvent) {
@@ -729,22 +723,9 @@ function tickForest(now) {
   render();
 }
 
-function talkToForestTeam() {
-  if (forestPhase !== 'regroup' || world.player.cell !== FOREST_TALK || forestDialog.open) return;
-  if (performance.now() < nextStepAt) return afterCurrentStep(talkToForestTeam);
-  stopWalk();
-  pendingShiftTap = false;
-  forestLine = 0;
-  forestDialog.returnValue = '';
-  byId('forest-line').textContent = forestLines[0];
-  forestNext.textContent = 'Tiếp tục';
-  forestTeam.facePlayer(world.player.cell);
-  forestDialog.showModal();
-}
-
 function step(target) {
   const previous = world;
-  if (raidStage === 'scene' || forestDialog.open || ['pan', 'warning', 'battle', 'done'].includes(forestPhase)) return false;
+  if (raidStage === 'scene' || ['pan', 'warning', 'battle', 'ending', 'done'].includes(forestPhase)) return false;
   if (raidStage !== 'rear' && toPoint(target).col >= RAMPART_EDGE) {
     setHint(raidStage === 'aid' ? 'Tới hậu trại để gọi viện binh.' : 'Hoàn thành bài tập phòng thủ trước khi rời trại.', true);
     return false;
@@ -822,7 +803,7 @@ function followRoute() {
 }
 
 function go(target) {
-  if (['pan', 'warning', 'battle', 'done'].includes(forestPhase)) return;
+  if (['pan', 'warning', 'battle', 'ending', 'done'].includes(forestPhase)) return;
   stopWalk();
   if (target === world.player.cell) return;
   route = findPath(world, target, reliefCell);
@@ -1076,6 +1057,7 @@ function tick(now) {
 function reset() {
   stopWalk();
   wolfMotion.stop();
+  forestEnding.reset();
   forestTeam.reset();
   forestPhase = null;
   forestBattle = undefined;
@@ -1137,27 +1119,14 @@ const raid = createBeastKingRaid({
 });
 const reinforcements = createReinforcements(plane);
 const forestTeam = createForestTeam(plane, beast, motion, rampartDefense.shoot);
-forestTeam.reset(forestPhase === 'regroup' || forestPhase === 'done');
+const forestEnding = createForestEnding(field, plane, byId('demo-end'), () => {
+  forestPhase = 'done';
+  announce('Demo kết thúc');
+});
+forestTeam.reset();
 byId('forest-ready').addEventListener('click', beginForestTurns);
 forestButtons.forEach(button => button.addEventListener('click', () => forestAction(button.dataset.action)));
-forestNext.addEventListener('click', () => {
-  forestLine++;
-  if (forestLine === forestLines.length) forestDialog.close('confirm');
-  else {
-    byId('forest-line').textContent = forestLines[forestLine];
-    forestNext.textContent = 'Kết thúc đoạn chơi';
-  }
-});
-forestDialog.addEventListener('close', () => {
-  if (forestDialog.returnValue === 'confirm') {
-    forestPhase = 'done';
-    forestBattle = undefined;
-    saveCheckpoint('forest-done');
-    setHint('Bạn đã báo tin cho đội viện trợ.', true);
-    render();
-  }
-  field.focus({ preventScroll: true });
-});
+byId('demo-play-again').addEventListener('click', reset);
 castButton.addEventListener('click', castMoon);
 absorbButton.addEventListener('click', absorbStone);
 introDialog.addEventListener('close', () => {
@@ -1200,11 +1169,12 @@ render();
 field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
 requestAnimationFrame(tick);
-beginArrival();
+if (forestPhase === 'done') forestEnding.restore();
+else beginArrival();
 
 map.addEventListener('click', (event) => {
   const tile = event.target.closest('button[data-cell]');
-  if (!tile || world.mode === 'defeat' || raidStage === 'scene' || rearDialog.open || forestDialog.open) return;
+  if (!tile || world.mode === 'defeat' || raidStage === 'scene' || rearDialog.open) return;
   field.focus({ preventScroll: true });
   if (forestPhase === 'battle') {
     if (selectedMove) forestAction('move', Number(tile.dataset.cell));
@@ -1214,8 +1184,8 @@ map.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', event => {
-  if (introDialog.open || mentorDialog.open || rearDialog.open || forestDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
-  if (['pan', 'warning', 'done'].includes(forestPhase)) return;
+  if (introDialog.open || mentorDialog.open || rearDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+  if (['pan', 'warning', 'ending', 'done'].includes(forestPhase)) return;
   if (forestPhase === 'battle') {
     const key = event.key.toLowerCase();
     const action = { '1': 'move', '2': 'strike', '3': 'moon', '4': 'guard', f: 'moon' }[key];
@@ -1253,8 +1223,7 @@ document.addEventListener('keydown', event => {
       castMoon();
     } else if (key === 'e' && !event.repeat) {
       event.preventDefault();
-      if (forestPhase === 'regroup') talkToForestTeam();
-      else if (raidStage === 'rear') talkToRearLeader();
+      if (raidStage === 'rear') talkToRearLeader();
       else absorbStone();
     }
   }
@@ -1270,10 +1239,7 @@ window.addEventListener('blur', () => { pendingShiftTap = false; });
 guide.addEventListener('click', () => {
   field.focus({ preventScroll: true });
   if (raidStage === 'scene') return;
-  if (forestPhase === 'regroup') {
-    if (world.player.cell === FOREST_TALK) talkToForestTeam();
-    else go(FOREST_TALK);
-  } else if (forestPhase === 'revealed') go(FOREST_FOLLOW);
+  if (forestPhase === 'revealed') go(FOREST_FOLLOW);
   else if (raidStage === 'aid') go(REAR_POST);
   else if (raidStage === 'rear' && rearPhase === 'report') {
     if (world.player.cell === REAR_POST) talkToRearLeader();

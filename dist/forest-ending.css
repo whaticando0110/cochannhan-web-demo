@@ -1,0 +1,93 @@
+.forest-ending .field-status, .forest-ending .field-caption { visibility: hidden; }
+.forest-ending:has(.immortal-scene:is([data-stage=aura], [data-stage=arrival])) .field-unit:is(.hero, .forest-support)::after {
+  content: "!"; position: absolute; top: -23%; left: 50%; translate: -50%;
+  color: #fcf0c5; font: 700 1rem var(--display); text-shadow: 0 1px 3px #131920;
+}
+.immortal-scene, .rupture, .immortal-aura, .immortal-edge {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.immortal-scene { z-index: 7; overflow: hidden; }
+.immortal-aura {
+  z-index: 1; opacity: 0;
+  background:
+    radial-gradient(ellipse at 60% 5%, #e0fff5ce 0%, #9accbc92 11%, #46766c22 36%, transparent 57%),
+    linear-gradient(180deg, #101d2abe, #15343562 43%, #18192251);
+  transition: opacity 390ms ease-out;
+}
+.immortal-scene:not([data-stage=silence]) .immortal-aura { opacity: 1; }
+.immortal-wind {
+  position: absolute; inset: -14%; z-index: 2; opacity: 0;
+  background: repeating-linear-gradient(143deg, transparent 0 79px, #b3e8d95e 80px 81px, transparent 82px 136px);
+  mask-image: radial-gradient(ellipse at 60% 36%, #000 6%, #0007 30%, transparent 60%);
+}
+.immortal-scene:is([data-stage=aura], [data-stage=arrival], [data-stage=line], [data-stage=windup]) .immortal-wind {
+  opacity: .62; animation: immortal-wind 1.4s linear infinite;
+}
+@keyframes immortal-wind { to { transform: translate(-42px, 31px); } }
+.immortal-person {
+  position: absolute; left: 60%; top: 30%; z-index: 3; width: clamp(140px, 23vw, 260px);
+  aspect-ratio: 1; translate: -50% -52%; opacity: 0;
+  background: url("assets/forest-support/co-tien-ending.png") 0 0 / 400% 100% no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 11px #b3f3d3a9) drop-shadow(0 6px 5px #111d1b);
+  transition: opacity 245ms ease-out, translate 560ms ease-out;
+}
+.immortal-scene:not([data-stage=silence], [data-stage=aura]) .immortal-person { opacity: 1; translate: -50% -40%; }
+.immortal-scene:is([data-stage=arrival], [data-stage=line]) .immortal-person { animation: immortal-hover 1.6s ease-in-out infinite alternate; }
+@keyframes immortal-hover { to { transform: translate(-2px, -5px) rotate(-1deg); } }
+.immortal-scene[data-stage=windup] .immortal-person { background-position-x: 33.333%; }
+.immortal-scene[data-stage=slash] .immortal-person { background-position-x: 66.667%; }
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .immortal-person { background-position-x: 100%; }
+.immortal-line { z-index: 6; width: max-content; min-width: 156px; text-align: center; justify-content: center; }
+.immortal-line p { margin: 0; color: #fff6db; font: 600 clamp(1.08rem, 2.4vw, 1.52rem) var(--display); }
+.rupture { opacity: 0; z-index: 0; background: #111b23; overflow: hidden; }
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .rupture { opacity: 1; }
+.rupture-half {
+  position: absolute; inset: 0; overflow: hidden;
+  transition: transform 660ms cubic-bezier(.08, .68, .36, 1);
+}
+.rupture-half:first-child { clip-path: polygon(0 0, 100% 0, 100% 21%, 79% 34%, 62% 39%, 42% 55%, 20% 60%, 0 75%); }
+.rupture-half:last-child { clip-path: polygon(0 75%, 20% 60%, 42% 55%, 62% 39%, 79% 34%, 100% 21%, 100% 100%, 0 100%); }
+.rupture .field-world, .rupture .field-unit { transition: none !important; }
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .rupture-half:first-child { transform: translateY(-4.9%); }
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .rupture-half:last-child { transform: translateY(4.1%); }
+.immortal-edge {
+  z-index: 4; opacity: 0;
+  background: #b2f7e5;
+  clip-path: polygon(0 74.7%, 20% 59.6%, 42% 54.6%, 62% 38.6%, 79% 33.6%, 100% 20.5%, 100% 22%, 79% 35%, 62% 40%, 42% 56%, 20% 61%, 0 76%);
+}
+.immortal-scene[data-stage=slash] .immortal-edge { animation: immortal-slash 310ms both; background: #fffff3; }
+@keyframes immortal-slash {
+  0% { opacity: 1; mask-image: linear-gradient(90deg, transparent 56%, black 68%); }
+  38%, 100% { opacity: 1; mask-image: none; }
+}
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .immortal-edge {
+  opacity: 1; transform: scaleY(1.025);
+  clip-path: polygon(0 72%, 14% 60%, 19% 58%, 22% 58%, 35% 53%, 39% 53%, 41% 52%, 44% 48%, 52% 41%, 54% 41%, 61% 36%, 64% 36%, 73% 32%, 77% 32%, 86% 25%, 90% 24%, 100% 17%, 100% 26%, 91% 30%, 89% 33%, 82% 36%, 79% 38%, 66% 44%, 62% 44%, 55% 50%, 52% 51%, 44% 59%, 42% 59%, 35% 61%, 23% 64%, 20% 66%, 16% 67%, 0 79%);
+  background: radial-gradient(ellipse at 63% 39%, #fffff7 0%, #f6fffb 18%, #b1fbe6 40%, #4f9691 75%);
+}
+.immortal-scene:is([data-stage=rift], [data-stage=white]) .immortal-aura {
+  background:
+    radial-gradient(ellipse at 59% 39%, #f0fff2da 0%, #bfffe275 13%, #9ff6db22 39%, transparent 60%),
+    linear-gradient(180deg, #101d2a98, #15343524 50%, #18192223);
+}
+.demo-end {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 24px; border: 0; border-radius: 0; color: #1f2d27; background: #fff;
+}
+.demo-end[open] { display: grid; place-content: center; justify-items: center; gap: 23px; }
+.demo-end::backdrop { background: transparent; }
+.demo-end[data-stage=white] { animation: forest-white 900ms ease-in-out both; }
+.demo-end[data-stage=white] > * { visibility: hidden; }
+.demo-end[data-stage=end] > * { animation: ending-text 340ms both; }
+.demo-end h2 { font: 600 clamp(2.13rem, 6vw, 4.25rem) var(--display); text-align: center; outline: 0; }
+.demo-end .trail-guide { margin: 0; }
+@keyframes forest-white { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ending-text { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .immortal-scene .immortal-wind { animation: none; }
+  .immortal-person { transition-property: opacity; }
+  .immortal-scene .immortal-person { animation: none; }
+  .rupture-half { transition: none; }
+  .immortal-scene[data-stage=slash] .immortal-edge { animation: none; opacity: 1; }
+}

@@ -38,7 +38,7 @@ Ngay khi dùng xong nguyên thạch, camera theo đợt sói mới và Cuồng �
 
 Tới bìa bãi săn, bạn thấy đội tuần rừng phối hợp phá vây bằng Nguyệt Nghê Thường, Tùng Châm và Nguyệt Mang. Đi tiếp qua lối rừng để thấy một Điện Lang tách đàn. Sau tiếng hô **Cẩn thận!**, chọn **Vào trận** để bắt đầu hướng dẫn theo lượt. Dùng các nút trên màn hình hoặc phím **1–4** để chọn di chuyển, đánh tay không, phóng Nguyệt Quang hay thủ thế. Khi chọn di chuyển, chạm ô xanh hoặc dùng WASD/phím mũi tên cho bước kề bên. Mỗi hành động hợp lệ kết thúc một lượt. Né khỏi vùng đỏ trước khi kết thúc lượt.
 
-Nếu gục, **Thử lại trận** đưa bạn về lượt một với chỉ số lúc chạm trán. Khi thắng, tới dấu đội viện trợ và bấm **E** hoặc **Trao đổi** để báo tin thú vương. Đây là điểm kết thúc đoạn chơi. Tải lại trước khi thắng bắt đầu lại từ điểm tập kết. Tải lại sau khi thắng giữ mục tiêu gặp đội, còn tải lại sau cuộc thoại giữ mốc hoàn thành.
+Nếu gục, **Thử lại trận** đưa bạn về lượt một với chỉ số lúc chạm trán. Khi hạ Điện Lang, đội viện trợ cũng kết thúc trận. Một luồng khí tức ép xuống từ trên cao, Cổ Tiên xuất hiện, nói **“Tôm tép”** rồi vung tay chém xẻ bãi săn. Ánh sáng từ vết chém phủ trắng màn hình và hiện **Demo kết thúc**. Tải lại trước khi thắng đưa bạn về điểm tập kết, còn tải lại sau đòn kết liễu giữ màn kết. Nút **Chơi lại** đặt lại mốc.
 
 Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
 
@@ -56,6 +56,7 @@ Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với 
 - `dist/beast-king-raid.mjs` điều phối cảnh xuất hiện của Cuồng Điện Lang và các mốc nối lại. [Hồ sơ atlas và VFX](docs/thu-trieu-assets.md)
 - `dist/reinforcement-post.mjs` điều quân tiếp viện và quản lý các điểm hẹn từ hậu trại tới bãi săn.
 - `dist/forest-team.mjs` phát mô hình và VFX đội viện trợ trong cảnh rừng. `dist/forest-encounter.mjs` định nghĩa vị trí chạm trán, đấu trường và bộ hành động đầu game. [Hồ sơ tạo hình](docs/forest-support/README.md)
+- `dist/forest-ending.mjs` và `dist/forest-ending.css` điều khiển đoạn kết tự chạy khoảng 4,7 giây. Mỗi nửa vết chém dùng địa hình từ bản đồ đang chơi. Sprite Cổ Tiên gồm bốn khung 192 × 192 px trong `dist/assets/forest-support/co-tien-ending.png`.
 - `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 

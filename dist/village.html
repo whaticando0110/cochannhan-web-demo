@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="world.css">
   <link rel="stylesheet" href="rampart-fx.css">
+  <link rel="stylesheet" href="forest-ending.css">
+  <link rel="preload" as="image" href="assets/forest-support/co-tien-ending.png">
   <link rel="preload" as="image" href="assets/world/dien-lang.png">
   <link rel="preload" as="image" href="assets/rampart/son-trai-nu-nguyet-quang.png">
   <link rel="preload" as="image" href="assets/rampart/nguyet-quang.png">
@@ -59,7 +61,6 @@
             <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
             <div class="field-marker passage" id="rear-marker" aria-hidden="true" hidden><span>Hậu trại</span></div>
             <div class="field-marker passage" id="forest-marker" aria-hidden="true" hidden><span>Điểm tập kết</span></div>
-            <div class="field-marker passage" id="regroup-marker" aria-hidden="true" hidden><span>Đội viện trợ</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
@@ -93,6 +94,14 @@
           <div id="forest-warning" class="raid-dialogue forest-warning" role="status" hidden>
             <div><strong>Cổ sư tuần rừng</strong><p>Cẩn thận! Có Điện Lang sau lưng đội hình!</p></div>
             <button type="button" class="trail-guide" id="forest-ready">Vào trận</button>
+          </div>
+          <div class="immortal-scene" hidden>
+            <div class="rupture" aria-hidden="true" inert><div class="rupture-half"></div><div class="rupture-half"></div></div>
+            <i class="immortal-aura" aria-hidden="true"></i>
+            <i class="immortal-wind" aria-hidden="true"></i>
+            <i class="immortal-person" aria-hidden="true"></i>
+            <i class="immortal-edge" aria-hidden="true"></i>
+            <div class="raid-dialogue immortal-line" role="status" hidden><p>Tôm tép</p></div>
           </div>
           <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
@@ -163,14 +172,9 @@
       <button type="button" class="trail-guide" id="rear-next" autofocus>Tiếp tục</button>
     </div>
   </dialog>
-  <dialog class="mentor-dialog" id="forest-dialog" aria-labelledby="forest-speaker" aria-describedby="forest-line">
-    <div class="rear-dialog-content">
-      <div class="mentor-copy">
-        <h2 id="forest-speaker">Đội trưởng đội viện trợ</h2>
-        <p id="forest-line" aria-live="polite"></p>
-      </div>
-      <button type="button" class="trail-guide" id="forest-next" autofocus>Tiếp tục</button>
-    </div>
+  <dialog class="demo-end" id="demo-end" aria-labelledby="demo-end-title" hidden>
+    <h2 id="demo-end-title" tabindex="-1">Demo kết thúc</h2>
+    <button type="button" class="trail-guide" id="demo-play-again">Chơi lại</button>
   </dialog>
 </body>
 </html>

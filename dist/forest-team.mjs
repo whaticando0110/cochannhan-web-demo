@@ -1,7 +1,7 @@
 import motionAtlas from './assets/forest-support/team-motion.json' with { type: 'json' };
 import { FOREST_PACK, FOREST_TEAM } from './forest-encounter.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
-import { createWorld, findPath, toCell, toPoint } from './world.mjs';
+import { toPoint } from './world.mjs';
 
 export const REVEAL_MS = 2450;
 
@@ -20,7 +20,7 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
   layer.className = 'forest-team';
   layer.setAttribute('aria-hidden', 'true');
   plane.append(layer);
-  const actors = FOREST_TEAM.map(({ id, cell, regroup, cast }) => {
+  const actors = FOREST_TEAM.map(({ id, cell, cast }) => {
     const node = document.createElement('div');
     node.className = 'field-unit forest-support';
     node.dataset.support = id;
@@ -31,7 +31,7 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
     shadow.className = 'unit-shadow';
     node.append(shadow, art);
     layer.append(node);
-    return { id, cell, regroup, cast, node, art, fx: null, route: [] };
+    return { id, cell, cast, node, art, fx: null };
   });
   const wolves = FOREST_PACK.map((cell, i) => {
     const node = wolfTemplate.cloneNode(true);
@@ -46,10 +46,21 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
   ward.className = 'forest-ward';
   layer.append(ward);
   let started = null;
-  let timers = [];
-  const later = (fn, delay) => timers.push(setTimeout(fn, delay));
+  const timers = new Set();
+  const later = (fn, delay) => {
+    const timer = setTimeout(() => {
+      timers.delete(timer);
+      fn();
+    }, delay);
+    timers.add(timer);
+  };
+  function clearActions() {
+    timers.forEach(clearTimeout);
+    timers.clear();
+    ward.hidden = true;
+  }
 
-  function play(actor, name, { duration, iterations = 1 } = {}) {
+  function play(actor, name) {
     actor.fx?.cancel();
     const { frames, times, duration: length } = motionAtlas[actor.id].clips[name];
     actor.art.style.backgroundPosition = position(frames[0]);
@@ -58,21 +69,17 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
       offset: times[index] / length, backgroundPosition: position(frame), easing: 'steps(1, end)',
     }));
     keyframes.push({ ...keyframes.at(-1), offset: 1 });
-    actor.fx = actor.art.animate(keyframes, { duration: duration ?? length, iterations });
+    actor.fx = actor.art.animate(keyframes, { duration: length });
     actor.fx.onfinish = () => { actor.art.style.backgroundPosition = position(8); };
   }
 
-  function reset(visible = false) {
-    timers.forEach(clearTimeout);
-    timers = [];
+  function reset() {
+    clearActions();
     started = null;
-    layer.hidden = !visible;
-    ward.hidden = true;
+    layer.hidden = true;
     for (const actor of actors) {
-      actor.node.classList.remove('support-walking');
-      actor.route = [];
       actor.node.style.setProperty('--support-face', '1');
-      place(actor.node, visible ? actor.regroup : actor.cell);
+      place(actor.node, actor.cell);
       play(actor, 'idle');
     }
     for (const wolf of wolves) {
@@ -96,6 +103,18 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
     }
   }
 
+  function cast(actor, delay) {
+    later(() => play(actor, 'skill'), delay);
+    later(() => release(actor), delay + motionAtlas[actor.id].clips.skill.releaseAt);
+  }
+
+  function exchange(turn) {
+    clearActions();
+    cast(actors[turn % actors.length], 0);
+    const wolf = wolves[turn % wolves.length];
+    later(() => wolf.animation.play('pounce', { direction: [turn % 4 === 0 || turn % 4 === 3 ? .35 : -.35, 0] }), 190);
+  }
+
   function reveal(now) {
     if (started !== null) return;
     reset();
@@ -106,42 +125,25 @@ export function createForestTeam(plane, wolfTemplate, motion, shoot) {
       wolf.node.hidden = false;
       wolf.animation.idle();
     }
-    for (const actor of actors) {
-      later(() => play(actor, 'skill'), actor.cast);
-      later(() => release(actor), actor.cast + motionAtlas[actor.id].clips.skill.releaseAt);
-    }
-    const exits = [toCell(36, 6), toCell(41, 8), toCell(41, 10), toCell(37, 14)];
-    wolves.forEach((wolf, i) => later(() => {
-      wolf.animation.play('hit', { direction: [i === 0 ? .2 : -.2, 0] });
-      later(() => {
-        const a = toPoint(wolf.cell), b = toPoint(exits[i]);
-        place(wolf.node, exits[i]);
-        wolf.animation.run(a.col - b.col, a.row - b.row, { duration: 620, after: () => {
-          wolf.node.hidden = true;
-          wolf.animation.stop();
-        } });
-      }, 205);
-    }, 1055 + i * 103));
-    for (const actor of actors) {
-      const world = createWorld();
-      const path = findPath({ ...world, player: { ...world.player, cell: actor.cell } }, actor.regroup);
-      path.forEach((cell, index) => later(() => {
-        const from = toPoint(path[index - 1] ?? actor.cell);
-        const to = toPoint(cell);
-        if (from.col !== to.col) actor.node.style.setProperty('--support-face', Math.sign(to.col - from.col));
-        actor.node.classList.add('support-walking');
-        if (index === 0) play(actor, 'walk', { duration: 400, iterations: Math.ceil(path.length / 2) });
-        place(actor.node, cell);
-      }, 1660 + 177 * index));
-    }
+    for (const actor of actors) cast(actor, actor.cast);
+    wolves.forEach((wolf, index) => later(() =>
+      wolf.animation.play('hit', { direction: [index === 0 || index === 3 ? .2 : -.2, 0] }), 1100 + index * 115));
   }
 
   function facePlayer(cell) {
     const captain = actors[1];
-    const direction = toPoint(cell).col < toPoint(captain.regroup).col ? -1 : 1;
+    const direction = toPoint(cell).col < toPoint(captain.cell).col ? -1 : 1;
     captain.node.style.setProperty('--support-face', direction);
     play(captain, 'signal');
+    later(() => captain.node.style.setProperty('--support-face', '1'), 540);
   }
 
-  return { reveal, facePlayer, reset, camera: now => started !== null && now - started < REVEAL_MS ? [35.4, 9.65] : null };
+  function finishFight() {
+    clearActions();
+    wolves.forEach(wolf => wolf.animation.fall());
+    actors.forEach(actor => play(actor, 'idle'));
+  }
+
+  return { reveal, facePlayer, exchange, finishFight, reset,
+    camera: now => started !== null && now - started < REVEAL_MS ? [35.4, 9.65] : null };
 }

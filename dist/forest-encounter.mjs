@@ -3,15 +3,13 @@ import { MAP, isWalkable, toCell, toPoint } from './world.mjs';
 
 export const FOREST_REVEAL = toCell(27, 10);
 export const FOREST_FOLLOW = toCell(29, 10);
-export const FOREST_TALK = toCell(36, 11);
-export const FOREST_CAPTAIN = toCell(37, 11);
 export const FOREST_SCOUT = toCell(34, 9);
 export const FOREST_BOUNDS = Object.freeze({ left: 27, right: 34, top: 5, bottom: 14 });
 export const FOREST_PACK = [[34, 7], [37, 8], [38, 10], [34, 12]].map(([col, row]) => toCell(col, row));
 export const FOREST_TEAM = [
-  { id: 'pine', cell: toCell(35, 8), regroup: toCell(38, 10), cast: 570 },
-  { id: 'moon', cell: toCell(35, 10), regroup: FOREST_CAPTAIN, cast: 750 },
-  { id: 'raiment', cell: toCell(36, 11), regroup: toCell(38, 12), cast: 430 },
+  { id: 'pine', cell: toCell(35, 8), cast: 570 },
+  { id: 'moon', cell: toCell(35, 10), cast: 750 },
+  { id: 'raiment', cell: toCell(36, 11), cast: 430 },
 ];
 export const FOREST_ACTIONS = {
   move: ACTIONS.move,
@@ -44,7 +42,7 @@ const scout = {
   strikeName: 'Cắn xé',
   strikeDamage: 10,
   pace: 2,
-  victory: 'Điện Lang đã gục. Đội viện trợ đã mở được đường.',
+  victory: 'Điện Lang cuối cùng đã gục.',
   defeat: 'Bạn đã gục trước Điện Lang.',
 };
 
@@ -63,7 +61,5 @@ export function startForestBattle(player) {
 }
 
 export function forestCheckpoint(value, identity) {
-  if (value === identity + '|forest-regroup') return 'regroup';
-  if (value === identity + '|forest-done') return 'done';
-  return null;
+  return value === identity + '|forest-done' || value === identity + '|forest-regroup' ? 'done' : null;
 }

@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { moveTargets, playTurn } from '../dist/combat.mjs';
 import {
-  FOREST_BOUNDS, FOREST_FOLLOW, FOREST_TALK, atForestAlert, atForestReveal, forestCheckpoint, startForestBattle,
+  FOREST_BOUNDS, FOREST_FOLLOW, atForestAlert, atForestReveal, forestCheckpoint, startForestBattle,
 } from '../dist/forest-encounter.mjs';
-import { createWorld, findPath, isWalkable, toCell, walk } from '../dist/world.mjs';
+import { endingBeat } from '../dist/forest-ending.mjs';
+import { createWorld, isWalkable, toCell, walk } from '../dist/world.mjs';
 
 test('the forest chapter reveals the team before the alert and bypasses the real-time encounter', () => {
   const world = createWorld();
@@ -18,7 +19,7 @@ test('the forest chapter reveals the team before the alert and bypasses the real
   assert.equal(walk(world, toCell(28, 10)).mode, 'battle');
 });
 
-test('every entry row gives the player a safe first move and access to the regroup point', () => {
+test('every entry row gives the player a safe first move', () => {
   const world = createWorld();
   for (let row = FOREST_BOUNDS.top; row <= FOREST_BOUNDS.bottom; row++) {
     const cell = toCell(29, row);
@@ -28,7 +29,6 @@ test('every entry row gives the player a safe first move and access to the regro
     const safe = moveTargets(battle).find(target => !battle.intent.cells.includes(target));
     assert.notEqual(safe, undefined, `row ${row}`);
     assert.equal(playTurn(battle, 'move', safe).state.player.hp, world.player.hp);
-    assert.equal(findPath({ ...world, player: { ...world.player, cell } }, FOREST_TALK).at(-1), FOREST_TALK);
   }
 });
 
@@ -44,9 +44,17 @@ test('the tutorial supports a win, a loss, and a clean retry from the original p
   state = startForestBattle({ ...player, hp: 1 });
   assert.equal(playTurn(state, 'guard').state.result, 'loss');
   assert.deepEqual(startForestBattle(player), initial);
-  assert.equal(forestCheckpoint('ao-reu:45|forest-regroup', 'ao-reu:45'), 'regroup');
+  assert.equal(forestCheckpoint('ao-reu:45|forest-regroup', 'ao-reu:45'), 'done');
   assert.equal(forestCheckpoint('ao-reu:45|forest-done', 'ao-reu:45'), 'done');
   assert.equal(forestCheckpoint('ao-reu:45|forest-done', 'huyen-bao:45'), null);
+});
+
+test('the forest finale moves from aura and dialogue to slash, fracture and white before the title', () => {
+  const beats = [0, 350, 950, 1660, 2520, 2770, 3110, 4200, 4650];
+  assert.deepEqual(beats.map(endingBeat), ['silence', 'aura', 'arrival', 'line', 'windup', 'slash', 'rift', 'white', 'end']);
+  assert.equal(endingBeat(60000), 'end');
+  const png = readFileSync(new URL('../dist/assets/forest-support/co-tien-ending.png', import.meta.url));
+  assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [768, 192]);
 });
 
 test('the deployed team manifest resolves all three runtime sprite atlases', () => {
