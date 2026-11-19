@@ -51,11 +51,23 @@
 .field-unit, .field-marker { position: absolute; left: 0; top: 0; width: var(--tile); height: var(--tile); pointer-events: none; }
 .field-unit { z-index: 3; }
 .field-unit .sprite { position: absolute; left: 50%; bottom: 13%; width: 118%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); filter: drop-shadow(0 0 1px #b6ffdd) drop-shadow(1px 2px 1px #171f19); }
-.field-unit .wolf-art { position: absolute; left: 50%; bottom: 0; width: 133%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); background: url("assets/world/dien-lang.png") 0 0 / 400% 400% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #dbccad) drop-shadow(1px 2px 1px #17141d); }
+.beast { --wolf-art-scale: 1.35; --wolf-center-shift: 0px; }
+.field-unit .wolf-art {
+  position: absolute; left: calc(50% + var(--wolf-center-shift)); bottom: 0; width: 133%; aspect-ratio: 1;
+  /* The idle frame's paws end at 107 px in the 128 px atlas cell. */
+  transform-origin: 50% 84%;
+  transform: translateX(-50%) scaleX(var(--face, 1)) scale(var(--wolf-art-scale));
+  background: url("assets/world/dien-lang.png") 0 0 / 400% 400% no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px #dbccad) drop-shadow(1px 2px 1px #17141d);
+}
 .unit-shadow { position: absolute; bottom: 11%; left: 18%; width: 64%; height: 20%; border: 1px solid #94e9c0; border-radius: 50%; background: #0c13179e; }
-.beast .unit-shadow { border-color: #ffad85; }
+.beast .unit-shadow { left: calc(8% + var(--wolf-center-shift)); width: 84%; border-color: #ffad85; }
+.rampart-wolf {
+  /* Pull back the wider lunge so the front paw still reaches the original wall contact. */
+  --wolf-center-shift: calc(var(--tile) * (1 - var(--wolf-art-scale)) * .55);
+}
 .rampart-wolf .unit-shadow { border-color: transparent; }
-.rampart-wolf .wolf-art { transform-origin: 50% 84%; filter: drop-shadow(1px 2px 1px #141914c9); }
+.rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
 .rampart-wolf.wolf-down .wolf-art {
   scale: 1 .58; translate: -15% 8%; filter: brightness(.72) drop-shadow(1px 2px 1px #141914c9);
 }
@@ -74,7 +86,8 @@
   filter: drop-shadow(1px 2px 1px #101913);
 }
 .wolf-health {
-  appearance: none; position: absolute; left: 19%; top: 19%; width: 62%; height: 4px;
+  appearance: none; position: absolute; left: 27.5%; top: calc(var(--wolf-head-top, 42.96875%) - 5px);
+  width: 45%; height: 3px; transform: scaleX(var(--face, 1));
   border: 1px solid #21181b; background: #462b35; accent-color: #d76b68;
 }
 .wolf-health::-webkit-progress-bar { background: #462b35; }

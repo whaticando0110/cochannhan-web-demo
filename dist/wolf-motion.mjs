@@ -1,4 +1,6 @@
 const idleFrame = '0% 0%';
+// First opaque row of each 128 px atlas frame, used to pin the health bar above the pose.
+const frameTop = [55, 54, 53, 56, 62, 57, 57, 50, 65, 31, 55, 62, 57, 62, 58, 56];
 const clips = {
   idle: { frames: [0, 1, 0, 2, 3, 0], duration: 2000 },
   run: { frames: [4, 5, 6, 7], duration: 300 },
@@ -68,6 +70,7 @@ export function createWolfMotion(unit, reducedMotion, impact) {
       return {
         offset: clip.offsets?.[index] ?? index / clip.frames.length,
         backgroundPosition: framePosition(frame),
+        '--wolf-head-top': `${100 * frameTop[frame] / 128}%`,
         translate: `${100 * dx * reach}% ${100 * (dy * reach + (clip.drop?.[index] ?? 0))}%`,
         ...(clip.bodyScale && { scale: `1 ${clip.bodyScale[index]}` }),
         easing: 'steps(1, end)',
