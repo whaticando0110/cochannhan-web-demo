@@ -14,6 +14,8 @@ npm run preview
 
 Mở [bản demo local](http://127.0.0.1:4173). Bản đồ có **42 × 20 ô**. Dùng WASD, phím mũi tên hoặc chạm một ô để đi tới đó. Các ô có vật cản chặn đường. Nếu đang đi theo một đường đã chọn, nhân vật dừng ở ô bắt đầu cuộc chạm trán.
 
+Ở sơn trại, đi lên một trong hai cầu thang để tới sàn lũy gỗ. Nhân vật xuống sân bằng cầu thang trước khi tiếp tục qua cổng đông. Mỗi lượt **Chơi lại** chọn biến thể nền theo mã riêng và giữ vị trí các tuyến đường, cọc và bậc thang.
+
 Khi giao chiến, ô đỏ cho biết vùng sói sắp đánh. Mỗi hành động kết thúc lượt và sói phản ứng theo ý định hiển thị. Nếu gục, chọn **Thử lại trận** để trở về lúc sói xuất hiện.
 
 | Phím | Hành động | Tác dụng trong demo |
@@ -36,10 +38,11 @@ Mở **Đấu nhanh** để chơi trận thử ban đầu tại Thềm Hứng M�
 - `dist/combat.mjs` chứa quy tắc di chuyển, ý định đối thủ và xử lý lượt. Chỉ nhận trạng thái và hành động, nên kiểm thử được ngoài trình duyệt.
 - `dist/world.mjs` định nghĩa địa hình, vùng chạm trán, tìm đường và chuyển chế độ. Cả hai chế độ đọc cùng vị trí và vật cản.
 - `dist/expedition.mjs` nối bản đồ và camera với bàn phím, cảm ứng và bộ xử lý lượt. `dist/game.mjs` điều khiển trận Đấu nhanh.
+- `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 
 ```sh
 npm test
 ```
 
-Đồ họa nền, vật cản, sói và atlas nhân vật lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Bố cục sơn trại và đường rừng là bản thử ghép ô; chỉ số được rút gọn cho demo portfolio.
+Đồ họa đường rừng, vật cản, sói và atlas nhân vật lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Chỉ số được rút gọn cho demo portfolio.

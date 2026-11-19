@@ -1,0 +1,332 @@
+{
+  "name": "Cổ Nguyệt Sơn Trại · Lũy gỗ",
+  "version": 1,
+  "tileSize": 48,
+  "atlas": {
+    "file": "atlas.png",
+    "width": 384,
+    "height": 432
+  },
+  "sources": [
+    {
+      "name": "exec-b70e61d7-24cd-4ee3-ae0a-997c6158ffa0.png",
+      "sha256": "e9e591f7693a7f91cdb20ddd760bd65952cc8d4e224713e6759e4c7c9ac6db70"
+    },
+    {
+      "name": "exec-9f02d6e8-0869-4720-9f7b-9bbbeac83e39.png",
+      "sha256": "2665768062822d8af86af72d506419f54dcee6a281296a866e4016a48fea244e"
+    },
+    {
+      "name": "exec-7be74c7e-c794-4491-9495-633513bbf38f.png",
+      "sha256": "dbf4def05a4fa6176c68495a26716b8d15b5fd8da53fcfacb5ae0729db5303ac"
+    }
+  ],
+  "families": {
+    "mud": [
+      "mud-1",
+      "mud-2",
+      "mud-3",
+      "mud-4"
+    ],
+    "stone": [
+      "stone-1",
+      "stone-2",
+      "stone-3",
+      "stone-4"
+    ],
+    "deck-east": [
+      "deck-east-1",
+      "deck-east-2",
+      "deck-east-3",
+      "deck-east-4"
+    ],
+    "deck-south": [
+      "deck-south-1",
+      "deck-south-2",
+      "deck-south-3",
+      "deck-south-4"
+    ],
+    "bamboo": [
+      "bamboo-1",
+      "bamboo-2",
+      "bamboo-3",
+      "bamboo-4"
+    ]
+  },
+  "frames": {
+    "mud-1": {
+      "x": 0,
+      "y": 0,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "mud-2": {
+      "x": 48,
+      "y": 0,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "mud-3": {
+      "x": 96,
+      "y": 0,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "mud-4": {
+      "x": 144,
+      "y": 0,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "stone-1": {
+      "x": 0,
+      "y": 48,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "stone-2": {
+      "x": 48,
+      "y": 48,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "stone-3": {
+      "x": 96,
+      "y": 48,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "stone-4": {
+      "x": 144,
+      "y": 48,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 0
+    },
+    "deck-east-1": {
+      "x": 0,
+      "y": 96,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-east-2": {
+      "x": 48,
+      "y": 96,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-east-3": {
+      "x": 96,
+      "y": 96,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-east-4": {
+      "x": 144,
+      "y": 96,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-south-1": {
+      "x": 0,
+      "y": 144,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-south-2": {
+      "x": 48,
+      "y": 144,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-south-3": {
+      "x": 96,
+      "y": 144,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "deck-south-4": {
+      "x": 144,
+      "y": 144,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": true,
+      "elevation": 1
+    },
+    "bamboo-1": {
+      "x": 0,
+      "y": 192,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": false,
+      "elevation": 0
+    },
+    "bamboo-2": {
+      "x": 48,
+      "y": 192,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": false,
+      "elevation": 0
+    },
+    "bamboo-3": {
+      "x": 96,
+      "y": 192,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": false,
+      "elevation": 0
+    },
+    "bamboo-4": {
+      "x": 144,
+      "y": 192,
+      "width": 48,
+      "height": 48,
+      "layer": "surface",
+      "walkable": false,
+      "elevation": 0
+    },
+    "palisade-north": {
+      "x": 0,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "structure",
+      "walkable": false,
+      "blocksVisionAtGround": true
+    },
+    "palisade-west": {
+      "x": 48,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "structure",
+      "walkable": false,
+      "blocksVisionAtGround": true
+    },
+    "palisade-corner-nw": {
+      "x": 96,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "structure",
+      "walkable": false,
+      "blocksVisionAtGround": true
+    },
+    "platform-edge-south": {
+      "x": 144,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "overlay"
+    },
+    "platform-edge-east": {
+      "x": 192,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "overlay"
+    },
+    "bamboo-fringe": {
+      "x": 240,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "overlay"
+    },
+    "bamboo-edge-south": {
+      "x": 288,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "overlay"
+    },
+    "bamboo-edge-east": {
+      "x": 336,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "layer": "overlay"
+    },
+    "stairs-up-north": {
+      "x": 0,
+      "y": 288,
+      "width": 96,
+      "height": 144,
+      "layer": "structure",
+      "footprint": [
+        2,
+        3
+      ],
+      "uphill": "north",
+      "levels": [
+        0,
+        1
+      ]
+    },
+    "stairs-up-west": {
+      "x": 144,
+      "y": 288,
+      "width": 144,
+      "height": 96,
+      "layer": "structure",
+      "footprint": [
+        3,
+        2
+      ],
+      "uphill": "west",
+      "levels": [
+        0,
+        1
+      ]
+    }
+  }
+}

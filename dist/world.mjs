@@ -1,10 +1,12 @@
 import { ACTIONS, createBattle, neighbors, playTurn } from './combat.mjs';
+import { RAMPART_EDGE, rampartTile, stairConnects } from './rampart.mjs';
 
 export const MAP = Object.freeze({ columns: 42, rows: 20 });
 export const toCell = (col, row) => row * MAP.columns + col;
 export const toPoint = (cell) => ({ col: cell % MAP.columns, row: Math.floor(cell / MAP.columns) });
 export const SPAWN = toCell(9, 10);
-export const GATE = toCell(14, 10);
+const gateRow = 10;
+export const GATE = toCell(RAMPART_EDGE, gateRow);
 export const TRAIL_ENTRY = toCell(28, 10);
 export const WOLF = toCell(31, 10);
 export const CONTINUE = toCell(38, 10);
@@ -14,17 +16,10 @@ const clearingRocks = new Set([toCell(30, 8), toCell(33, 12), toCell(36, 9), toC
 
 function terrainAt(cell) {
   const { col, row } = toPoint(cell);
+  if (col <= RAMPART_EDGE) return { rampart: rampartTile(col, row, MAP.rows, gateRow) };
   const boundary = col === 0 || row === 0 || col === MAP.columns - 1 || row === MAP.rows - 1;
-  const kind = col < 15 ? 'grass' : 'mulch';
   const variant = (Math.imul(col + 13, 31) ^ Math.imul(row + 3, 17)) >>> 0;
-  if (boundary) return { ground: kind, prop: col < 15 ? 'wall' : 'thicket', variant };
-  if (col === 14 && (row < 9 || row > 11)) return { ground: 'stone', prop: 'wall', variant };
-  if (col < 14) {
-    const stone = (row >= 9 && row <= 11) || (col >= 7 && col <= 11 && row >= 6 && row <= 14);
-    const enclosed = ((row === 5 || row === 15) && col >= 4 && col <= 11) || (col === 5 && (row < 8 || row > 12));
-    const block = enclosed ? 'wall' : !stone && variant % 17 === 0 ? 'bamboo' : null;
-    return { ground: stone ? 'stone' : 'grass', prop: block, variant };
-  }
+  if (boundary) return { ground: 'mulch', prop: 'thicket', variant };
   if (col === 27 && (row < 7 || row > 13)) return { ground: 'mulch', prop: 'thicket', variant };
   if (col >= huntingGround.left) {
     const outside = row < huntingGround.top || row > huntingGround.bottom;
@@ -38,7 +33,7 @@ function terrainAt(cell) {
 }
 
 export const TERRAIN = Object.freeze(Array.from({ length: MAP.columns * MAP.rows }, (_, cell) => terrainAt(cell)));
-const obstacles = new Set(TERRAIN.flatMap(({ prop }, cell) => prop ? [cell] : []));
+const obstacles = new Set(TERRAIN.flatMap(({ prop, rampart }, cell) => prop || rampart?.blocked ? [cell] : []));
 export const ARENA = Object.freeze({ ...MAP, bounds: huntingGround, rocks: obstacles });
 
 export const FIELD_ACTIONS = Object.freeze({
@@ -64,17 +59,18 @@ export function insideHunt(cell) {
 
 export function locationOf(cell) {
   const { col } = toPoint(cell);
-  if (col < 15) return 'Cổ Nguyệt Sơn Trại';
+  if (col <= RAMPART_EDGE) return 'Cổ Nguyệt Sơn Trại';
   if (col < 28) return 'Đường rừng';
   return 'Bãi săn Thanh Mao';
 }
 
-export function createWorld() {
+export function createWorld({ seed = 29 } = {}) {
   return {
     mode: 'explore',
     player: { cell: SPAWN, hp: 48, maxHp: 48, qi: 4, maxQi: 6 },
     battle: null,
     checkpoint: null,
+    seed,
     cleared: false,
     reached: false,
     notice: 'Qua cổng phía đông, rồi theo lối mòn tới bãi săn.',
@@ -85,6 +81,18 @@ export function isWalkable(cell) {
   return Number.isInteger(cell) && cell >= 0 && cell < TERRAIN.length && !obstacles.has(cell);
 }
 
+function canExploreStep(from, to) {
+  if (!isWalkable(to)) return false;
+  const source = TERRAIN[from].rampart;
+  const target = TERRAIN[to].rampart;
+  const a = source?.stair;
+  const b = target?.stair;
+  if (a && b) return a === b;
+  if (a) return stairConnects(a, toPoint(from), toPoint(to), target?.elevation ?? 0);
+  if (b) return stairConnects(b, toPoint(to), toPoint(from), source?.elevation ?? 0);
+  return (source?.elevation ?? 0) === (target?.elevation ?? 0);
+}
+
 export function findPath(state, target) {
   const from = state.player.cell;
   if (state.mode !== 'explore' || !isWalkable(target) || from === target) return [];
@@ -93,7 +101,7 @@ export function findPath(state, target) {
   const previous = new Map([[from, null]]);
   for (let at = 0; at < queue.length; at++) {
     for (const next of neighbors(queue[at], MAP)) {
-      if (!isWalkable(next) || previous.has(next)) continue;
+      if (previous.has(next) || !canExploreStep(queue[at], next)) continue;
       previous.set(next, queue[at]);
       if (next === target) {
         const path = [];
@@ -107,7 +115,7 @@ export function findPath(state, target) {
 }
 
 export function walk(state, target) {
-  if (state.mode !== 'explore' || !isWalkable(target) || !neighbors(state.player.cell, MAP).includes(target)) return state;
+  if (state.mode !== 'explore' || !neighbors(state.player.cell, MAP).includes(target) || !canExploreStep(state.player.cell, target)) return state;
   const player = { ...state.player, cell: target };
   if (!state.cleared && insideHunt(target)) {
     const battle = createBattle({

@@ -1,4 +1,6 @@
 import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
+import atlas from './assets/rampart/atlas.mjs';
+import { chooseRampartFrame } from './rampart.mjs';
 import {
   CONTINUE, FIELD_ACTIONS, GATE, MAP, TERRAIN, TRAIL_ENTRY,
   createWorld, fight, findPath, insideHunt, locationOf, retryEncounter, toPoint, walk,
@@ -8,6 +10,7 @@ const byId = (id) => document.getElementById(id);
 const field = byId('field');
 const plane = byId('world-plane');
 const map = byId('map');
+const artwork = byId('map-ornaments');
 const hero = byId('hero-unit');
 const beast = byId('wolf-unit');
 const cursor = byId('target-cursor');
@@ -33,7 +36,8 @@ const actionHints = {
   guard: 'Giảm một nửa sát thương trong lượt và hồi 1 chân nguyên.',
 };
 
-let world = createWorld();
+const newTrip = () => createWorld({ seed: (Math.random() * 2 ** 32) >>> 0 });
+let world = newTrip();
 let selecting = false;
 let selectedCell = world.player.cell;
 let stepTimer;
@@ -42,6 +46,10 @@ let markedThreats = [];
 let markedMoves = [];
 const buttons = {};
 const tiles = [];
+const rampartSurfaces = [];
+const sheetUrls = Object.fromEntries(Object.entries(atlas.sheets).map(([id, sheet]) => [
+  id, new URL(`./assets/rampart/${sheet.file}`, import.meta.url).href,
+]));
 
 function announce(message) {
   byId('world-announcement').textContent = message;
@@ -53,24 +61,61 @@ function setHint(message, shouldAnnounce = false) {
   if (shouldAnnounce) announce(message);
 }
 
+function paintRampartFrame(node, id) {
+  const frame = atlas.frames[id];
+  const sheet = atlas.sheets[frame.sheet];
+  const axis = (offset, excess) => excess ? 100 * offset / excess : 0;
+  node.style.backgroundImage = `url("${sheetUrls[frame.sheet]}")`;
+  node.style.backgroundSize = `${100 * sheet.width / frame.width}% ${100 * sheet.height / frame.height}%`;
+  node.style.backgroundPosition = `${axis(frame.x, sheet.width - frame.width)}% ${axis(frame.y, sheet.height - frame.height)}%`;
+  node.dataset.frame = id;
+}
+
+function surfaceTexture() {
+  for (const { tile, family, cell } of rampartSurfaces) {
+    paintRampartFrame(tile, chooseRampartFrame(family, cell, world.seed));
+  }
+}
+
+function drawRampartOrnament(layer, cell, { frame: id, flip }) {
+  const { col, row } = toPoint(cell);
+  const frame = atlas.frames[id];
+  const node = document.createElement('span');
+  node.className = 'map-ornament';
+  node.style.left = `calc(var(--tile) * ${col})`;
+  node.style.top = `calc(var(--tile) * ${row})`;
+  node.style.width = `calc(var(--tile) * ${frame.width / atlas.tileSize})`;
+  node.style.height = `calc(var(--tile) * ${frame.height / atlas.tileSize})`;
+  if (flip) node.style.transform = 'scaleX(-1)';
+  paintRampartFrame(node, id);
+  layer.append(node);
+}
+
 function createMap() {
   plane.style.setProperty('--columns', MAP.columns);
   const fragment = document.createDocumentFragment();
-  TERRAIN.forEach(({ ground, prop, variant }, cell) => {
+  const overlays = document.createDocumentFragment();
+  TERRAIN.forEach(({ ground, prop, variant, rampart }, cell) => {
     const tile = document.createElement('button');
     tile.type = 'button';
-    tile.className = `world-tile ${ground}`;
+    tile.className = ground ? `world-tile ${ground}` : 'world-tile';
     tile.dataset.cell = cell;
     tile.tabIndex = -1;
     if (!insideHunt(cell)) tile.classList.add('outside-hunt');
-    const point = toPoint(cell);
-    if (point.col === 14 && (point.row === 8 || point.row === 12)) tile.classList.add('gate-post');
-    tile.style.setProperty('--tile-x', `${(variant % 8) * 100 / 7}%`);
+    if (rampart) {
+      rampartSurfaces.push({ tile, family: rampart.family, cell });
+      for (const ornament of rampart.ornaments) drawRampartOrnament(overlays, cell, ornament);
+    } else {
+      tile.style.setProperty('--tile-x', `${(variant % 8) * 100 / 7}%`);
+    }
+
     const name = coordinate(cell, MAP.columns);
-    tile.setAttribute('aria-label', prop ? `${name}, ô bị chặn` : name);
+    const blocked = Boolean(prop || rampart?.blocked);
+    tile.classList.toggle('blocked', blocked);
+    const detail = blocked ? ', ô bị chặn' : rampart?.stair ? ', cầu thang' : rampart?.elevation ? ', sàn lũy' : '';
+    tile.setAttribute('aria-label', name + detail);
     if (prop) {
       const feature = document.createElement('span');
-      tile.classList.add('blocked');
       feature.className = `prop ${prop}`;
       feature.setAttribute('aria-hidden', 'true');
       tile.append(feature);
@@ -79,6 +124,8 @@ function createMap() {
     fragment.append(tile);
   });
   map.append(fragment);
+  artwork.append(overlays);
+  surfaceTexture();
 }
 
 function createActions() {
@@ -120,7 +167,8 @@ function aimCamera() {
   const { col, row } = toPoint(cell);
   const offset = (point, screen, length) => Math.min(Math.max(0, length * size - screen), Math.max(0, (point + 0.5) * size - screen / 2));
   const x = offset(col, field.clientWidth, MAP.columns);
-  const y = offset(row, field.clientHeight, MAP.rows);
+  const lookTowardRampart = 2.5 * Math.min(1, Math.max(0, (19 - col) / 6));
+  const y = offset(row - lookTowardRampart, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
   place(byId('gate-marker'), GATE, size);
@@ -145,7 +193,7 @@ function renderObjective() {
   const inBattle = world.mode === 'battle';
   const pastGate = toPoint(world.player.cell).col >= 14;
   let title = 'Ra cổng đông';
-  let detail = 'Đi tự do trong sơn trại. Qua cổng đông để tới đường rừng.';
+  let detail = 'Thử lên sàn lũy bằng cầu thang hoặc đi qua cổng đông để tới đường rừng.';
   let button = 'Đi tới cổng';
   if (world.mode === 'defeat') {
     title = 'Thử lại cuộc săn';
@@ -216,7 +264,9 @@ function renderBattle() {
 
 function render() {
   byId('location').textContent = locationOf(world.player.cell);
-  byId('coordinates').textContent = `Ô ${coordinate(world.player.cell, MAP.columns)}`;
+  const terrain = TERRAIN[world.player.cell].rampart;
+  const level = terrain?.stair ? ' · Cầu thang' : terrain?.elevation ? ' · Sàn lũy' : '';
+  byId('coordinates').textContent = `Ô ${coordinate(world.player.cell, MAP.columns)}${level}`;
   byId('mode').textContent = world.mode === 'battle'
     ? `Giao chiến · Lượt ${world.battle.turn}` : world.mode === 'defeat' ? 'Thất bại' : 'Khám phá';
   meter('world-hp', world.player.hp, world.player.maxHp);
@@ -318,7 +368,8 @@ function chooseAction(action) {
 
 function reset() {
   stopWalk();
-  world = createWorld();
+  world = newTrip();
+  surfaceTexture();
   selecting = false;
   field.classList.remove('walking');
   hero.style.removeProperty('--face');

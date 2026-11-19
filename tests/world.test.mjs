@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { moveTargets, neighbors } from '../dist/combat.mjs';
+import atlas from '../dist/assets/rampart/atlas.mjs';
+import { chooseRampartFrame, STAIRS } from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
   createWorld, fight, findPath, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk,
@@ -37,6 +39,55 @@ test('walls block direct movement, and the village has space to explore off the 
   assert.deepEqual(findPath(atGateside, wall), []);
   assert.ok(findPath(world, toCell(8, 7)).length > 0);
   assert.strictEqual(walk(world, CONTINUE), world);
+});
+
+test('both modeled stairs connect the ground and the rampart in both directions', () => {
+  for (const stair of STAIRS) {
+    const isNorth = stair.uphill === 'north';
+    const lower = isNorth ? toCell(stair.col, stair.row + stair.height) : toCell(stair.col + stair.width, stair.row);
+    const upper = isNorth ? toCell(stair.col, stair.row - 1) : toCell(stair.col - 1, stair.row);
+    const world = createWorld();
+    const start = { ...world, player: { ...world.player, cell: lower } };
+    const climb = findPath(start, upper);
+    assert.equal(climb.length, 4);
+    let current = start;
+    for (const cell of climb.slice(0, -1)) {
+      assert.equal(TERRAIN[cell].rampart.stair, stair);
+      current = walk(current, cell);
+    }
+    current = walk(current, upper);
+    assert.equal(current.player.cell, upper);
+    assert.equal(TERRAIN[upper].rampart.elevation, 1);
+    for (const cell of findPath(current, lower)) current = walk(current, cell);
+    assert.equal(current.player.cell, lower);
+  }
+});
+
+test('a flat elevation edge and the side of a stair block direct steps', () => {
+  const world = createWorld();
+  const startingAt = cell => ({ ...world, player: { ...world.player, cell } });
+  const besideDeck = startingAt(toCell(8, 7));
+  assert.strictEqual(walk(besideDeck, toCell(8, 6)), besideDeck);
+  const besideStair = startingAt(toCell(9, 8));
+  assert.strictEqual(walk(besideStair, toCell(10, 8)), besideStair);
+  const blockedFence = startingAt(toCell(7, 5));
+  assert.strictEqual(walk(blockedFence, toCell(7, 4)), blockedFence);
+  assert.ok(findPath(besideDeck, toCell(8, 6)).length > 2);
+});
+
+test('seeded texture variation is reproducible and runtime frames cover the complete atlas', () => {
+  const world = createWorld({ seed: 123 });
+  const choose = seed => TERRAIN.flatMap(({ rampart }, cell) =>
+    rampart ? [chooseRampartFrame(rampart.family, cell, seed)] : []);
+  assert.equal(Object.keys(atlas.sheets).length, 3);
+  assert.equal(Object.keys(atlas.frames).length, 30);
+  assert.deepEqual(choose(world.seed), choose(123));
+  assert.notDeepEqual(choose(123), choose(991));
+  for (const [, frame] of Object.entries(atlas.frames)) {
+    const sheet = atlas.sheets[frame.sheet];
+    assert.ok(frame.x + frame.width <= sheet.width);
+    assert.ok(frame.y + frame.height <= sheet.height);
+  }
 });
 
 test('entering the encounter preserves the arrival cell and uses terrain from the same map', () => {
