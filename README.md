@@ -2,7 +2,7 @@
 
 Đi tự do từ **Cổ Nguyệt Sơn Trại** qua đường rừng đến **bãi săn Thanh Mao**. Khi chạm trán sói, bản đồ giữ nguyên vị trí và chuyển sang chiến đấu theo lượt. Hạ sói để tiếp tục đi theo lối mòn phía đông.
 
-Sơn Trại kéo dài theo trục bắc–nam. Khi mở map, bầy sói chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây.
+Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Điện Lang** chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây. Con gặp ở bãi săn dùng cùng tạo hình và có động tác đứng, chạy áp sát, cắn, vồ và giật mình khi trúng đòn.
 
 Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước cổng đông, nối lũy bắc với đoạn tường sát cổng.
 
@@ -53,4 +53,6 @@ Mở **Đấu nhanh** để chơi trận thử ban đầu tại Thềm Hứng M�
 npm test
 ```
 
-Đồ họa đường rừng, vật cản và sói lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Cả hai chế độ dùng **Huyền bào tay rộng** từ bản Activity ở mốc `5738f80f`. Bộ này có khung đứng, thủ, lao tới, bật lùi và né đổi hàng. Khi tung đòn, sprite giữ tư thế sẵn sàng trong lúc game hiện hiệu ứng. Chỉ số được rút gọn cho demo portfolio.
+Đồ họa đường rừng và vật cản lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Cả hai chế độ dùng **Huyền bào tay rộng** từ bản Activity ở mốc `5738f80f`. Bộ này có khung đứng, thủ, lao tới, bật lùi và né đổi hàng. Khi tung đòn, sprite giữ tư thế sẵn sàng trong lúc game hiện hiệu ứng. Chỉ số được rút gọn cho demo portfolio.
+
+Điện Lang phổ thông dùng atlas trong suốt 16 khung 128 × 128 ở `dist/assets/world/dien-lang.png`. Tốc độ, thị lực và cảnh công trại dựa trên truyện. Bờm xanh than và mắt bắt sáng nhẹ là lựa chọn tạo hình cho demo. [Chương 127](https://truyenhoan.com/co-chan-nhan/chuong-127.html) · [Chương 150](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-150)

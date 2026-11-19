@@ -1,5 +1,6 @@
 import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
 import { createHeroMotion } from './hero-motion.mjs';
+import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
   chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_WOLVES, westForestFamily,
@@ -28,6 +29,7 @@ if (wearsAoReu) {
   byId('hero-name').textContent = 'Cổ sư Áo rêu';
 }
 const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion, wearsAoReu);
+const wolfMotion = createWolfMotion(beast, motion);
 const stepDurations = { walk: 485, run: 280, climb: 630 };
 
 const keys = {
@@ -65,6 +67,8 @@ try {
 let route = [];
 let markedThreats = [];
 let markedMoves = [];
+let wolfLeaving = false;
+let wolfHeldCell;
 const buttons = {};
 const tiles = [];
 const rampartSurfaces = [];
@@ -234,20 +238,14 @@ function createRampartWolves() {
     unit.style.left = `calc(var(--tile) * ${col})`;
     unit.style.top = `calc(var(--tile) * ${row})`;
     plane.append(unit);
-    rampartWolves.push(unit);
+    rampartWolves.push(createWolfMotion(unit, motion));
   }
 }
 
 function animateRampartWolves() {
-  rampartWolves.forEach((unit, index) => {
-    unit.getAnimations().forEach(animation => animation.cancel());
-    if (motion.matches) return;
+  rampartWolves.forEach((wolf, index) => {
     const { col, row, startCol, startRow } = RAMPART_WOLVES[index];
-    unit.style.setProperty('--face', startCol < col ? -1 : 1);
-    unit.animate([
-      { translate: `${100 * (startCol - col)}% ${100 * (startRow - row)}%` },
-      { translate: '0 0' },
-    ], { delay: 280 + index * 160, duration: 1500, easing: 'ease-out', fill: 'backwards' });
+    wolf.run(startCol - col, startRow - row, { duration: 1500, delay: 280 + index * 160 });
   });
 }
 
@@ -301,10 +299,11 @@ function aimCamera() {
   place(byId('gate-marker'), GATE, size);
   place(byId('end-marker'), CONTINUE, size);
   if (!beast.hidden) {
-    place(beast, world.battle.rival.cell, size);
-    const face = toPoint(world.battle.rival.cell).col >= col ? 1 : -1;
+    const wolfCell = wolfHeldCell ?? world.battle.rival.cell;
+    place(beast, wolfCell, size);
+    const face = toPoint(wolfCell).col >= col ? 1 : -1;
     hero.style.setProperty('--face', face);
-    beast.style.setProperty('--face', face);
+    beast.style.setProperty('--face', -face);
   }
   if (selecting) place(cursor, selectedCell, size);
 }
@@ -326,14 +325,14 @@ function renderObjective() {
     title = 'Thử lại cuộc săn';
     detail = world.notice;
   } else if (inBattle) {
-    title = 'Hạ sói rừng';
+    title = 'Hạ Điện Lang';
     detail = 'Chọn đường tránh vùng đỏ hoặc dùng Thủ thế. Đánh tay không để hồi chân nguyên.';
   } else if (world.reached) {
     title = 'Đã tới lối mòn';
     detail = world.notice;
   } else if (world.cleared) {
     title = 'Đi tiếp về phía đông';
-    detail = 'Sói rừng đã gục. Bạn có thể tự do đi lại qua bãi săn.';
+    detail = 'Điện Lang đã gục. Bạn có thể tự do đi lại qua bãi săn.';
     button = 'Đi tới lối mòn';
   } else if (pastGate) {
     title = 'Tới bãi săn';
@@ -356,7 +355,7 @@ function renderBattle() {
   byId('field-actions').hidden = !inBattle;
   byId('defeat').hidden = !defeat;
   byId('encounter-log').hidden = !battle;
-  beast.hidden = !inBattle && !defeat;
+  beast.hidden = !inBattle && !defeat && !wolfLeaving;
 
   if (inBattle) {
     meter('wolf-hp', battle.rival.hp, battle.rival.maxHp);
@@ -427,6 +426,7 @@ function step(target) {
   field.classList.add('walking');
   render();
   if (world.mode === 'battle') {
+    wolfMotion.idle();
     stopWalk();
     byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh. Chọn Di chuyển để xem các ô có thể đến.';
     setHint('Sói xuất hiện. Né vùng đỏ hoặc chọn một hành động.', true);
@@ -463,18 +463,62 @@ function go(target) {
   }
 }
 
+function wolfDirection(from, to) {
+  const start = toPoint(from);
+  const end = toPoint(to);
+  const distance = Math.max(Math.abs(end.col - start.col), Math.abs(end.row - start.row), 1);
+  return [(end.col - start.col) / distance, (end.row - start.row) / distance];
+}
+
+function animateWolfTurn(previous, playerEvent, rivalEvent) {
+  const react = () => {
+    if (wolfLeaving) {
+      wolfLeaving = false;
+      beast.hidden = true;
+      wolfMotion.stop();
+      return;
+    }
+    if (rivalEvent?.type === 'move') {
+      const from = toPoint(rivalEvent.from);
+      const to = toPoint(rivalEvent.to);
+      wolfHeldCell = undefined;
+      aimCamera();
+      wolfMotion.run(from.col - to.col, from.row - to.row);
+      return;
+    }
+    // On a dodge, the wolf still attacks the square it targeted before the player moved.
+    if (previous.intent.type === 'heavy' || previous.intent.type === 'strike') {
+      const direction = wolfDirection(previous.rival.cell, rivalEvent?.to ?? previous.player.cell);
+      if (direction[0]) beast.style.setProperty('--face', Math.sign(direction[0]));
+      wolfMotion.play(previous.intent.type === 'heavy' ? 'pounce' : 'bite', { direction });
+      return;
+    }
+    wolfMotion.idle();
+  };
+  if (playerEvent?.damage) {
+    wolfMotion.play('hit', { direction: wolfDirection(playerEvent.from, playerEvent.to), after: react });
+  } else {
+    react();
+  }
+}
+
 function resolve(action, cell) {
+  const previous = world.battle;
   const { state, error } = fight(world, action, cell);
   if (error) return setHint(error, true);
   world = state;
+  const event = world.battle.events.find(entry => entry.actor === 'player');
+  const rivalEvent = world.battle.events.find(entry => entry.actor === 'rival');
+  wolfLeaving = world.battle.result === 'win';
+  wolfHeldCell = event?.damage && rivalEvent?.type === 'move' ? rivalEvent.from : undefined;
   selecting = false;
   field.style.removeProperty('--step-time');
   render();
-  const event = world.battle.events.find(entry => entry.actor === 'player');
   if (event) {
     const facing = Number(hero.style.getPropertyValue('--face')) || 1;
     heroMotion.playBattle(event, facing, MAP.columns, 170);
   }
+  animateWolfTurn(previous, event, rivalEvent);
   if (world.mode === 'battle') {
     setHint('Chọn hành động tiếp theo theo ý định của sói.');
     announce(world.battle.report.slice(0, 2).map(entry => entry.text).join(' '));
@@ -502,6 +546,9 @@ function chooseAction(action) {
 
 function reset() {
   stopWalk();
+  wolfMotion.stop();
+  wolfLeaving = false;
+  wolfHeldCell = undefined;
   world = newTrip();
   nextStepAt = 0;
   field.style.removeProperty('--step-time');
@@ -593,6 +640,7 @@ byId('retry-encounter').addEventListener('click', () => {
   world = retryEncounter(world);
   selecting = false;
   heroMotion.stand();
+  wolfMotion.idle();
   render();
   byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh.';
   setHint(world.notice, true);

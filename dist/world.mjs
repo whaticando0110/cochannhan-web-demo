@@ -44,10 +44,10 @@ export const FIELD_ACTIONS = Object.freeze({
 });
 
 const wolf = Object.freeze({
-  name: 'Sói rừng',
+  name: 'Điện Lang',
   heavyName: 'Vồ mồi', heavyEvery: 3, heavyRange: 4, heavyDamage: 17,
   strikeName: 'Cắn', strikeDamage: 11, pace: 2,
-  victory: 'Sói rừng đã gục. Bạn có thể tiếp tục khám phá.',
+  victory: 'Điện Lang đã gục. Bạn có thể tiếp tục khám phá.',
   defeat: 'Bạn đã gục ở bãi săn.',
 });
 
