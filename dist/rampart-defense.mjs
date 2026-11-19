@@ -2,7 +2,7 @@ import {
   RAMPART_GUARD, RAMPART_INSTRUCTOR, RAMPART_MOONWHIRL_GUARD, RAMPART_WOLVES,
   RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
 } from './rampart.mjs';
-import { MOONLIGHT } from './world.mjs';
+import { MOONLIGHT, TRAINING_POST, toPoint } from './world.mjs';
 
 const wolfMaxHp = 52;
 const castDuration = 690;
@@ -55,6 +55,7 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
   const needleGuard = addGuard(plane, RAMPART_INSTRUCTOR, 'indigo-guard');
   const northGuard = addGuard(plane, RAMPART_NORTH_REINFORCEMENT, 'russet-guard');
   const southGuard = addGuard(plane, RAMPART_SOUTH_REINFORCEMENT, 'ivory-guard');
+  const relief = addGuard(plane, { col: 0, row: 0 }, 'ivory-guard relief-guard');
   const effects = document.createElement('div');
   effects.className = 'rampart-defense-effects';
   effects.setAttribute('aria-hidden', 'true');
@@ -173,10 +174,31 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       sprite: southGuard, target: targets[2], delay: 4250, kind: 'whirl' }, () => damage(2));
   }
 
+  function coverTrainingPost() {
+    if (!health[midpoint]) {
+      const { col, row, startCol, startRow } = RAMPART_WOLVES[midpoint];
+      const { unit, motion } = wolves[midpoint];
+      health[midpoint] = wolfMaxHp;
+      updateWolfHealth(unit, wolfMaxHp, wolfMaxHp);
+      motion.run(startCol - col, startRow - row, { duration: 1400, after: motion.attackWall });
+    }
+    const post = toPoint(TRAINING_POST);
+    const from = guardPalm(post, 94, 64.5);
+    const chargeFrom = guardPalm(post, 67, 68);
+    for (const delay of [1300, 3000]) {
+      shoot({ from, chargeFrom, sprite: relief, target: targets[midpoint], delay }, () => damage(midpoint));
+    }
+  }
+
   return {
-    begin, stop, shoot,
+    begin, stop, shoot, coverTrainingPost,
+    reliefUnit: relief.parentElement,
     trainingTarget: targets[midpoint],
     targetHp: () => health[midpoint],
-    playerShot: from => shoot({ from, target: targets[midpoint], windup: 0 }, () => damage(midpoint)),
+    playerShot: (from, settled) => shoot({ from, target: targets[midpoint], windup: 0 }, () => {
+      const hit = damage(midpoint);
+      settled();
+      return hit;
+    }),
   };
 }

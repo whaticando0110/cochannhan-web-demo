@@ -51,6 +51,7 @@
             <div class="map-ornaments" id="map-ornaments" aria-hidden="true"></div>
             <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
             <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
+            <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
@@ -66,6 +67,9 @@
             <div class="field-vital">
               <div class="vital-note"><span>Chân nguyên</span><b id="world-qi"></b></div>
               <progress class="qi-meter" id="world-qi-meter" aria-label="Chân nguyên người chơi"></progress>
+            </div>
+            <div class="field-vital" id="stone-status" hidden>
+              <div class="vital-note"><span>Nguyên thạch</span><b id="stone-count"></b></div>
             </div>
             <div class="field-vital" id="wolf-status" hidden>
               <div class="vital-note"><span>Điện Lang</span><b id="wolf-hp"></b></div>
@@ -85,6 +89,7 @@
         <div class="field-footer">
           <span id="field-hint">Bấm ô để đi, hoặc dùng WASD và phím mũi tên.</span>
           <button class="run-toggle" id="cast-moon" type="button" aria-keyshortcuts="F" hidden><kbd>F</kbd> Nguyệt Quang <small>−2 chân nguyên</small></button>
+          <button class="run-toggle" id="absorb-stone" type="button" aria-keyshortcuts="E" hidden><kbd>E</kbd> Hấp thụ nguyên thạch</button>
           <button class="run-toggle" id="run-toggle" type="button" aria-label="Chế độ chạy" aria-pressed="false" aria-keyshortcuts="Shift">Chạy · Tắt</button>
         </div>
       </section>
@@ -94,6 +99,7 @@
           <span class="quest-mark" aria-label="Mục tiêu">◆</span>
           <h2 id="objective-title"></h2>
           <p id="objective-detail"></p>
+          <progress id="absorption-progress" value="0" max="1" aria-label="Tiến độ hấp thụ nguyên thạch" hidden></progress>
           <button type="button" class="trail-guide" id="guide"></button>
         </section>
 

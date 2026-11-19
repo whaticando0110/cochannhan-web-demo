@@ -1,5 +1,6 @@
 import { aptitude, awakeningStorageKey, baseStepMs, cellId, createCeremony, finalDepth, flowerBank, height,
   hopeCells, move, routeTo, seaEssenceLabel, seaEssenceRatio, stepPace, terrain, width } from './awakening-rules.mjs';
+import { lessonCheckpointKey } from './village-arrival.mjs';
 
 const byId = id => document.getElementById(id);
 const selection = byId('character-select');
@@ -232,6 +233,7 @@ function resize() {
 
 function saveOutcome(grade, seaPct) {
   try {
+    sessionStorage.removeItem(lessonCheckpointKey);
     sessionStorage.setItem(awakeningStorageKey, JSON.stringify({
       hero: selectedHero,
       depth: state.depth,

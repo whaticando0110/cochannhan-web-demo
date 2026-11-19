@@ -30,7 +30,9 @@ Mở [bản demo local](http://127.0.0.1:4173). Bản đồ có **42 × 26 ô**.
 
 Bấm **Shift** một lần để bật chạy khi khám phá, bấm lần nữa để về đi bộ. Nút **Chạy** dưới bản đồ cũng đổi chế độ và trình duyệt ghi nhớ lựa chọn. Huyền bào dùng dáng chạy riêng trên nền phẳng. Trên cầu thang, nhân vật đi từng bước ở lối giữa rộng một ô và trở lại nhịp đã chọn sau khi ra khỏi thang. Mỗi lượt **Chơi lại** chọn biến thể nền theo mã riêng và giữ vị trí các tuyến đường, cọc và bậc thang.
 
-Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 chân nguyên và có thời gian hồi. Chân nguyên phục hồi dần khi ngừng bắn. Ở bãi săn, dùng WASD, phím mũi tên hoặc chạm ô để thoát vùng màu đỏ trước lúc Điện Lang vồ. Nếu gục, chọn **Thử lại trận** để về lúc sói xuất hiện. Nút **Chơi lại** đặt lại cả tutorial.
+Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 chân nguyên. Khi cạn chân nguyên, nghe Tĩnh Nghi rồi xuống chỗ tiếp tế để một cổ sư khác lên thay. Bấm **E** hoặc chạm **Hấp thụ nguyên thạch** và đứng yên khoảng 1,5 giây. Rời ô trước khi xong sẽ giữ lại viên đá. Hoàn tất lưu điểm tiếp tế cho lần tải lại trong cùng phiên. Nút **Chơi lại** đặt lại cả tutorial.
+
+Sau bài tập, cổng đông vẫn dẫn tới bãi săn của bản thử. Ở đó chân nguyên hồi dần khi ngừng bắn. Né vùng màu đỏ trước lúc Điện Lang vồ và dùng **Thử lại trận** nếu gục. Cảnh Cuồng Điện Lang xuất hiện sẽ nối vào ngay sau khi hồi chân nguyên ở mốc kế tiếp.
 
 Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
 
@@ -44,7 +46,7 @@ Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với 
 
 - `dist/combat.mjs` giữ quy tắc của bản Đấu nhanh theo lượt.
 - `dist/world.mjs` định nghĩa địa hình, tìm đường, nhịp tấn công theo thời gian thực và sát thương ở bãi săn. `dist/rampart-defense.mjs` điều khiển cảnh phòng thủ, đạn và hiệu ứng trúng đòn.
-- `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/game.mjs` điều khiển trận Đấu nhanh.
+- `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/rampart-lesson.mjs` giữ các mốc bài tập và quy tắc hấp thụ. `dist/game.mjs` điều khiển trận Đấu nhanh.
 - `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 
