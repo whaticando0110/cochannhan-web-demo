@@ -9,10 +9,33 @@
 .world-tile.grass { background-image: url("assets/world/grass.png"); }
 .world-tile.mulch { background-image: url("assets/world/mulch.png"); }
 .world-tile.trail { background-image: url("assets/world/trail.png"); }
+.world-tile.rampart-verge { background-color: #3e3c2e; }
+.world-tile.rampart-verge::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: #162b31; opacity: var(--verge-tint);
+}
+.world-tile:is(.rampart-surface, .rampart-verge):not(:hover, .threat, .reachable)::after {
+  border-color: transparent;
+}
 .world-tile:hover::after { border: 1px solid #f5e2a58f; }
 .world-tile.blocked { cursor: default; }
 .map-ornaments { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .map-ornament { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; }
+.west-wall-shade {
+  position: absolute; top: calc(var(--tile) * 4); left: calc(var(--tile) * 2.35);
+  width: calc(var(--tile) * .65); height: calc(var(--tile) * var(--wall-length));
+  background: linear-gradient(to right, transparent, #1419157d);
+}
+.apron-scrub {
+  position: absolute; width: calc(var(--tile) * .32); height: calc(var(--tile) * .22);
+  background: #6b7350;
+  clip-path: polygon(0 74%, 17% 74%, 17% 50%, 29% 50%, 29% 21%, 42% 21%, 42% 55%,
+    51% 55%, 51% 33%, 69% 33%, 69% 0, 81% 0, 81% 58%, 100% 58%, 100% 72%,
+    69% 72%, 69% 100%, 27% 100%, 27% 86%, 0 86%);
+  box-shadow: inset 0 -5px #3b4935;
+  opacity: .82;
+}
+.apron-scrub.small { transform: scale(-.66, .66); }
 .world-tile .prop { position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat; background-position: center 76%; filter: drop-shadow(1px 3px 1px #2424189e); }
 .world-tile .prop.bamboo { background-image: url("assets/world/bamboo.png"); background-size: 100% auto; }
 .world-tile .prop.thicket { background-image: url("assets/world/thicket.png"); background-size: 105% auto; }
@@ -32,6 +55,7 @@
 .unit-shadow { position: absolute; bottom: 11%; left: 18%; width: 64%; height: 20%; border: 1px solid #94e9c0; border-radius: 50%; background: #0c13179e; }
 .beast .unit-shadow { border-color: #ffad85; }
 .rampart-wolf .unit-shadow { border-color: transparent; }
+.rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
 .cursor { z-index: 5; border: 2px solid #fff3bf; box-shadow: inset 0 0 0 2px #222c26aa, 0 0 11px #2b382f; }
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }

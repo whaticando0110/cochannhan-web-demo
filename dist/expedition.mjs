@@ -64,6 +64,16 @@ const buttons = {};
 const tiles = [];
 const rampartSurfaces = [];
 const rampartWolves = [];
+const forestEdges = [
+  [-1, 0, { frame: 'bamboo-edge-east' }],
+  [1, 0, { frame: 'bamboo-edge-east', flip: true }],
+  [0, -1, { frame: 'bamboo-edge-south' }],
+  [0, 1, { frame: 'bamboo-edge-south', flipY: true }],
+];
+const westernScrub = [
+  [1.3, 5.3], [-1.1, 6.6], [-2.1, 8.5], [-2.6, 10.1], [-2.2, 12.7],
+  [-1.3, 14.4], [-0.8, 14.8], [-1.5, 16.2], [0.6, 17.7], [1.5, 21.6],
+];
 const sheetUrls = Object.fromEntries(Object.entries(atlas.sheets).map(([id, sheet]) => [
   id, new URL(`./assets/rampart/${sheet.file}`, import.meta.url).href,
 ]));
@@ -111,8 +121,7 @@ function surfaceTexture() {
   }
 }
 
-function drawRampartOrnament(layer, cell, { frame: id, flip, flipY, width, height, uphill }) {
-  const { col, row } = toPoint(cell);
+function drawRampartOrnament(layer, col, row, { frame: id, flip, flipY, width, height, uphill }) {
   const frame = atlas.frames[id];
   const node = document.createElement('span');
   node.className = 'map-ornament';
@@ -127,6 +136,33 @@ function drawRampartOrnament(layer, cell, { frame: id, flip, flipY, width, heigh
   if (flip || flipY) node.style.transform = `scale(${flip ? -1 : 1}, ${flipY ? -1 : 1})`;
   paintRampartFrame(node, id);
   layer.append(node);
+}
+
+function drawWestClearing(layer) {
+  function familyAt(col, row) {
+    if (col < 0) return westForestFamily(col, row);
+    return TERRAIN[row * MAP.columns + col]?.rampart?.family;
+  }
+  for (let row = 1; row < MAP.rows - 1; row++) {
+    for (let col = -RAMPART_FOREST_WIDTH; col <= 2; col++) {
+      if (familyAt(col, row) !== 'mud') continue;
+      for (const [dx, dy, ornament] of forestEdges) {
+        if (familyAt(col + dx, row + dy) === 'bamboo') drawRampartOrnament(layer, col, row, ornament);
+      }
+    }
+  }
+  const shade = document.createElement('span');
+  shade.className = 'west-wall-shade';
+  shade.style.setProperty('--wall-length', MAP.rows - 7);
+  layer.append(shade);
+  for (const [index, [col, row]] of westernScrub.entries()) {
+    const tuft = document.createElement('span');
+    tuft.className = 'apron-scrub';
+    tuft.style.left = `calc(var(--tile) * ${col})`;
+    tuft.style.top = `calc(var(--tile) * ${row})`;
+    if (index % 2) tuft.classList.add('small');
+    layer.append(tuft);
+  }
 }
 
 function createMap() {
@@ -144,7 +180,9 @@ function createMap() {
   }
   const fragment = document.createDocumentFragment();
   const overlays = document.createDocumentFragment();
+  drawWestClearing(overlays);
   TERRAIN.forEach(({ ground, prop, variant, rampart }, cell) => {
+    const { col, row } = toPoint(cell);
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = ground ? `world-tile ${ground}` : 'world-tile';
@@ -152,10 +190,15 @@ function createMap() {
     tile.tabIndex = -1;
     if (!insideHunt(cell)) tile.classList.add('outside-hunt');
     if (rampart) {
+      tile.classList.add('rampart-surface');
       rampartSurfaces.push({ tile, family: rampart.family, cell });
-      for (const ornament of rampart.ornaments) drawRampartOrnament(overlays, cell, ornament);
+      for (const ornament of rampart.ornaments) drawRampartOrnament(overlays, col, row, ornament);
     } else {
       tile.style.setProperty('--tile-x', `${(variant % 8) * 100 / 7}%`);
+      if (col <= RAMPART_EDGE + 6) {
+        tile.classList.add('rampart-verge');
+        tile.style.setProperty('--verge-tint', (RAMPART_EDGE + 7 - col) * 9 + '%');
+      }
     }
 
     const name = coordinate(cell, MAP.columns);
