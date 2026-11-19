@@ -121,14 +121,16 @@ function surfaceTexture() {
   }
 }
 
-function drawRampartOrnament(layer, col, row, { frame: id, flip, flipY, width, height, uphill }) {
+function drawRampartOrnament(layer, col, row, { frame: id, flip, flipY, width, height, uphill, style }) {
   const frame = atlas.frames[id];
   const node = document.createElement('span');
   node.className = 'map-ornament';
+  if (style) node.classList.add(style);
   // Center the two-tile artwork on the lane. Its rails occupy the adjacent blocked cells.
   const insetX = uphill === 'north' ? 0.5 : 0;
   const insetY = uphill === 'west' ? 0.5 : 0;
-  node.style.left = `calc(var(--tile) * ${col + insetX})`;
+  const centerNarrowFrame = width && width < 1 ? (1 - width) / 2 : 0;
+  node.style.left = `calc(var(--tile) * ${col + insetX + centerNarrowFrame})`;
   node.style.top = `calc(var(--tile) * ${row + insetY})`;
   node.style.width = `calc(var(--tile) * ${(width ?? frame.width / atlas.tileSize) - 2 * insetX})`;
   node.style.height = `calc(var(--tile) * ${(height ?? frame.height / atlas.tileSize) - 2 * insetY})`;

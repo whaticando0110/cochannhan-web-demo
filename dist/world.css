@@ -21,6 +21,8 @@
 .world-tile.blocked { cursor: default; }
 .map-ornaments { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .map-ornament { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; }
+.inner-palisade { filter: drop-shadow(-3px 1px 0 #1a1a18a8); }
+.inner-threshold { clip-path: inset(31% 0 31%); opacity: .83; }
 .west-wall-shade {
   position: absolute; top: calc(var(--tile) * 4); left: calc(var(--tile) * 2.35);
   width: calc(var(--tile) * .65); height: calc(var(--tile) * var(--wall-length));

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { moveTargets, neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
-import { chooseRampartFrame, RAMPART_EDGE, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
+import { chooseRampartFrame, INNER_RAMPART, RAMPART_EDGE, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
   createWorld, fight, findPath, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk,
@@ -55,6 +55,26 @@ test('the path across the village gate leads through the forest on the same larg
   assert.equal(toPoint(world.player.cell).col, 27);
 });
 
+test('the inner palisade blocks crossings except at the two marked passages', () => {
+  const { col, passages } = INNER_RAMPART;
+  const world = createWorld();
+  for (let row = 7; row < MAP.rows - 3; row++) {
+    const tile = toCell(col, row);
+    const walkable = passages.includes(row);
+    assert.equal(isWalkable(tile), walkable);
+    assert.ok(TERRAIN[tile].rampart.ornaments.some(({ style }) =>
+      style === (walkable ? 'inner-threshold' : 'inner-palisade')));
+    const east = { ...world, player: { ...world.player, cell: toCell(col + 1, row) } };
+    assert.equal(walk(east, tile).player.cell, walkable ? tile : east.player.cell);
+  }
+
+  const stair = STAIRS[1];
+  const lower = toCell(stair.col + stair.width, stair.row + 1);
+  const firstStairTile = toCell(stair.col + stair.width - 1, stair.row + 1);
+  assert.ok(findPath(world, firstStairTile).includes(lower));
+  assert.ok(findPath({ ...world, player: { ...world.player, cell: firstStairTile } }, GATE).includes(lower));
+});
+
 test('walls block direct movement, and the village has space to explore off the road', () => {
   const world = createWorld();
   const atGateside = { ...world, player: { ...world.player, cell: toCell(13, 8) } };
@@ -62,7 +82,7 @@ test('walls block direct movement, and the village has space to explore off the 
   assert.equal(isWalkable(wall), false);
   assert.strictEqual(walk(atGateside, wall), atGateside);
   assert.deepEqual(findPath(atGateside, wall), []);
-  assert.ok(findPath(world, toCell(8, 7)).length > 0);
+  assert.ok(findPath(world, toCell(7, 7)).length > 0);
   assert.strictEqual(walk(world, CONTINUE), world);
 });
 
@@ -97,13 +117,13 @@ test('both modeled stairs connect the ground and the rampart in both directions'
 test('a flat elevation edge and the side of a stair block direct steps', () => {
   const world = createWorld();
   const startingAt = cell => ({ ...world, player: { ...world.player, cell } });
-  const besideDeck = startingAt(toCell(8, 7));
-  assert.strictEqual(walk(besideDeck, toCell(8, 6)), besideDeck);
+  const besideDeck = startingAt(toCell(7, 7));
+  assert.strictEqual(walk(besideDeck, toCell(7, 6)), besideDeck);
   const besideStair = startingAt(toCell(9, 8));
   assert.strictEqual(walk(besideStair, toCell(10, 8)), besideStair);
   const blockedFence = startingAt(toCell(7, 5));
   assert.strictEqual(walk(blockedFence, toCell(7, 4)), blockedFence);
-  assert.ok(findPath(besideDeck, toCell(8, 6)).length > 2);
+  assert.ok(findPath(besideDeck, toCell(7, 6)).length > 2);
 });
 
 test('seeded texture variation is reproducible and runtime frames cover the complete atlas', () => {

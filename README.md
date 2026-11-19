@@ -4,6 +4,8 @@
 
 Sơn Trại kéo dài theo trục bắc–nam. Khi mở map, bầy sói chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây.
 
+Hàng cọc gỗ thứ hai ngăn hành lang ngay sau lũy tây với sân trong. Lối qua nằm gần sàn lũy bắc và thẳng với chân cầu thang tây.
+
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 
 Chọn **Khai Khiếu** để thử vượt sông ngầm và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)

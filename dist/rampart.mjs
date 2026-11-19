@@ -15,6 +15,11 @@ const fenceRow = 4;
 const deckBottom = 6;
 const deckRight = 5;
 
+export const INNER_RAMPART = Object.freeze({
+  col: 8,
+  passages: Object.freeze([STAIRS[0].row + STAIRS[0].height, STAIRS[1].row + 1]),
+});
+
 export const RAMPART_FOREST_WIDTH = 5;
 export const RAMPART_WOLVES = Object.freeze([
   { col: fenceCol - 1, row: 7, startCol: -2.6, startRow: 6.1 },
@@ -69,6 +74,15 @@ export function rampartTile(col, row, mapRows, gateRow) {
     } else if (!stair || rail) {
       if (row === deckBottom + 1) ornaments.push({ frame: 'platform-edge-south' });
       if (col === deckRight + 1) ornaments.push({ frame: 'platform-edge-east' });
+    }
+  }
+
+  if (inside && col === INNER_RAMPART.col && row > deckBottom) {
+    if (INNER_RAMPART.passages.includes(row)) {
+      ornaments.push({ frame: 'deck-east-1', style: 'inner-threshold', width: .68 });
+    } else {
+      ornaments.push({ frame: 'palisade-west', style: 'inner-palisade', width: .68, flip: true });
+      blocked = true;
     }
   }
 
