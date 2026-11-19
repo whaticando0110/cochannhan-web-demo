@@ -11,6 +11,10 @@ const clips = {
     reach: [0, -.21, .06, .04, -.10, -.16, -.06, 0],
     duration: 2120,
   },
+  fall: {
+    frames: [12, 13, 8, 8], duration: 320,
+    reach: [.10, .14, .15, .15], drop: [0, .03, .07, .08], bodyScale: [1, .81, .67, .58],
+  },
 };
 
 function framePosition(index) {
@@ -26,6 +30,7 @@ export function createWolfMotion(unit, reducedMotion, impact) {
   let finishWhenReduced;
 
   function stop() {
+    if (pose === 'down') unit.classList.remove('wolf-down');
     pose = undefined;
     finishWhenReduced = undefined;
     if (animation) {
@@ -59,7 +64,8 @@ export function createWolfMotion(unit, reducedMotion, impact) {
       return {
         offset: clip.offsets?.[index] ?? index / clip.frames.length,
         backgroundPosition: framePosition(frame),
-        translate: `${100 * dx * reach}% ${100 * dy * reach}%`,
+        translate: `${100 * dx * reach}% ${100 * (dy * reach + (clip.drop?.[index] ?? 0))}%`,
+        ...(clip.bodyScale && { scale: `1 ${clip.bodyScale[index]}` }),
         easing: 'steps(1, end)',
       };
     });
@@ -87,6 +93,17 @@ export function createWolfMotion(unit, reducedMotion, impact) {
     ], { duration, iterations: Infinity });
   }
 
+  function down() {
+    stop();
+    pose = 'down';
+    sprite.style.backgroundPosition = framePosition(8);
+    unit.classList.add('wolf-down');
+  }
+
+  function fall() {
+    play('fall', { direction: [-1, 0], after: down });
+  }
+
   // The parent moves across the map while its child cycles through the running poses.
   function run(fromX, fromY, { duration = 340, delay = 0, after = idle } = {}) {
     if (fromX) unit.style.setProperty('--face', -Math.sign(fromX));
@@ -103,11 +120,12 @@ export function createWolfMotion(unit, reducedMotion, impact) {
     const finish = finishWhenReduced;
     const wasActive = Boolean(animation);
     const atWall = pose === 'wall';
+    if (pose === 'down') return;
     stop();
     if (finish) finish();
     else if (atWall) attackWall();
     else if (wasActive || !unit.hidden) idle();
   });
 
-  return { idle, play, run, stop, attackWall };
+  return { idle, play, run, stop, attackWall, fall };
 }

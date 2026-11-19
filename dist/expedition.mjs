@@ -1,5 +1,6 @@
 import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
 import { createHeroMotion } from './hero-motion.mjs';
+import { createRampartDefense } from './rampart-defense.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
@@ -252,6 +253,7 @@ function animateRampartWolves() {
       duration: 1500, delay: 280 + index * 290, after: wolf.attackWall,
     });
   });
+  rampartDefense.begin();
 }
 
 function createActions() {
@@ -574,6 +576,7 @@ renderRunToggle();
 runToggle.addEventListener('click', toggleRun);
 createMap();
 createRampartWolves();
+const rampartDefense = createRampartDefense(plane, rampartWolves, motion);
 createActions();
 render();
 animateRampartWolves();

@@ -16,6 +16,8 @@ function motionFixture() {
     };
   }
   const unit = element();
+  const classes = new Set();
+  unit.classList = { add: name => classes.add(name), remove: name => classes.delete(name) };
   const sprite = element();
   const impact = element();
   unit.querySelector = () => sprite;
@@ -23,7 +25,7 @@ function motionFixture() {
     matches: false,
     addEventListener(_, listener) { this.change = listener; },
   };
-  return { unit, sprite, impact, preference, motion: createWolfMotion(unit, preference, impact) };
+  return { unit, sprite, impact, classes, preference, motion: createWolfMotion(unit, preference, impact) };
 }
 
 test('rampart wolf mirrors toward its destination and runs for the same time as it travels', () => {
@@ -83,4 +85,21 @@ test('the sustained attack starts on arrival and splinters coincide with wall co
   assert.equal(impact.active.at(-1).cancelled, true);
   assert.equal(unit.active.length, 2);
   assert.notEqual(sprite.active.at(-1).timing.iterations, Infinity);
+});
+
+test('a struck wolf cancels its wall attack, stays down, and can run again on reset', () => {
+  const { impact, sprite, classes, preference, motion } = motionFixture();
+  motion.attackWall();
+  const wallImpact = impact.active.at(-1);
+  motion.fall();
+  assert.equal(wallImpact.cancelled, true);
+  sprite.active.at(-1).onfinish();
+  assert.ok(classes.has('wolf-down'));
+  preference.matches = true;
+  preference.change();
+  preference.matches = false;
+  preference.change();
+  assert.ok(classes.has('wolf-down'));
+  motion.run(-4, 0, { after: motion.attackWall });
+  assert.ok(!classes.has('wolf-down'));
 });

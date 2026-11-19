@@ -4,6 +4,8 @@
 
 Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Điện Lang** chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây. Chúng thay nhau vồ vào cọc gỗ, làm bật dăm rồi lùi lấy đà. Con gặp ở bãi săn dùng cùng tạo hình và có động tác đứng, chạy áp sát, cắn, vồ và giật mình khi trúng đòn.
 
+Một **nữ cổ sư Sơn Trại** đứng trên sàn lũy tây, tụ sáng trong lòng bàn tay rồi phóng ba nguyệt nhận xuống bầy Điện Lang. Cảnh dùng model Nhân tộc nữ từ bộ Sơn Trại v66 và các khung Nguyệt Quang `moonlight-c` trong bộ asset Antigravity, xuất từ mẫu C v68 với nhịp bay nhanh, thẳng của B v69. Các cú trúng ở lũy thuộc cảnh mở đầu, còn trận bãi săn dùng luật theo lượt riêng. [Chương 22](https://truyenhoan.com/co-chan-nhan/chuong-22.html) · [Chương 159](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-159)
+
 Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước cổng đông, nối lũy bắc với đoạn tường sát cổng.
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
