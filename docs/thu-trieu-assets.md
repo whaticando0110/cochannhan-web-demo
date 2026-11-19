@@ -51,7 +51,10 @@ Tài liệu kỹ thuật trên nhánh `antigravity/gu-vfx-thu-trieu` phục vụ
 - **Căn cứ nguyên tác**: *Cổ Chân Nhân* Chương 6–7 — Nguyên thạch hình bầu dục cỡ trứng vịt, sắc xám tro (`thanh hôi sắc`), ẩn chứa thiên địa nguyên khí dày đặc; khi cổ sư rút cạn nguyên khí đưa vào Không Khiếu thì vỏ đá nứt vỡ, hóa thành một nắm bột phấn xám rơi khỏi kẽ tay.
 - **Rương tiếp tế & Icon Nguyên Thạch (`dist/assets/rampart/primeval-stone.png` + `primeval-stone.json`)**:
   - Kích thước & lưới: `256 × 128` (`4 cột × 2 hàng`, ô `64 × 64`, `groundPivot: [32, 54]`, alpha nhị phân `0 | 255`).
-  - Hàng 0 (`supply_crate`, `4` khung): Khung `0..2` = rương gỗ nẹp đồng mở nắp tại `SUPPLY_POST` (`col 9, row 13`) với các viên nguyên thạch xám bầu dục thở nhịp nguyên khí xanh ngọc; Khung `3` = trạng thái sau khi đã lấy & hút cạn 1 viên, còn vương bột đá xám trên miệng rương.
+  - **Tách riêng ô đặt thùng và ô nhân vật đứng**:
+    - Ô nhân vật đứng hấp thụ (`SUPPLY_STAND_POST` / `SUPPLY_POST`): `col 9, row 13` (nhân vật quay mặt sang phải `--face: 1` về phía thùng).
+    - Ô đặt thùng nguyên thạch (`SUPPLY_CRATE_POST`): `col 10, row 13` (ô kế bên phải trên sân đá, tách khỏi chân cầu thang `col 6..7, row 11.5..13.5` và tách khỏi lộ trình cổ sư tiếp viện đi lên `(8, 14) -> (8, 12) -> (6, 12) -> (4, 11)` để không ai dẫm lên thùng gỗ).
+  - Hàng 0 (`supply_crate`, `4` khung): Khung `0..2` = rương gỗ nẹp đồng mở nắp với các viên nguyên thạch xám bầu dục thở nhịp nguyên khí xanh ngọc; Khung `3` = trạng thái sau khi đã lấy & hút cạn 1 viên, còn vương bột đá xám trên miệng rương.
   - Hàng 1 (`stone_icon`, `4` khung): Icon viên nguyên thạch cho HUD `#stone-status` (`dormant -> awakening -> cracking -> powder`).
 - **Hiệu ứng Hấp Thụ Nguyên Thạch (`dist/assets/rampart/stone-absorb-fx.png` + `stone-absorb-fx.json`)**:
   - Kích thước & lưới: `512 × 128` (`8 cột × 2 hàng`, ô `64 × 64`, `groundPivot: [32, 54]`, `dantianCenter: [32, 34]`, tổng thời lượng `1500 ms` khớp `ABSORB_MS = 1500`, alpha nhị phân `0 | 255`).

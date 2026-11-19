@@ -467,8 +467,14 @@ export function spawnEnhancedGuImpact(effectsLayer, reducedMotion, { target, ang
 }
 
 export const PRIMEVAL_STONE_FRAME_WEIGHTS = Object.freeze([180, 185, 190, 190, 190, 195, 185, 185]);
+export const SUPPLY_STAND_POST = Object.freeze({ col: 9, row: 13 });
+export const SUPPLY_CRATE_POST = Object.freeze({ col: 10, row: 13 });
 
-export function buildStoneAbsorptionSchedule({ durationMs = 1500 } = {}) {
+export function buildStoneAbsorptionSchedule({
+  durationMs = 1500,
+  standPost = SUPPLY_STAND_POST,
+  cratePost = SUPPLY_CRATE_POST,
+} = {}) {
   const scale = durationMs / 1500;
   let elapsed = 0;
   const frames = PRIMEVAL_STONE_FRAME_WEIGHTS.map((w, col) => {
@@ -487,6 +493,9 @@ export function buildStoneAbsorptionSchedule({ durationMs = 1500 } = {}) {
   });
   return {
     durationMs,
+    standPost,
+    cratePost,
+    facingTowardCrate: Math.sign(cratePost.col - standPost.col) || 1,
     apertureFullFrame: 5,
     apertureFullMs: frames[5].startMs,
     powderStartFrame: 6,
@@ -513,7 +522,7 @@ export function createSupplyStationFx(plane, reducedMotion) {
     if (absorbRoot) absorbRoot.hidden = true;
   }
 
-  function mountCrate(post, { depleted = false } = {}) {
+  function mountCrate(post = SUPPLY_CRATE_POST, { depleted = false } = {}) {
     if (!crateNode && plane) {
       crateNode = document.createElement('div');
       crateNode.className = 'supply-crate-unit';
@@ -548,7 +557,7 @@ export function createSupplyStationFx(plane, reducedMotion) {
     }
   }
 
-  function startAbsorption(post, { durationMs = 1500, onComplete } = {}) {
+  function startAbsorption(post = SUPPLY_STAND_POST, { durationMs = 1500, onComplete } = {}) {
     stopAbsorbAnimations();
     const schedule = buildStoneAbsorptionSchedule({ durationMs });
     if (!plane || reducedMotion?.matches) return schedule;

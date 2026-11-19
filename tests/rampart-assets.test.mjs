@@ -5,6 +5,8 @@ import test from 'node:test';
 import zlib from 'node:zlib';
 import {
   BEAST_KING_TREMOR_STEPS,
+  SUPPLY_CRATE_POST,
+  SUPPLY_STAND_POST,
   buildAnimeImpactSchedule,
   buildGuWakeSchedule,
   buildStoneAbsorptionSchedule,
@@ -196,6 +198,10 @@ test('primeval-stone and stone-absorb-fx atlases match 1500ms absorption schedul
 
   const schedule = buildStoneAbsorptionSchedule({ durationMs: 1500 });
   assert.equal(schedule.durationMs, 1500);
+  assert.deepEqual(schedule.standPost, SUPPLY_STAND_POST);
+  assert.deepEqual(schedule.cratePost, SUPPLY_CRATE_POST);
+  assert.notDeepEqual(schedule.standPost, schedule.cratePost);
+  assert.equal(schedule.facingTowardCrate, 1);
   assert.equal(schedule.frames.length, 8);
   assert.equal(schedule.frames[0].startMs, 0);
   assert.equal(schedule.frames.at(-1).endMs, 1500);
