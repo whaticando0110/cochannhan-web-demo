@@ -98,9 +98,10 @@ test('tinh-nghi motion atlas locks frame [0,0] identity, 2x2 pixel grid, and foo
   const staticImg = decodePng(path.join(rampartDir, meta.staticSprite));
 
   assert.equal(motionImg.width, 1024);
-  assert.equal(motionImg.height, 512);
+  assert.equal(motionImg.height, 640);
   assert.deepEqual(meta.cellSize, [128, 128]);
-  assert.deepEqual(meta.grid, [8, 4]);
+  assert.deepEqual(meta.grid, [8, 5]);
+  assert.equal(meta.backgroundSize, '800% 500%');
   assert.equal(meta.anchorBaselineY, 121);
 
   for (let i = 3; i < motionImg.data.length; i += 4) {
@@ -133,14 +134,33 @@ test('tinh-nghi motion atlas locks frame [0,0] identity, 2x2 pixel grid, and foo
     }
   }
 
-  // Every cell in all 4 rows respects the y=121 baseline and non-empty geometry
-  for (const clipName of ['idle', 'walk', 'cast', 'hit']) {
+  const counts = { idle: 8, walk: 4, cast: 8, hit: 6, guard: 6 };
+  for (const [clipName, count] of Object.entries(counts)) {
     const clip = meta.clips[clipName];
-    assert.equal(clip.count, 8);
-    assert.equal(clip.bboxes128.length, 8);
-    for (const bbox of clip.bboxes128) {
-      assert.ok(bbox.y1 <= meta.anchorBaselineY);
-      assert.ok(bbox.y1 >= 117);
+    assert.equal(clip.count, count);
+    assert.equal(clip.bboxes128.length, count);
+    assert.equal(clip.timesMs.length, count);
+    assert.equal(clip.timesMs[0], 0);
+    for (const [column, bbox] of clip.bboxes128.entries()) {
+      assert.equal(bbox.y1, meta.anchorBaselineY);
+      const time = clip.timesMs[column];
+      assert.ok(time < clip.durationMs && (column === 0 || time > clip.timesMs[column - 1]));
+      assert.ok(bbox.x0 > 0 && bbox.x1 < 127 && bbox.y0 > 0);
+      const baseline = ((clip.row * 128 + bbox.y1) * motionImg.width + column * 128) * 4;
+      assert.ok(motionImg.data.subarray(baseline, baseline + 128 * 4).some((value, index) => index % 4 === 3 && value === 255));
     }
+  }
+
+  const { cast, hit, guard } = meta.clips;
+  assert.notEqual(guard.row, hit.row);
+  assert.ok(guard.readyFrame < guard.contactFrame && guard.contactFrame < guard.count);
+  assert.equal(cast.timesMs[cast.releaseFrame], cast.releaseTimeMs);
+  for (const [column, [x, y]] of [
+    [2, meta.sockets.chargePalm128], [cast.releaseFrame, meta.sockets.releasePalm128],
+  ]) {
+    const index = ((cast.row * 128 + y) * motionImg.width + column * 128 + x) * 4;
+    const [red, green, blue, alpha] = motionImg.data.subarray(index, index + 4);
+    assert.equal(alpha, 255);
+    assert.ok(red > 145 && red > green && green > blue, 'palm socket must touch visible skin');
   }
 });

@@ -15,15 +15,19 @@ Tài liệu kỹ thuật trên nhánh `antigravity/thu-trieu-assets` phục vụ
 
 ## 2. Chuyển động Cổ Nguyệt Tĩnh Nghi (`dist/assets/rampart/tinh-nghi-motion.png` + `tinh-nghi.json`)
 
-- **Bảo toàn tạo hình gốc**: Dựng trên lưới logic `64 × 64` và phóng `2×` nearest-neighbor thành `128 × 128` (`1024 × 512`, `8 cột × 4 hàng`), giữ nguyên ô `[0,0]` khớp 1:1 với `tinh-nghi-sprite.png` (búi tóc, trâm gỗ, lọn tóc bạc, cổ áo kem, bào xanh thông và dải thắt lưng nâu đất, đường chân cố định `y = 121`).
-- **Bố cục các hàng**:
-  - Hàng 0: `idle` (`8` khung, `1400 ms`)
-  - Hàng 1: `walk` (`8` khung, `640 ms`)
-  - Hàng 2: `cast` (`8` khung, `610 ms`, thả chiêu tại khung `4` ở `330 ms`; tập con 4 pose cho `rampart-defense`: `[0, 2, 4, 6]`)
-  - Hàng 3: `hit` (`8` khung, `420 ms`, thủ thế / giật lùi và hồi tư thế)
-- **Tọa độ lòng bàn tay (thang `128 px`)**:
-  - Tụ khí (`cast[2]`): `[72.5, 69.5]`
-  - Xuất chưởng (`cast[4]`): `[96.1, 69.3]` (`[0.7508, 0.5414]` chuẩn hóa theo ô)
+Atlas V2 do Codex sửa từ bản Antigravity bàn giao ở `18dc497`. Giữ nguyên hàng `idle` và chân dung hiện có. Các tư thế mới dùng ImageGen tham chiếu model gốc, thu về lưới `64 × 64` cùng tỷ lệ, rồi phóng nearest-neighbor `2×`. Có [file Aseprite với 5 tag](art/tinh-nghi-motion.aseprite) khớp atlas và thời lượng trong metadata.
+
+| Hàng | Clip | Số khung | Thời lượng | Chuyển động |
+| --- | --- | ---: | ---: | --- |
+| 0 | `idle` | 8 | 1400 ms | Giữ nguyên hình và nhịp của bản bàn giao. |
+| 1 | `walk` | 4 | 600 ms | Hai nhịp chân chạm đất xen kẽ hai nhịp chân bước qua. |
+| 2 | `cast` | 8 | 650 ms | Tụ tay trước ngực, hạ trọng tâm, bước tới phóng cổ, thu tay. |
+| 3 | `hit` | 6 | 470 ms | Vai bật lùi, lùi chân ghìm sức, đứng lại. |
+| 4 | `guard` | 6 | 680 ms | Dựng chéo cẳng tay ở khung 2, ghìm thế đỡ ở khung 3. |
+
+- Atlas `1024 × 640`, `8 × 5` ô `128 × 128`, alpha `0 | 255`, cạnh dưới bàn chân `y = 121`. Hàng 0 cột 0 trùng ảnh `tinh-nghi-sprite.png`. Lấy số khung và nhịp từ `clips[name].count` và `timesMs`. Dùng `800% 500%` cho `background-size`, tính phần trăm dọc từ `row / 4`.
+- Khung tụ `cast[2]` có lòng bàn tay tại `[69, 75]`. Mốc phát vẫn là `cast[4]` tại `330 ms`, lòng bàn tay tại `[104, 66]` hay tọa độ chuẩn hóa `[0.8125, 0.515625]`. Khi lật sprite sang trái, lật cả tọa độ ngang của tay.
+- `guard` là tư thế cơ thể dành cho phòng hộ. Tài sản này sẵn sàng để ráp vào cảnh, với chuyển vị, thời điểm va chạm và VFX do cảnh điều khiển.
 
 ## 3. Trạng thái Kim Chung Tráo
 
