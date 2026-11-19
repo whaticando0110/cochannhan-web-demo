@@ -34,7 +34,9 @@ Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 ch
 
 Ngay khi dùng xong nguyên thạch, camera theo đợt sói mới và Cuồng Điện Lang tới lũy tây. Tĩnh Nghi chỉ đường về hậu trại rồi lên lũy dùng Huyết Nguyệt và Kim Chung Tráo. Có thể bấm **Esc** hoặc **Bỏ qua cảnh** để chuyển tới nhiệm vụ gọi viện binh. Tải lại trước khi xem xong sẽ phát lại từ đầu cảnh và giữ kết quả hấp thụ. Tải lại sau khi xem xong sẽ đưa bạn về mốc đang làm.
 
-Sau khi đến hậu trại, cổng đông vẫn dẫn tới bãi săn của bản thử. Ở đó chân nguyên hồi dần khi ngừng bắn. Né vùng màu đỏ trước lúc Điện Lang vồ và dùng **Thử lại trận** nếu gục.
+Ở hậu trại, bấm **E** hoặc chạm **Báo tin** để báo động cho đội trưởng. Hai cổ sư lên lũy tiếp viện. Theo đội trưởng qua cổng đông bên hông tới điểm tập kết và trao đổi trước khi vào bãi săn. Tải lại trong cùng phiên sẽ tiếp tục từ mốc báo tin, cổng đông hoặc điểm tập kết đã đạt.
+
+Phần bãi săn hiện nối vào trận Điện Lang thời gian thực có sẵn. Chân nguyên hồi dần khi ngừng bắn. Né vùng màu đỏ trước lúc sói vồ và dùng **Thử lại trận** nếu gục.
 
 Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
 
@@ -50,6 +52,7 @@ Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với 
 - `dist/world.mjs` định nghĩa địa hình, tìm đường, nhịp tấn công theo thời gian thực và sát thương ở bãi săn. `dist/rampart-defense.mjs` điều khiển cảnh phòng thủ, đạn và hiệu ứng trúng đòn.
 - `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/rampart-lesson.mjs` giữ các mốc bài tập và quy tắc hấp thụ. `dist/game.mjs` điều khiển trận Đấu nhanh.
 - `dist/beast-king-raid.mjs` điều phối cảnh xuất hiện của Cuồng Điện Lang và các mốc nối lại. [Hồ sơ atlas và VFX](docs/thu-trieu-assets.md)
+- `dist/reinforcement-post.mjs` điều quân tiếp viện và quản lý các điểm hẹn từ hậu trại tới bãi săn.
 - `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 
