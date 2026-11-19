@@ -115,11 +115,11 @@ function startBattle(now) {
   return { rival: huntWolf, nextAt: now + 950, intent: null };
 }
 
-export function walk(state, target, now = 0) {
+export function walk(state, target, now = 0, { hunt = true } = {}) {
   if (state.mode === 'defeat' || !neighbors(state.player.cell, MAP).includes(target)
     || !canWalk(state, state.player.cell, target)) return state;
   const player = { ...state.player, cell: target };
-  if (!state.cleared && !state.battle && insideHunt(target)) {
+  if (hunt && !state.cleared && !state.battle && insideHunt(target)) {
     return { ...state, player, battle: startBattle(now), checkpoint: player, mode: 'battle',
       notice: 'Điện Lang xuất hiện. Bắn lúc có tầm và rời ô đỏ trước khi sói vồ.' };
   }

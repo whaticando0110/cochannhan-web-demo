@@ -45,7 +45,7 @@
 .world-tile.reachable.threat::after { border-color: #ffd696; background: repeating-linear-gradient(135deg, #a9503f5c 0 6px, #8b3b326e 6px 12px); }
 .world-tile.reachable::before { content: ""; z-index: 1; position: absolute; width: 9px; height: 9px; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(45deg); background: #ccf4cc; border: 1px solid #254434; }
 .world-tile.reachable.threat::before { background: #ffce93; }
-.field-window.in-battle .world-tile.outside-hunt::after { background: #14201d45; }
+.field-window.in-battle:not(.forest-fighting) .world-tile.outside-hunt::after { background: #14201d45; }
 .field-window.walking .field-world { transition: transform var(--step-time, 105ms) linear; }
 .field-window.ready .field-unit.hero { transition: transform var(--step-time, 105ms) linear; }
 .field-unit, .field-marker { position: absolute; left: 0; top: 0; width: var(--tile); height: var(--tile); pointer-events: none; }
@@ -125,6 +125,7 @@
   background: url("assets/rampart/nguyet-quang.png") 0 0 / 800% 200% no-repeat;
 }
 .rampart-moon.whirl { width: calc(var(--tile) * 1.35); }
+.rampart-moon.forest-mang { width: calc(var(--tile) * 1.25); filter: brightness(1.35); }
 .rampart-moon.whirl i { background-image: url("assets/rampart/nguyet-toan.png"); }
 .rampart-moon.huyet-nguyet { width: calc(var(--tile) * 1.48); }
 .rampart-moon.huyet-nguyet i {
@@ -296,6 +297,43 @@
 .trail-guide:hover { background:#ebdcaf; }
 .encounter-intent .panel-label { color:#ecb098; }
 .world-layout:has(.in-battle) #objective-card { display:none; }
+.field-window.forest-fighting .world-tile.outside-forest-arena::after { background: #14201d68; }
+.field-unit.forest-support { z-index: 3; }
+.forest-support .unit-shadow, .forest-pack-wolf .unit-shadow { border-color: transparent; }
+.support-art {
+  position: absolute; left: 50%; bottom: 11%; width: 146%; aspect-ratio: 1;
+  transform: translateX(-50%) scaleX(var(--support-face, 1));
+  background-size: 400% 300%; background-repeat: no-repeat;
+  image-rendering: pixelated; filter: drop-shadow(1px 2px 1px #171712);
+}
+.forest-ward {
+  position: absolute; z-index: 4; pointer-events: none; top: 0; left: 0;
+  width: var(--tile); height: var(--tile);
+}
+.forest-ward::before, .forest-ward::after {
+  content: ""; position: absolute; inset: 17% 1% 30%; border-radius: 50%;
+  border: solid #bce2f3a6; border-width: 0 0 3px;
+  box-shadow: 0 3px 10px #9fd3f099; rotate: -26deg; animation: forest-ward 900ms both;
+}
+.forest-ward::after { inset: 29% -3% 20%; rotate: 19deg; }
+@keyframes forest-ward { 0%, 100% { opacity: 0; } 25%, 60% { opacity: 1; } }
+.forest-warning { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.forest-warning button { pointer-events: auto; }
+.forest-command { padding: 6px clamp(10px, 2vw, 28px) 9px; }
+.forest-buttons { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+.forest-buttons button {
+  min-height: 37px; padding: 4px 9px; color: #e6e0cd; background: #26352c;
+  border: 1px solid #5c6e58; border-radius: 3px; cursor: pointer;
+}
+.forest-buttons button[aria-pressed=true] { border-color: #c9e4b8; background: #3b5b42; }
+.forest-buttons button[aria-disabled=true] { opacity: .62; }
+@media (max-width: 680px) {
+  .forest-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field-window.forest-fighting { height: clamp(275px, calc(100svh - 375px), 530px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forest-ward::before, .forest-ward::after { animation: none; }
+}
 .world-frame .field-footer { min-height:26px; padding:4px clamp(12px,2vw,28px); font-size:.82rem; }
 .run-toggle { margin-left:auto; min-height:36px; padding:4px 12px; border:1px solid #576554; border-radius:3px; color:#d5dbc9; background:#1b2920; cursor:pointer; }
 .run-toggle[aria-pressed="true"] { border-color:#cdb67e; color:#f6dfaa; background:#383222; }

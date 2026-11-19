@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="world.css">
   <link rel="stylesheet" href="rampart-fx.css">
+  <link rel="stylesheet" href="forest-ending.css">
+  <link rel="preload" as="image" href="assets/forest-support/co-tien-ending.png">
   <link rel="preload" as="image" href="assets/world/dien-lang.png">
   <link rel="preload" as="image" href="assets/rampart/son-trai-nu-nguyet-quang.png">
   <link rel="preload" as="image" href="assets/rampart/nguyet-quang.png">
@@ -89,6 +91,18 @@
             <img src="assets/rampart/tinh-nghi-portrait.png" alt="" width="48" height="48">
             <div><strong>Cổ Nguyệt Tĩnh Nghi <span class="mentor-rank">Tam chuyển đỉnh phong</span></strong><p></p></div>
           </div>
+          <div id="forest-warning" class="raid-dialogue forest-warning" role="status" hidden>
+            <div><strong>Cổ sư tuần rừng</strong><p>Cẩn thận! Có Điện Lang sau lưng đội hình!</p></div>
+            <button type="button" class="trail-guide" id="forest-ready">Vào trận</button>
+          </div>
+          <div class="immortal-scene" hidden>
+            <div class="rupture" aria-hidden="true" inert><div class="rupture-half"></div><div class="rupture-half"></div></div>
+            <i class="immortal-aura" aria-hidden="true"></i>
+            <i class="immortal-wind" aria-hidden="true"></i>
+            <i class="immortal-person" aria-hidden="true"></i>
+            <i class="immortal-edge" aria-hidden="true"></i>
+            <div class="raid-dialogue immortal-line" role="status" hidden><p>Tôm tép</p></div>
+          </div>
           <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
             <div class="result-panel">
@@ -120,6 +134,15 @@
           <h2 id="wolf-intent-name"></h2>
           <p id="wolf-intent-detail"></p>
         </section>
+        <section class="forest-command" id="forest-command" aria-label="Hành động theo lượt" hidden>
+          <div class="forest-buttons">
+            <button type="button" data-action="move" aria-pressed="false"><kbd>1</kbd> Di chuyển</button>
+            <button type="button" data-action="strike"><kbd>2</kbd> Tay không</button>
+            <button type="button" data-action="moon"><kbd>3</kbd> Nguyệt Quang</button>
+            <button type="button" data-action="guard"><kbd>4</kbd> Thủ thế</button>
+          </div>
+          <p id="forest-report" aria-live="polite"></p>
+        </section>
       </aside>
 
     </div>
@@ -148,6 +171,10 @@
       </div>
       <button type="button" class="trail-guide" id="rear-next" autofocus>Tiếp tục</button>
     </div>
+  </dialog>
+  <dialog class="demo-end" id="demo-end" aria-labelledby="demo-end-title" hidden>
+    <h2 id="demo-end-title" tabindex="-1">Demo kết thúc</h2>
+    <button type="button" class="trail-guide" id="demo-play-again">Chơi lại</button>
   </dialog>
 </body>
 </html>

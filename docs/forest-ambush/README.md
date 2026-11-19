@@ -2,6 +2,8 @@
 
 Hai ảnh sử dụng renderer và sprite của web demo tại `d67b125` trong [PR hậu trại #5](https://github.com/whaticando0110/cochannhan-web-demo/pull/5). Đây là bản dựng tĩnh để duyệt vị trí và khả năng đọc cảnh.
 
+Bản chơi dùng mặt bằng này đến hết trận Điện Lang. Từ đòn kết liễu, kịch bản chuyển thẳng sang cảnh Cổ Tiên và màn kết. Các tọa độ tụ đội và hội thoại dưới đây thuộc phương án bố cục ban đầu.
+
 - [Toàn cảnh đội viện trợ bị vây](rung-doi-vien-tro-desktop.png)
 - [Khung thử lượt 1 trên mobile](rung-doi-vien-tro-mobile.png)
 - [Tọa độ đề xuất dùng chung khi bàn giao](layout.json)
