@@ -43,6 +43,7 @@ let world = newTrip();
 let selecting = false;
 let selectedCell = world.player.cell;
 let stepTimer;
+let nextStepAt = 0;
 let route = [];
 let markedThreats = [];
 let markedMoves = [];
@@ -79,15 +80,15 @@ function surfaceTexture() {
   }
 }
 
-function drawRampartOrnament(layer, cell, { frame: id, flip }) {
+function drawRampartOrnament(layer, cell, { frame: id, flip, width, height }) {
   const { col, row } = toPoint(cell);
   const frame = atlas.frames[id];
   const node = document.createElement('span');
   node.className = 'map-ornament';
   node.style.left = `calc(var(--tile) * ${col})`;
   node.style.top = `calc(var(--tile) * ${row})`;
-  node.style.width = `calc(var(--tile) * ${frame.width / atlas.tileSize})`;
-  node.style.height = `calc(var(--tile) * ${frame.height / atlas.tileSize})`;
+  node.style.width = `calc(var(--tile) * ${width ?? frame.width / atlas.tileSize})`;
+  node.style.height = `calc(var(--tile) * ${height ?? frame.height / atlas.tileSize})`;
   if (flip) node.style.transform = 'scaleX(-1)';
   paintRampartFrame(node, id);
   layer.append(node);
@@ -169,7 +170,7 @@ function aimCamera() {
   const { col, row } = toPoint(cell);
   const offset = (point, screen, length) => Math.min(Math.max(0, length * size - screen), Math.max(0, (point + 0.5) * size - screen / 2));
   const x = offset(col, field.clientWidth, MAP.columns);
-  const lookTowardRampart = 2.5 * Math.min(1, Math.max(0, (19 - col) / 6));
+  const lookTowardRampart = 1.65 * Math.min(1, Math.max(0, (19 - col) / 6));
   const y = offset(row - lookTowardRampart, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
@@ -292,6 +293,11 @@ function step(target) {
   if (world === previous) return false;
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
   if (delta) hero.style.setProperty('--face', Math.sign(delta));
+  const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
+  const duration = onStairs ? 215 : 165;
+  field.style.setProperty('--step-time', duration + 'ms');
+  nextStepAt = performance.now() + duration;
+  heroMotion.travel(onStairs, duration);
   field.classList.add('walking');
   render();
   if (world.mode === 'battle') {
@@ -310,7 +316,7 @@ function step(target) {
 function followRoute() {
   if (!route.length) return;
   const target = route.shift();
-  if (step(target) && route.length) stepTimer = setTimeout(followRoute, motion.matches ? 45 : 114);
+  if (step(target) && route.length) stepTimer = setTimeout(followRoute, motion.matches ? 45 : Math.max(0, nextStepAt - performance.now()));
 }
 
 function go(target) {
@@ -330,6 +336,7 @@ function resolve(action, cell) {
   if (error) return setHint(error, true);
   world = state;
   selecting = false;
+  field.style.removeProperty('--step-time');
   render();
   const event = world.battle.events.find(entry => entry.actor === 'player');
   if (event) {
@@ -364,6 +371,8 @@ function chooseAction(action) {
 function reset() {
   stopWalk();
   world = newTrip();
+  nextStepAt = 0;
+  field.style.removeProperty('--step-time');
   surfaceTexture();
   selecting = false;
   field.classList.remove('walking');
@@ -398,6 +407,7 @@ document.addEventListener('keydown', (event) => {
     if (world.mode === 'battle' && !selecting) return;
     event.preventDefault();
     if (world.mode === 'explore') {
+      if (event.repeat && performance.now() < nextStepAt) return;
       stopWalk();
       step(world.player.cell + keys[key]);
     } else {

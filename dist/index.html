@@ -25,27 +25,27 @@
     </div>
   </header>
   <main class="shell expedition">
-    <div class="match-heading">
-      <div>
-        <p class="region">Nam Cương <span aria-hidden="true">/</span> Thanh Mao Sơn</p>
-        <h1 id="location">Cổ Nguyệt Sơn Trại</h1>
-      </div>
-      <output class="turn" id="mode">Khám phá</output>
-    </div>
     <div class="world-layout">
       <section class="world-frame" aria-label="Bản đồ Thanh Mao Sơn">
+        <div class="match-heading">
+          <div>
+            <p class="region">Nam Cương <span aria-hidden="true">/</span> Thanh Mao Sơn</p>
+            <h1 id="location">Cổ Nguyệt Sơn Trại</h1>
+          </div>
+          <output class="turn" id="mode">Khám phá</output>
+        </div>
         <div id="field" class="field-window" tabindex="0" aria-describedby="field-hint" role="group" aria-label="Bản đồ có thể tương tác">
           <div class="field-world" id="world-plane">
             <div class="field-tiles" id="map"></div>
             <div class="map-ornaments" id="map-ornaments" aria-hidden="true"></div>
             <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
-            <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
+            <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"><i class="stride-body"></i></i></div>
             <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i></div>
             <div class="field-unit cursor" id="target-cursor" aria-hidden="true" hidden></div>
           </div>
           <div class="field-shade" aria-hidden="true"></div>
-          <div class="field-caption"><span id="coordinates"></span><span>Đông <b aria-hidden="true">E</b></span></div>
+          <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
             <div class="result-panel">
               <h2>Bạn đã gục</h2>
@@ -65,6 +65,7 @@
           <button type="button" class="trail-guide" id="guide"></button>
         </section>
         <section class="trail-card field-status" aria-label="Trạng thái chiến đấu">
+          <div class="hero-heading"><span class="hero-portrait" aria-hidden="true"></span><h2>Phương Nguyên</h2></div>
           <div class="field-vital">
             <div class="vital-note"><span>Sinh lực</span><b id="world-hp"></b></div>
             <progress id="world-hp-meter" aria-label="Sinh lực người chơi"></progress>
@@ -83,10 +84,10 @@
           <h2 id="wolf-intent-name"></h2>
           <p id="wolf-intent-detail"></p>
         </section>
-        <section class="trail-card encounter-log" id="encounter-log" hidden>
-          <h2>Diễn biến</h2>
+        <details class="trail-card encounter-log" id="encounter-log" hidden>
+          <summary>Diễn biến trận</summary>
           <ul id="world-log"></ul>
-        </section>
+        </details>
       </aside>
 
       <section class="actions world-actions" id="field-actions" hidden aria-labelledby="field-actions-title">

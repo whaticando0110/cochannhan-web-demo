@@ -3,10 +3,10 @@ import atlas from './assets/rampart/atlas.mjs';
 export const RAMPART_EDGE = 14;
 export const STAIRS = Object.freeze([
   {
-    frame: 'stairs-up-north', col: 10, row: 7, width: 2, height: 3, uphill: 'north',
+    frame: 'stairs-up-north', col: 10, row: 7, width: 2, height: 2, uphill: 'north',
   },
   {
-    frame: 'stairs-up-west', col: 6, row: 12, width: 3, height: 2, uphill: 'west',
+    frame: 'stairs-up-west', col: 6, row: 12, width: 2, height: 2, uphill: 'west',
   },
 ]);
 
@@ -56,7 +56,7 @@ export function rampartTile(col, row, mapRows, gateRow) {
     if (row === 2) ornaments.push({ frame: 'bamboo-edge-south' });
     if (col === 2) ornaments.push({ frame: 'bamboo-edge-east' });
   }
-  if (stair && stair.col === col && stair.row === row) ornaments.push({ frame: stair.frame });
+  if (stair && stair.col === col && stair.row === row) ornaments.push(stair);
   if (boundary) family = 'bamboo';
   if (col === RAMPART_EDGE && entrance) family = 'stone';
   return { family, elevation, blocked, stair, ornaments };

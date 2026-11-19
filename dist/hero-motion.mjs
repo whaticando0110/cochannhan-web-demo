@@ -30,8 +30,11 @@ const ready = keyframes([[0, 13]], 470);
 
 export function createHeroMotion(sprite, reducedMotion) {
   let current;
+  let restTimer;
 
   function stop() {
+    clearTimeout(restTimer);
+    sprite.classList.remove('striding', 'climbing');
     if (!current) return;
     current.onfinish = null;
     current.cancel();
@@ -41,6 +44,17 @@ export function createHeroMotion(sprite, reducedMotion) {
   function stand() {
     stop();
     if (!reducedMotion.matches) current = sprite.animate(idle, { duration: idleDuration, iterations: Infinity });
+  }
+
+  function travel(onStairs, duration) {
+    if (reducedMotion.matches) return;
+    if (!sprite.classList.contains('striding')) {
+      stop();
+      sprite.classList.add('striding');
+    }
+    sprite.classList.toggle('climbing', onStairs);
+    clearTimeout(restTimer);
+    restTimer = setTimeout(stand, duration + 45);
   }
 
   function playBattle(event, facing, columns, moveDuration) {
@@ -65,5 +79,5 @@ export function createHeroMotion(sprite, reducedMotion) {
 
   reducedMotion.addEventListener('change', stand);
   stand();
-  return { stand, playBattle };
+  return { stand, travel, playBattle };
 }

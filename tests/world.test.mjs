@@ -49,7 +49,7 @@ test('both modeled stairs connect the ground and the rampart in both directions'
     const world = createWorld();
     const start = { ...world, player: { ...world.player, cell: lower } };
     const climb = findPath(start, upper);
-    assert.equal(climb.length, 4);
+    assert.equal(climb.length, (isNorth ? stair.height : stair.width) + 1);
     let current = start;
     for (const cell of climb.slice(0, -1)) {
       assert.equal(TERRAIN[cell].rampart.stair, stair);

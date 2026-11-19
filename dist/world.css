@@ -24,8 +24,8 @@
 .world-tile.reachable::before { content: ""; z-index: 1; position: absolute; width: 9px; height: 9px; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(45deg); background: #ccf4cc; border: 1px solid #254434; }
 .world-tile.reachable.threat::before { background: #ffce93; }
 .field-window.in-battle .world-tile.outside-hunt::after { background: #14201d45; }
-.field-window.walking .field-world { transition: transform 105ms linear; }
-.field-window.ready .field-unit { transition: transform 105ms linear; }
+.field-window.walking .field-world { transition: transform var(--step-time, 105ms) linear; }
+.field-window.ready .field-unit { transition: transform var(--step-time, 105ms) linear; }
 .field-unit, .field-marker { position: absolute; left: 0; top: 0; width: var(--tile); height: var(--tile); pointer-events: none; }
 .field-unit { z-index: 3; }
 .field-unit .sprite { position: absolute; left: 50%; bottom: 13%; width: 118%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); filter: drop-shadow(0 0 1px #b6ffdd) drop-shadow(1px 2px 1px #171f19); }
@@ -96,4 +96,63 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .field-window .field-world, .field-window.ready .field-unit { transition: none !important; }
+}
+
+/* The neutral pose supplies the upper robe and two overlapping leg layers.
+   Pivot at the hips so the face and the scale stay fixed throughout a stride. */
+.field-unit .sprite.striding { background-image: none; --stride-time: 340ms; --lift: -2px; }
+.field-unit .sprite.climbing { --stride-time: 430ms; --lift: -4px; }
+.striding .stride-body, .striding::before, .striding::after {
+  content: ""; position: absolute; inset: 0;
+  background: url("assets/huyen-bao.png") 0 0 / 800% 600% no-repeat;
+  transform-origin: 50% 73%;
+}
+.striding::before { clip-path: inset(72% 50% 0 0); animation: robe-step var(--stride-time) linear infinite; }
+.striding::after { clip-path: inset(72% 0 0 50%); animation: robe-step var(--stride-time) linear infinite; animation-delay: calc(var(--stride-time) / -2); }
+.striding .stride-body { z-index: 1; clip-path: inset(0 0 24%); animation: robe-rise calc(var(--stride-time) / 2) ease-in-out infinite; }
+@keyframes robe-step {
+  0%, 100% { transform: rotate(-15deg); }
+  25% { transform: translateY(var(--lift)) rotate(0deg); }
+  50% { transform: rotate(15deg); }
+  75% { transform: rotate(0deg); }
+}
+@keyframes robe-rise { 50% { translate: 0 -1px; } }
+
+.expedition { padding-top: clamp(10px, 2vw, 22px); }
+.world-frame .match-heading { margin: 0; padding: 12px 18px; align-items: center; border-bottom: 1px solid #605b44; background: linear-gradient(100deg,#22362f,#15241e); }
+.world-frame h1 { margin-top: 3px; font-size: clamp(1.45rem, 2.7vw, 2.2rem); }
+.world-frame .region { color: #bfccba; }
+.world-frame .turn { color: #cbe5cd; background: #1d342b; border-color: #506957; }
+.world-layout { gap: 10px; }
+.world-frame { border-radius: 5px; }
+.field-window { height: clamp(330px, 65svh, 720px); }
+.world-sidebar { gap: 8px; }
+.field-status { grid-row: 1; gap: 10px; }
+.hero-heading { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #3b5044; padding-bottom: 7px; }
+.hero-heading .hero-portrait { position: static; width: 36px; height: 40px; background-color: #101e19; border: 1px solid #536a55; }
+.hero-heading h2 { margin: 0; }
+.trail-guide { color: #18251a; background: #dcca98; border-color: #f1dda6; }
+.trail-guide:hover { background: #efdda9; }
+.encounter-log summary { cursor: pointer; color: #dfd2ad; }
+.encounter-log[open] ul { margin-top: 9px; }
+.expedition:has(.in-battle) #objective-card { display: none; }
+.map-ornament[data-frame^="stairs-up"] { filter: drop-shadow(1px 2px 1px #231a1280); }
+@media (max-width: 680px) {
+  .expedition { padding-top: 8px; }
+  .world-frame .match-heading { display: flex; padding: 8px 10px; }
+  .world-frame .match-heading > div { display: block; }
+  .world-frame .region { font-size: .76rem; }
+  .world-frame .turn { padding: 5px 7px; }
+  .field-window { height: clamp(270px, 48svh, 450px); }
+  .in-battle.field-window { height: clamp(220px, 34svh, 325px); }
+  .world-frame { order: 1; }
+  .field-status { order: 3; align-items: center; }
+  .field-status .hero-heading { border: 0; padding: 0; }
+  .hero-heading h2 { font-size: .92rem; }
+  .hero-heading .hero-portrait { width: 28px; height: 36px; flex-shrink: 0; }
+  .expedition:has(.in-battle) .hero-heading { display: none; }
+  #objective-card { order: 2; }
+  .encounter-intent { order: 2; }
+  .world-actions { order: 4; }
+  .world-frame .field-footer { min-height: 32px; }
 }
