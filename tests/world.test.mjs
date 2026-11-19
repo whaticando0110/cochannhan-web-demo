@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { moveTargets, neighbors } from '../dist/combat.mjs';
+import { neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
 import { chooseRampartFrame, EAST_CORNER, RAMPART_EDGE, RAMPART_GUARD, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
-  createWorld, fight, findPath, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk,
+  advanceHunt, clearShot, createWorld, findPath, hitHunt, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk, TRAINING_POST,
 } from '../dist/world.mjs';
 
 function enterHunt() {
@@ -149,34 +149,42 @@ test('seeded texture variation is reproducible and runtime frames cover the comp
   }
 });
 
-test('entering the encounter preserves the arrival cell and uses terrain from the same map', () => {
-  const world = enterHunt();
-  assert.equal(world.mode, 'battle');
-  assert.equal(world.player.cell, TRAIL_ENTRY);
-  assert.equal(world.battle.player.cell, TRAIL_ENTRY);
-  assert.equal(world.battle.rival.cell, WOLF);
-  assert.equal(world.battle.intent.name, 'Vồ mồi');
-  assert.ok(world.battle.intent.cells.includes(world.player.cell));
-  const targets = moveTargets(world.battle);
-  assert.ok(targets.every(cell => insideHunt(cell) && isWalkable(cell) && cell !== WOLF));
-  assert.strictEqual(walk(world, targets[0]), world);
-  const valid = targets.find(cell => !world.battle.intent.cells.includes(cell));
-  const dodge = fight(world, 'move', valid);
-  assert.equal(dodge.error, '');
-  assert.equal(dodge.state.player.hp, world.player.hp);
+test('the training post is on the upper deck and is reachable from the village spawn', () => {
+  assert.equal(TERRAIN[TRAINING_POST].rampart.elevation, 1);
+  assert.equal(findPath(createWorld(), TRAINING_POST).at(-1), TRAINING_POST);
 });
 
-test('defeating the wolf resumes free movement and crossing the clearing again stays neutral', () => {
+test('the hunt advances on its own clock while the player is free to walk out of a pounce', () => {
+  const initial = enterHunt();
+  assert.equal(initial.mode, 'battle');
+  assert.equal(initial.player.cell, TRAIL_ENTRY);
+  assert.equal(initial.battle.rival.cell, WOLF);
+  assert.strictEqual(advanceHunt(initial, 949).state, initial);
+  const approach = advanceHunt(initial, 950);
+  assert.equal(approach.event.type, 'move');
+  const warn = advanceHunt(approach.state, 1500).state;
+  assert.ok(warn.battle.intent.cells.includes(TRAIL_ENTRY));
+  assert.strictEqual(advanceHunt(warn, 2449).state, warn);
+  const step = toCell(28, 9);
+  let dodging = walk(warn, step, 1700);
+  dodging = walk(dodging, toCell(28, 8), 2150);
+  assert.equal(dodging.player.cell, toCell(28, 8));
+  assert.equal(advanceHunt(dodging, 2450).state.player.hp, initial.player.hp);
+  assert.equal(advanceHunt(warn, 2450).state.player.hp, 35);
+  assert.strictEqual(walk(warn, toCell(27, 10)), warn);
+});
+
+test('a projectile only hits the wolf if it still occupies the targeted cell', () => {
   const world = enterHunt();
-  const opening = fight(world, 'moon');
-  assert.equal(opening.error, '');
-  assert.equal(opening.state.battle.rival.hp, 21);
-  const victory = fight(opening.state, 'moon').state;
+  assert.equal(clearShot(world.player.cell, WOLF), true);
+  assert.equal(clearShot(toCell(28, 8), toCell(31, 8)), false);
+  const approaching = advanceHunt(world, 950).state;
+  assert.strictEqual(hitHunt(approaching, WOLF, 26), approaching);
+  const opening = hitHunt(world, WOLF, 26);
+  assert.equal(opening.battle.rival.hp, 26);
+  const victory = hitHunt(opening, WOLF, 26);
   assert.equal(victory.mode, 'explore');
   assert.equal(victory.cleared, true);
-  assert.equal(victory.player.cell, TRAIL_ENTRY);
-  assert.equal(victory.player.qi, 0);
-  assert.equal(victory.player.hp, 31);
   let onward = victory;
   for (const tile of findPath(onward, CONTINUE)) onward = walk(onward, tile);
   assert.equal(onward.reached, true);
@@ -186,14 +194,15 @@ test('defeating the wolf resumes free movement and crossing the clearing again s
   assert.equal(onward.player.cell, TRAIL_ENTRY);
 });
 
-test('retry restores the encounter without walking from the village again', () => {
+test('retry restores health, position and real-time deadlines from the hunt checkpoint', () => {
   const initial = enterHunt();
   let world = initial;
-  for (let turn = 0; turn < 20 && world.mode === 'battle'; turn++) world = fight(world, 'guard').state;
+  for (let tick = 1; tick < 20 && world.mode === 'battle'; tick++) world = advanceHunt(world, tick * 2000).state;
   assert.equal(world.mode, 'defeat');
-  const retry = retryEncounter(world);
+  const retry = retryEncounter(world, 20000);
   assert.equal(retry.mode, 'battle');
-  assert.equal(retry.battle.turn, 1);
+  assert.equal(retry.battle.nextAt, 20950);
+  assert.equal(retry.battle.intent, null);
   assert.deepEqual(retry.player, initial.player);
-  assert.equal(retry.battle.rival.hp, 47);
+  assert.equal(retry.battle.rival.hp, 52);
 });

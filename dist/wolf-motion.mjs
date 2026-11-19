@@ -4,6 +4,10 @@ const clips = {
   run: { frames: [4, 5, 6, 7], duration: 300 },
   bite: { frames: [8, 9, 10, 11, 0], duration: 380, reach: [0, .21, .16, .05, 0] },
   pounce: { frames: [8, 8, 9, 10, 11, 0], duration: 520, reach: [0, 0, .55, .36, .12, 0] },
+  huntPounce: {
+    frames: [0, 8, 9, 10, 11, 0], offsets: [0, .24, .8, .86, .92, .97],
+    duration: 1187.5, reach: [0, -.05, .63, .44, .15, 0],
+  },
   hit: { frames: [12, 13, 14, 15], duration: 240, reach: [.10, .08, .02, 0] },
   wall: {
     frames: [0, 8, 9, 10, 12, 13, 15, 0],

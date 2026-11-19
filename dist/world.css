@@ -66,12 +66,21 @@
     -8px 1px #ad9165, -3px 5px #c1a87f, 2px 7px #93744b;
 }
 .rampart-guard .unit-shadow { border-color: transparent; }
+.wolf-health {
+  appearance: none; position: absolute; left: 19%; top: 19%; width: 62%; height: 4px;
+  border: 1px solid #21181b; background: #462b35; accent-color: #d76b68;
+}
+.wolf-health::-webkit-progress-bar { background: #462b35; }
+.wolf-health::-webkit-progress-value { background: #e47770; }
+.wolf-health::-moz-progress-bar { background: #e47770; }
 .guard-art {
   position: absolute; left: 50%; bottom: 11%; width: 146%; aspect-ratio: 1;
   transform: translateX(-50%) scaleX(-1);
   background: url("assets/rampart/son-trai-nu-nguyet-quang.png") 0 0 / 400% 100% no-repeat;
   image-rendering: pixelated; filter: drop-shadow(1px 2px 1px #171712db);
 }
+.slate-guard .guard-art { background-image: url("assets/rampart/guard-slate.png"); }
+.indigo-guard .guard-art { background: url("assets/rampart/guard-indigo.png") 0 0 / 100% 100% no-repeat; }
 .rampart-defense-effects { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .rampart-moon {
   position: absolute; width: calc(var(--tile) * .70); aspect-ratio: 1;
@@ -81,6 +90,17 @@
   position: absolute; inset: 0; transform: scaleX(-1); image-rendering: pixelated;
   background: url("assets/rampart/nguyet-quang.png") 0 0 / 800% 200% no-repeat;
 }
+.rampart-moon.whirl { width: calc(var(--tile) * 1.35); }
+.rampart-moon.whirl i { background-image: url("assets/rampart/nguyet-toan.png"); }
+.rampart-moon.needles { width: calc(var(--tile) * 1.25); }
+.rampart-moon.needles i { background-image: url("assets/rampart/tung-cham.png"); }
+.rampart-moon.blood { width: calc(var(--tile) * .95); }
+.rampart-moon.blood i {
+  transform: scaleX(var(--blood-facing)); background: url("assets/rampart/hit-bleed.png") 0 0 / 400% 100% no-repeat;
+}
+#cast-moon { margin-left: auto; white-space: nowrap; }
+#cast-moon small { margin-left: 5px; color: #bcb99e; }
+#cast-moon[aria-disabled=true] { opacity: .58; }
 .cursor { z-index: 5; border: 2px solid #fff3bf; box-shadow: inset 0 0 0 2px #222c26aa, 0 0 11px #2b382f; }
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }
@@ -136,18 +156,10 @@
 .trail-guide { margin-left:auto; flex-shrink:0; padding:8px 16px; min-height:40px; color:#251e12; background:#d8c797; border:1px solid #e5d5a5; cursor:pointer; border-radius:3px; font-weight:650; }
 .trail-guide:hover { background:#ebdcaf; }
 .encounter-intent .panel-label { color:#ecb098; }
-.encounter-log { order:2; padding:5px clamp(12px,2vw,28px); font-size:.85rem; color:#d6cba7; }
-.encounter-log summary { cursor:pointer; width:fit-content; }
-.encounter-log ul { padding-left:1rem; }
 .world-layout:has(.in-battle) #objective-card { display:none; }
-.world-actions { grid-area:auto; padding:8px clamp(12px,2vw,28px); border:0; border-radius:0; }
-.world-actions .actions-heading { position:absolute; clip-path:inset(50%); width:1px; height:1px; overflow:hidden; }
-.world-actions .action-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin:0 0 5px; }
-.world-actions .action-card { min-height:44px; }
 .world-frame .field-footer { min-height:26px; padding:4px clamp(12px,2vw,28px); font-size:.82rem; }
 .run-toggle { margin-left:auto; min-height:36px; padding:4px 12px; border:1px solid #576554; border-radius:3px; color:#d5dbc9; background:#1b2920; cursor:pointer; }
 .run-toggle[aria-pressed="true"] { border-color:#cdb67e; color:#f6dfaa; background:#383222; }
-.world-frame:has(.in-battle) .field-footer { display:none; }
 @media(max-width:680px) {
   .journey .seal, .journey .region { display:none; }
   .journey .topbar-inner { flex-wrap:nowrap; gap:5px; }
@@ -162,8 +174,6 @@
   .hero-heading .hero-portrait { left:2px; width:29px; height:36px; }
   #objective-card, .encounter-intent { flex-wrap:wrap; gap:3px 7px; padding:6px 10px; }
   #objective-detail { order:2; width:100%; }
-  .world-actions .action-card { padding:5px; }
-  .world-actions .action-meta span { display:none; }
   .encounter-intent p { width:100%; }
 }
 @media(max-width:360px) {
@@ -171,4 +181,5 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .field-window .field-world, .field-window.ready .field-unit { transition:none !important; }
+  .rampart-defense-effects { visibility: hidden; }
 }

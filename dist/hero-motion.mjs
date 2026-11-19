@@ -86,7 +86,17 @@ export function createHeroMotion(sprite, reducedMotion, useAoReu = false) {
     current.onfinish = stand;
   }
 
+  function cast() {
+    stop();
+    if (reducedMotion.matches) return;
+    current = sprite.animate([
+      { rotate: '0deg', offset: 0 }, { rotate: 'calc(var(--face, 1) * -5deg)', offset: .33 },
+      { rotate: 'calc(var(--face, 1) * 9deg)', offset: .58 }, { rotate: '0deg', offset: 1 },
+    ], { duration: 570 });
+    current.onfinish = stand;
+  }
+
   reducedMotion.addEventListener('change', stand);
   stand();
-  return { stand, travel, playBattle };
+  return { stand, travel, playBattle, cast };
 }

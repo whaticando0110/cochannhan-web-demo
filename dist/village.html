@@ -11,6 +11,9 @@
   <link rel="preload" as="image" href="assets/world/dien-lang.png">
   <link rel="preload" as="image" href="assets/rampart/son-trai-nu-nguyet-quang.png">
   <link rel="preload" as="image" href="assets/rampart/nguyet-quang.png">
+  <link rel="preload" as="image" href="assets/rampart/hit-bleed.png">
+  <link rel="preload" as="image" href="assets/rampart/nguyet-toan.png">
+  <link rel="preload" as="image" href="assets/rampart/tung-cham.png">
   <script type="module" src="expedition.mjs"></script>
 </head>
 <body class="journey">
@@ -28,8 +31,7 @@
         </div>
       </div>
       <div class="utilities">
-        <a href="awakening.html" class="subtle nav-link">Khai Khiếu</a>
-        <a href="duel.html" class="subtle nav-link">Đấu nhanh</a>
+        <a href="./" class="subtle nav-link">Khai Khiếu</a>
         <button type="button" class="subtle reset" id="reset-trip">Chơi lại</button>
       </div>
     </div>
@@ -43,10 +45,10 @@
             <div class="field-tiles" id="map"></div>
             <div class="map-ornaments" id="map-ornaments" aria-hidden="true"></div>
             <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
+            <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
-            <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i></div>
-            <div class="field-unit cursor" id="target-cursor" aria-hidden="true" hidden></div>
+            <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i><progress class="wolf-health"></progress></div>
           </div>
           <section class="trail-card field-status" aria-label="Trạng thái chiến đấu">
             <div class="hero-heading"><span class="hero-portrait" aria-hidden="true"></span><h2 id="hero-name">Phương Nguyên</h2></div>
@@ -75,6 +77,7 @@
         </div>
         <div class="field-footer">
           <span id="field-hint">Bấm ô để đi, hoặc dùng WASD và phím mũi tên.</span>
+          <button class="run-toggle" id="cast-moon" type="button" aria-keyshortcuts="F" hidden><kbd>F</kbd> Nguyệt Quang <small>−2 chân nguyên</small></button>
           <button class="run-toggle" id="run-toggle" type="button" aria-label="Chế độ chạy" aria-pressed="false" aria-keyshortcuts="Shift">Chạy · Tắt</button>
         </div>
       </section>
@@ -92,20 +95,8 @@
           <h2 id="wolf-intent-name"></h2>
           <p id="wolf-intent-detail"></p>
         </section>
-        <details class="trail-card encounter-log" id="encounter-log" hidden>
-          <summary>Diễn biến trận</summary>
-          <ul id="world-log"></ul>
-        </details>
       </aside>
 
-      <section class="actions world-actions" id="field-actions" hidden aria-labelledby="field-actions-title">
-        <div class="actions-heading">
-          <h2 id="field-actions-title">Chọn hành động</h2>
-          <span>Mỗi hành động kết thúc lượt</span>
-        </div>
-        <div class="action-grid" id="field-action-grid"></div>
-        <p class="action-hint" id="field-action-hint"></p>
-      </section>
     </div>
     <div class="sr-only" role="status" id="world-announcement"></div>
   </main>
