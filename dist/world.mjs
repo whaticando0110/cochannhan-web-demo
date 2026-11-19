@@ -80,10 +80,10 @@ function canExploreStep(from, to) {
   return (source?.elevation ?? 0) === (target?.elevation ?? 0);
 }
 
-export function findPath(state, target) {
+export function findPath(state, target, avoidCell) {
   const from = state.player.cell;
   if (state.mode === 'defeat') return [];
-  return pathBetween(from, target, (from, to) => canWalk(state, from, to));
+  return pathBetween(from, target, (from, to) => to !== avoidCell && canWalk(state, from, to));
 }
 
 function pathBetween(from, target, canStep) {

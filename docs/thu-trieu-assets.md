@@ -1,5 +1,13 @@
 # Asset hiệu ứng Cổ & Sàn Đấu cho Thú triều Thanh Mao Sơn (Act 1)
 
+## Tích hợp cảnh Cuồng Điện Lang
+
+- Atlas `cuong-dien-lang-motion.png` có 17 tư thế. Dùng mẫu đứng Cuồng Điện Lang có sẵn và 16 tư thế mới tạo bằng ImageGen dựa trực tiếp trên mẫu đó. Dựng `4 × 5` ô `160 × 112`, đường chân `y = 100` với hai khung chạy bay nâng nhẹ khỏi đất. Các hàng lần lượt là phi nước đại, ghìm chân và gầm, lấy đà và húc, trúng đòn và phản kích, cùng tư thế đứng gốc. Ở cỡ chơi, thân dài khoảng 5 ô.
+- Tĩnh Nghi dùng [atlas ở PR #4](https://github.com/whaticando0110/cochannhan-web-demo/pull/4) và [file Aseprite có thể chỉnh sửa](art/tinh-nghi-motion.aseprite). Tăng nhịp bốn khung đi khi bà lao lên thang. Huyết Nguyệt rời lòng bàn tay ở khung `cast[4]`, sau 330 ms tụ thế. Phản ứng trúng đòn bắt đầu khi lưỡi nguyệt chạm vai.
+- Cảnh dùng Kim Chung Tráo theo quy ước Tam chuyển của demo. Vòm chuông dựng trước khi thú vương phản kích, rồi dùng quầng vàng và tia va chạm của Antigravity tại điểm trúng. Chế độ giảm chuyển động giữ camera cố định và tắt rung, chớp. Kết thúc cảnh, Tĩnh Nghi ở lại trên lũy.
+
+## Asset Antigravity
+
 Tài liệu kỹ thuật trên nhánh `antigravity/gu-vfx-thu-trieu` phục vụ Issue #2 (`whaticando0110/cochannhan-web-demo`). Phần chuyển động nhân vật Cổ Nguyệt Tĩnh Nghi do Codex phụ trách trên `codex/web-tinh-nghi-motion` (PR #4, base `antigravity/thu-trieu-assets` tại `18dc497`).
 
 ## 1. Huyết Nguyệt (`dist/assets/rampart/huyet-nguyet.png` + `huyet-nguyet.json`)

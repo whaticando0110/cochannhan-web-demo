@@ -71,6 +71,7 @@ test('the sustained attack starts on arrival and splinters coincide with wall co
   assert.equal(attack.timing.iterations, Infinity);
   assert.deepEqual(dust.timing, { duration: attack.timing.duration, iterations: Infinity });
   assert.equal(dust.frames[1].offset, attack.frames[2].offset);
+  assert.equal(attack.frames[2]['--wolf-head-top'], `${31 / 128 * 100}%`);
 
   preference.matches = true;
   preference.change();

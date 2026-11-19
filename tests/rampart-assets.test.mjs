@@ -84,6 +84,24 @@ function measureCellBBox(img, ox, oy, cw, ch) {
   return x1 >= 0 ? { x0, y0, x1, y1 } : null;
 }
 
+test('all seventeen beast king poses have binary alpha and an uncropped ground anchor', () => {
+  const { width, height, data } = decodePng(path.join(rampartDir, 'cuong-dien-lang-motion.png'));
+  assert.deepEqual([width, height], [640, 560]);
+  for (let cel = 0; cel < 17; cel++) {
+    const left = (cel % 4) * 160;
+    const top = Math.floor(cel / 4) * 112;
+    let baseline = -1;
+    for (let y = 0; y < 112; y++) for (let x = 0; x < 160; x++) {
+      const alpha = data[((top + y) * width + left + x) * 4 + 3];
+      assert.ok(alpha === 0 || alpha === 255);
+      if (alpha === 0) continue;
+      assert.ok(x > 0 && x < 159 && y > 0);
+      baseline = y;
+    }
+    assert.equal(baseline, cel === 2 ? 94 : cel === 3 ? 96 : 100);
+  }
+});
+
 function assertAtlasIntegrity(metaFile, expectedW, expectedH, expectedCell, expectedGrid, expectedCounts) {
   const meta = JSON.parse(fs.readFileSync(path.join(rampartDir, metaFile), 'utf8'));
   const img = decodePng(path.join(rampartDir, meta.file));

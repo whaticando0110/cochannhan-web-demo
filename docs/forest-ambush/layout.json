@@ -1,0 +1,23 @@
+{
+  "entry": [25, 10],
+  "reveal": [27, 10],
+  "alertBand": { "col": 29, "top": 5, "bottom": 14 },
+  "arena": { "left": 27, "right": 34, "top": 5, "bottom": 14 },
+  "hero": [29, 10],
+  "scoutApproach": [34, 9],
+  "scoutBattle": [32, 10],
+  "dodge": [30, 9],
+  "rescuers": [
+    { "role": "cover", "cell": [35, 8], "sprite": "slate-guard" },
+    { "role": "opens-gap", "cell": [35, 10], "sprite": "russet-guard" },
+    { "role": "rear-guard", "cell": [36, 11], "sprite": "ivory-guard" }
+  ],
+  "pack": [[34, 7], [37, 8], [38, 10], [34, 12]],
+  "escape": [[35, 10], [36, 10], [37, 10], [37, 11], [38, 11]],
+  "regroupLead": [37, 11],
+  "talkFrom": [36, 11],
+  "frames": {
+    "desktop": { "tile": 64, "origin": [24.5, 5], "width": 1120, "height": 676 },
+    "mobile": { "tile": 42, "origin": [26.8, 4.9], "width": 390, "height": 587 }
+  }
+}

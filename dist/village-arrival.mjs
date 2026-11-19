@@ -1,5 +1,7 @@
 import { aptitude, finalDepth, seaEssenceRatio } from './awakening-rules.mjs';
 
+export const lessonCheckpointKey = 'cochannhan.rampart-lesson';
+
 function isHero(value) {
   return value === 'huyen-bao' || value === 'ao-reu';
 }
