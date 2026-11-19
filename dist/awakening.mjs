@@ -1,14 +1,16 @@
-import { aptitude, cellId, createCeremony, finalDepth, flowerBank, height,
-  hopeCells, move, routeTo, terrain, width } from './awakening-rules.mjs';
+import { aptitude, baseStepMs, cellId, createCeremony, finalDepth, flowerBank, height,
+  hopeCells, move, routeTo, seaEssenceLabel, seaEssenceRatio, stepPace, terrain, width } from './awakening-rules.mjs';
 
 const byId = id => document.getElementById(id);
 const selection = byId('character-select');
 const stage = byId('ceremony-stage');
 const changeHero = byId('change-hero');
 const narrationBar = byId('narration-bar');
-const finishBtn = byId('finish');
+const ceremonyBanner = byId('ceremony-banner');
 const canvas = byId('garden');
 const screen = canvas.getContext('2d');
+const apertureCanvas = byId('aperture-canvas');
+const apertureCtx = apertureCanvas.getContext('2d');
 const tile = 32;
 const map = document.createElement('canvas');
 map.width = width * tile;
@@ -26,7 +28,7 @@ caveTiles.src = 'assets/awakening/cave-tiles.png';
 const caveSpring = new Image();
 caveSpring.src = 'assets/awakening/cave-spring.png';
 
-// 5 beats from Nhân Tổ Truyện (Ch. 5) scrolling seamlessly underneath without interrupting movement
+// 5 beats from Nhân Tổ Truyện (Ch. 5) running passively underneath without locking controls
 const storyBeats = [
   'Thuở hoang sơ, loài người đầu tiên là Nhân Tổ. Bầy thú mang tên Khốn Cảnh săn đuổi ông khắp mọi nẻo.',
   'Nhân Tổ đổi tuổi trẻ lấy Sức Mạnh Cổ, rồi đổi tuổi trung niên lấy Trí Tuệ Cổ — khi ông già yếu, cả hai đều bỏ ông mà đi.',
@@ -35,7 +37,6 @@ const storyBeats = [
   'Từ đó, dẫu rơi vào tuyệt cảnh nào, chỉ cần trong lòng còn giữ một tia hy vọng, bước chân con người vẫn hướng về phía trước.',
 ];
 
-const pace = 148;
 const keys = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1],
   a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] };
 
@@ -43,12 +44,17 @@ let selectedHero = 'huyen-bao';
 let state = createCeremony();
 let from = state;
 let steppedAt = -Infinity;
+let stepDuration = baseStepMs;
 let facing = 1;
 let path = [];
 let heldKey;
 let queuedKey;
 let flash;
 let tierFlashAt = -Infinity;
+let stopBurstAt = -Infinity;
+let resultShownAt = -Infinity;
+let resultTimer;
+let bannerTimers = [];
 let cameraX = 0;
 let cameraY = 0;
 let frame;
@@ -224,43 +230,155 @@ function resize() {
   screen.imageSmoothingEnabled = false;
 }
 
-function saveOutcome(grade) {
+function saveOutcome(grade, seaPct) {
   try {
     sessionStorage.setItem('cochannhan.awakening', JSON.stringify({
       hero: selectedHero,
       depth: state.depth,
       grade,
+      seaPct,
       hopeGathered: state.gathered.length,
     }));
   } catch {
-    // Session persistence is best-effort for offline static environments.
+    // Session persistence is best-effort in static environments.
   }
-  byId('enter-village').href = `village.html?hero=${selectedHero}&depth=${state.depth}`;
+  byId('enter-village').href = `village.html?hero=${selectedHero}&depth=${state.depth}&essence=${seaPct}`;
+}
+
+function showBanner() {
+  for (const t of bannerTimers) clearTimeout(t);
+  bannerTimers = [];
+  ceremonyBanner.hidden = false;
+  ceremonyBanner.classList.remove('visible', 'fading');
+  void ceremonyBanner.offsetWidth;
+  ceremonyBanner.classList.add('visible');
+
+  const holdMs = reduced.matches ? 950 : 1350;
+  bannerTimers.push(setTimeout(() => {
+    ceremonyBanner.classList.add('fading');
+    ceremonyBanner.classList.remove('visible');
+    bannerTimers.push(setTimeout(() => {
+      ceremonyBanner.hidden = true;
+      ceremonyBanner.classList.remove('fading');
+    }, reduced.matches ? 60 : 640));
+  }, holdMs));
+}
+
+// Render live pixel-art spherical Không Khiếu (white Quang Mô) & Thanh Đồng Nguyên Hải inside 128x128
+function drawApertureInterior(now) {
+  if (byId('ceremony-result').hidden) return;
+  const ctx = apertureCtx;
+  const W = apertureCanvas.width;
+  const cx = 64, cy = 64, R = 46;
+  const targetRatio = seaEssenceRatio(state.depth);
+  const elapsed = reduced.matches ? 1000 : Math.max(0, now - resultShownAt);
+  const fillProgress = Math.min(1, elapsed / 850);
+  const easedFill = 1 - Math.pow(1 - fillProgress, 3);
+  const currentRatio = targetRatio * easedFill;
+  const waterY = Math.round(cy + R - currentRatio * (R * 2));
+  const t = reduced.matches ? 0 : now / 520;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#090e13';
+  ctx.fillRect(0, 0, W, W);
+
+  // Faint drifting specks of Hope Gu outside the sphere
+  for (let i = 0; i < 14; i++) {
+    const a = i * 0.45 + (reduced.matches ? 0 : now / 2800);
+    const rr = 53 + (i % 4) * 2;
+    const px = Math.round(cx + Math.cos(a) * rr);
+    const py = Math.round(cy + Math.sin(a * 1.1) * rr);
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(232, 224, 198, 0.35)' : 'rgba(170, 210, 198, 0.28)';
+    ctx.fillRect(px, py, 1, 1);
+  }
+
+  // Pixel-exact interior & spherical Quang Mô shell
+  for (let y = cy - R - 3; y <= cy + R + 3; y++) {
+    for (let x = cx - R - 3; x <= cx + R + 3; x++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > R + 2) continue;
+
+      // White luminous Quang Mô outer membrane ("một lớp quang mô ánh sáng màu trắng")
+      if (dist >= R - 2) {
+        const angle = Math.atan2(dy, dx);
+        const flow = Math.sin(angle * 4 - t * 1.5) * 0.5 + 0.5;
+        if (dist > R + 0.7) {
+          ctx.fillStyle = flow > 0.55 ? 'rgba(218, 236, 228, 0.45)' : 'rgba(154, 192, 184, 0.24)';
+        } else if (dist >= R - 0.8) {
+          ctx.fillStyle = flow > 0.38 ? '#ffffff' : '#e4f2eb';
+        } else {
+          ctx.fillStyle = flow > 0.5 ? '#c7e3d9' : '#8fb7ad';
+        }
+        ctx.fillRect(x, y, 1, 1);
+        continue;
+      }
+
+      // Serene flat mirror horizon across Thanh Đồng Hải ("bằng phẳng trong như gương, xanh ngọc ánh đồng")
+      const waveY = waterY + (reduced.matches ? 0 : Math.round(Math.sin(x * 0.14 + t * 1.7) * 0.5));
+      if (y < waveY) {
+        const innerFade = dist / (R - 2);
+        const coreLight = Math.max(0, 1 - Math.hypot(dx, (y - Math.max(cy - 18, waveY - 12)) * 1.3) / 36);
+        ctx.fillStyle = coreLight > 0.5 ? '#152528' : innerFade > 0.82 ? '#142126' : '#0d151b';
+        ctx.fillRect(x, y, 1, 1);
+      } else if (y === waveY) {
+        const centerGlint = Math.abs(dx) < 22 || ((x + Math.floor(t * 2)) % 11 === 0);
+        ctx.fillStyle = centerGlint ? '#e3f5ea' : '#9ed1b9';
+        ctx.fillRect(x, y, 1, 1);
+      } else if (y === waveY + 1) {
+        ctx.fillStyle = Math.abs(dx) < 26 ? '#76b69d' : '#53937c';
+        ctx.fillRect(x, y, 1, 1);
+      } else {
+        // Dense jade-bronze Primeval Sea with subtle horizontal metallic mirror reflections (no polka-dots)
+        const subDepth = (y - waveY) / Math.max(1, R * 2);
+        const horizBand = ((y - waveY) % 5 === 2) && Math.sin(x * 0.12 - t * 1.1 + y * 0.6) > 0.52 && subDepth < 0.42;
+        const centerRefl = Math.abs(dx) < Math.max(4, 24 - (y - waveY) * 0.45) && ((y - waveY) % 3 === 0);
+        if (horizBand && Math.abs(dx) < 32) {
+          ctx.fillStyle = '#8b9963';
+        } else if (centerRefl && subDepth < 0.36) {
+          ctx.fillStyle = '#4e9179';
+        } else if (subDepth < 0.14) {
+          ctx.fillStyle = '#367864';
+        } else if (subDepth < 0.34) {
+          ctx.fillStyle = '#24584e';
+        } else if (subDepth < 0.62) {
+          ctx.fillStyle = '#193f3a';
+        } else {
+          ctx.fillStyle = '#112927';
+        }
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
 }
 
 function showResult() {
   const grade = aptitude(state.depth);
-  saveOutcome(grade);
-  byId('ceremony-result').hidden = false;
-  byId('result-depth').textContent = `${state.depth} / ${finalDepth} bước vào biển Nguyệt Lan`;
-  byId('result-grade').textContent = grade;
-  byId('result-hope').textContent = `Hy Vọng Cổ đã tụ: ${state.gathered.length} / ${hopeCells.length} cụm`;
+  const seaPct = Math.round(seaEssenceRatio(state.depth) * 100);
+  saveOutcome(grade, seaPct);
 
-  let note = 'Gia lão đã ghi nhận kết quả Đại điển.';
+  resultShownAt = performance.now();
+  byId('ceremony-result').hidden = false;
+  byId('result-depth').textContent = `Dừng ở bước thứ ${state.depth} trong biển Nguyệt Lan`;
+  byId('result-grade').textContent = grade;
+  byId('result-sea').textContent = `Thanh Đồng Nguyên Hải · ${seaEssenceLabel(state.depth)}`;
+
+  let note = 'Quang mô Hy Vọng Cổ đã ngưng thành Không Khiếu bên trong cơ thể.';
   if (state.depth < 10) {
-    note = 'Chưa khai thông Không Khiếu. Hãy thử lại và đi qua các cụm Hy Vọng Cổ để tiến sâu hơn.';
-  } else if (state.resolve <= 0) {
-    note = `Áp lực Linh Tuyền đã tới cực hạn ở bước ${state.depth}. Tụ thêm Hy Vọng Cổ trong biển hoa để đi sâu hơn.`;
+    note = 'Không Khiếu chưa thành hình hoàn chỉnh. Thử lại để đi sâu hơn vào biển hoa.';
   } else if (state.depth >= 43) {
-    note = 'Vượt mốc 43 bước khai khiếu Giáp đẳng, chạm sát Linh Tuyền cổ tộc!';
-  } else if (state.depth > 27) {
-    note = `Đạt ${grade} (${state.depth} bước), vượt qua cột mốc 27 bước Bính đẳng của Phương Nguyên trong truyện.`;
+    note = `Tư chất Giáp đẳng (${seaPct}% nguyên hải) — sánh ngang mốc 43 bước của Cổ Nguyệt Phương Chính.`;
   } else if (state.depth === 27) {
-    note = 'Đúng 27 bước Bính đẳng — ngang dấu chân Cổ Nguyệt Phương Nguyên thuở khai khiếu.';
+    note = `Tư chất Bính đẳng ở đúng bước 27 — trùng dấu chân Cổ Nguyệt Phương Nguyên thuở khai khiếu.`;
+  } else if (state.depth >= 30) {
+    note = `Không Khiếu rộng mở bậc ${grade}, màng quang mô trắng sáng bảo bọc Thanh Đồng Hải sánh đặc.`;
   }
 
   byId('result-note').textContent = note;
-  byId('result-grade').focus();
+  drawApertureInterior(resultShownAt);
+  byId('enter-village').focus({ preventScroll: true });
 }
 
 function updateHint(note) {
@@ -273,7 +391,6 @@ function renderStatus() {
   byId('depth').textContent = state.depth;
   byId('grade').textContent = grade;
 
-  // Highlight Đinh / Bính / Ất / Giáp tiers sequentially
   const currentThreshold = state.depth >= 40 ? 40 : state.depth >= 30 ? 30 : state.depth >= 20 ? 20 : state.depth >= 10 ? 10 : 0;
   for (const el of byId('tier-track').children) {
     const t = Number(el.dataset.tier);
@@ -281,15 +398,11 @@ function renderStatus() {
     el.classList.toggle('current', t === currentThreshold);
   }
 
-  // Light up 7 Hope Gu aperture pips
   const count = state.gathered.length;
   byId('hope-count').textContent = count;
   const pips = byId('hope-pips');
   pips.setAttribute('aria-label', `${count} trên ${hopeCells.length} cụm Hy Vọng Cổ`);
   Array.from(pips.children).forEach((pip, idx) => pip.classList.toggle('lit', idx < count));
-
-  finishBtn.disabled = state.x < flowerBank || state.finished;
-  finishBtn.textContent = state.depth < 10 ? 'Dừng sớm' : `Chốt ${grade}`;
 }
 
 function showStory(index, flashSub = false) {
@@ -316,20 +429,38 @@ function step(x, y, now) {
   const prevGrade = aptitude(state.depth);
   const next = move(state, x, y);
   if (next === state) return false;
+
+  const nextPace = reduced.matches ? baseStepMs : stepPace(state, x);
   from = state;
   state = next;
   if (x !== from.x) facing = Math.sign(x - from.x);
   steppedAt = now;
+  stepDuration = nextPace;
 
   const newGrade = aptitude(state.depth);
-  if (state.gathered !== from.gathered) {
+  const remaining = Math.max(0, state.limit - Math.max(0, x - flowerBank));
+
+  if (state.finished) {
+    path = [];
+    heldKey = undefined;
+    queuedKey = undefined;
+    stopBurstAt = now + (reduced.matches ? 0 : nextPace * 0.85);
+    updateHint('Chân nặng như chì, không thể tiến thêm — Hy Vọng Cổ hội tụ mở Không Khiếu!');
+    clearTimeout(resultTimer);
+    const finishDelay = reduced.matches ? 60 : nextPace + 640;
+    resultTimer = setTimeout(showResult, finishDelay);
+  } else if (remaining <= 4 && x > from.x) {
+    updateHint(remaining <= 1
+      ? 'Áp lực Linh Tuyền đè nặng từng bước chân...'
+      : 'Khí tức từ Linh Tuyền dần đặc quánh, bước đi chậm lại...');
+  } else if (state.gathered !== from.gathered) {
     flash = { x, y, at: now };
-    updateHint(`Hy Vọng Cổ hội tụ (${state.gathered.length}/${hopeCells.length}) · Bước chân nhẹ hẳn`);
+    updateHint(`Hy Vọng Cổ hội tụ (${state.gathered.length}/${hopeCells.length}) về phía cơ thể`);
   } else if (newGrade !== prevGrade) {
     tierFlashAt = now;
-    updateHint(`Không Khiếu rung động · Đạt ngưỡng ${newGrade}`);
+    updateHint(`Không Khiếu rung động · Bước qua ngưỡng ${newGrade}`);
   } else if (x === flowerBank && from.x < flowerBank) {
-    updateHint('Đi theo các cụm Hy Vọng Cổ để tiến sâu về phía Linh Tuyền.');
+    updateHint('Tiến sâu vào biển Nguyệt Lan để xem giới hạn khai khiếu.');
   }
 
   const nextBeat = beatForProgress(state);
@@ -338,12 +469,11 @@ function step(x, y, now) {
   }
 
   renderStatus();
-  if (state.finished) showResult();
   return true;
 }
 
 function controls(now) {
-  if (state.finished || now - steppedAt < pace) return;
+  if (state.finished || now - steppedAt < stepDuration) return;
   const key = queuedKey ?? heldKey;
   queuedKey = undefined;
   if (key) {
@@ -419,13 +549,12 @@ function drawAmbientWaterAndSpring(now) {
 }
 
 function drawHero(x, heroFootY, progress, now) {
-  // Subtle Khong Khieu (Aperture Light) at chest/dantian scaling naturally with awakening depth & hope
   const tier = state.depth >= 40 ? 4 : state.depth >= 30 ? 3 : state.depth >= 20 ? 2 : state.depth >= 10 ? 1 : 0;
-  const apertureStrength = Math.min(1, state.gathered.length * 0.1 + tier * 0.14);
+  const apertureStrength = Math.min(1, state.gathered.length * 0.1 + tier * 0.14 + (state.finished ? 0.35 : 0));
   if (apertureStrength > 0.08) {
     const cx = Math.round(x);
     const cy = Math.round(heroFootY - 22);
-    const r = 10 + tier * 2;
+    const r = 10 + tier * 2 + (state.finished ? 4 : 0);
     const pulse = reduced.matches ? 1 : (0.9 + Math.sin(now / 360) * 0.12);
     const glow = screen.createRadialGradient(cx, cy, 1, cx, cy, r);
     glow.addColorStop(0, `rgba(252, 247, 223, ${0.34 * apertureStrength * pulse})`);
@@ -439,11 +568,12 @@ function drawHero(x, heroFootY, progress, now) {
   screen.fillRect(Math.round(x - 8), Math.round(heroFootY - 1), 16, 3);
   if (loaded(sprite)) {
     const walking = !reduced.matches && progress < 1;
-    const cel = reduced.matches ? 0 : walking ? Math.floor(progress * 8) : Math.floor(now / 350) % 8;
+    // Strained slow gait cycles slower naturally as stepDuration increases!
+    const walkFrame = walking ? Math.floor(progress * 8) : Math.floor(now / 350) % 8;
     screen.save();
     screen.translate(Math.round(x), Math.round(heroFootY));
     screen.scale(facing, 1);
-    screen.drawImage(sprite, cel * 64, walking ? 0 : 128, 64, 64, -32, -60, 64, 64);
+    screen.drawImage(sprite, walkFrame * 64, walking ? 0 : 128, 64, 64, -32, -60, 64, 64);
     screen.restore();
   } else {
     screen.fillStyle = '#d0cbb3';
@@ -452,7 +582,6 @@ function drawHero(x, heroFootY, progress, now) {
     screen.fillRect(Math.round(x - 5), Math.round(heroFootY - 21), 10, 20);
   }
 
-  // Brief bright aperture expansion when crossing Đinh / Bính / Ất / Giáp milestone
   if (!reduced.matches && now - tierFlashAt < 650) {
     const k = (now - tierFlashAt) / 650;
     screen.strokeStyle = `rgba(216, 237, 226, ${(1 - k) * 0.72})`;
@@ -513,10 +642,24 @@ function drawHopeSwarms(now, heroX, heroFootY) {
       );
     }
   }
+
+  // Final awakening convergence right as character stops completely!
+  if (state.finished && !reduced.matches && now >= stopBurstAt && now - stopBurstAt < 900) {
+    const k = Math.min(1, (now - stopBurstAt) / 900);
+    for (let i = 0; i < 8; i++) {
+      const ang = i * (Math.PI / 4) + k * 2.8;
+      drawGu(
+        heroX + Math.cos(ang) * 32 * (1 - k),
+        heroFootY - 22 + Math.sin(ang) * 22 * (1 - k),
+        now,
+        i,
+      );
+    }
+  }
 }
 
 function draw(now) {
-  const progress = reduced.matches ? 1 : Math.min(1, (now - steppedAt) / pace);
+  const progress = reduced.matches ? 1 : Math.min(1, (now - steppedAt) / stepDuration);
   const heroMapX = (from.x + (state.x - from.x) * progress + 0.5) * tile;
   const heroMapY = (from.y + (state.y - from.y) * progress + 0.5) * tile + 6;
   cameraX = Math.round(Math.max(0, Math.min(map.width - canvas.width, heroMapX - canvas.width * 0.34)));
@@ -544,8 +687,8 @@ function draw(now) {
 
   drawHopeSwarms(now, heroX, heroY);
 
-  // Subtle cavern vignette + organic cyan primeval spring pressure haze when close to stamina cap
-  const pressureRatio = state.x > flowerBank ? Math.max(0, (8 - state.resolve) / 8) : 0;
+  const remaining = state.x > flowerBank ? Math.max(0, state.limit - (state.x - flowerBank)) : 6;
+  const pressureRatio = state.x > flowerBank ? Math.max(0, (5 - remaining) / 5) : 0;
   const edgeAlpha = 0.55 + pressureRatio * 0.28;
   const shade = screen.createLinearGradient(0, 0, 0, canvas.height);
   shade.addColorStop(0, `rgba(10, 15, 20, ${edgeAlpha})`);
@@ -562,6 +705,8 @@ function draw(now) {
     screen.fillStyle = haze;
     screen.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  drawApertureInterior(now);
 }
 
 function tick(now) {
@@ -596,26 +741,27 @@ canvas.addEventListener('click', event => {
   queuedKey = undefined;
   path = routeTo(state, x, y);
 });
-finishBtn.addEventListener('click', () => {
-  state = { ...state, finished: true };
-  renderStatus();
-  showResult();
-});
 
 function resetCeremony() {
-  state = createCeremony();
+  clearTimeout(resultTimer);
+  const forced = new URLSearchParams(location.search).get('limit');
+  const limitOpt = forced && /^\d+$/.test(forced) ? { limit: Number(forced) } : {};
+  state = createCeremony(limitOpt);
   from = state;
   steppedAt = -Infinity;
+  stepDuration = baseStepMs;
   path = [];
   heldKey = undefined;
   queuedKey = undefined;
   facing = 1;
   flash = undefined;
   tierFlashAt = -Infinity;
+  stopBurstAt = -Infinity;
   byId('ceremony-result').hidden = true;
   showStory(0, false);
   updateHint('Qua sông ở đoạn nước nông. Dùng WASD, phím mũi tên hoặc chạm một ô.');
   renderStatus();
+  showBanner();
   canvas.focus({ preventScroll: true });
 }
 
@@ -635,6 +781,8 @@ selection.addEventListener('submit', event => {
   frame = requestAnimationFrame(tick);
 });
 changeHero.addEventListener('click', () => {
+  clearTimeout(resultTimer);
+  for (const t of bannerTimers) clearTimeout(t);
   cancelAnimationFrame(frame);
   stage.hidden = true;
   changeHero.hidden = true;
