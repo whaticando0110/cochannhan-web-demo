@@ -17,8 +17,11 @@ const beast = byId('wolf-unit');
 const cursor = byId('target-cursor');
 const guide = byId('guide');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
-const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Giữ Shift để chạy · Bấm ô để đi';
+const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
+const runToggle = byId('run-toggle');
+const runPreference = 'cochannhan.explore.run';
 const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
+const stepDurations = { walk: 485, run: 280, climb: 630 };
 
 const keys = {
   arrowup: -MAP.columns, w: -MAP.columns,
@@ -45,7 +48,13 @@ let selecting = false;
 let selectedCell = world.player.cell;
 let stepTimer;
 let nextStepAt = 0;
-let shiftHeld = false;
+let runEnabled = false;
+let pendingShiftTap = false;
+try {
+  runEnabled = localStorage.getItem(runPreference) === 'on';
+} catch {
+  // The toggle also works for this page when browser storage is unavailable.
+}
 let route = [];
 let markedThreats = [];
 let markedMoves = [];
@@ -58,6 +67,23 @@ const sheetUrls = Object.fromEntries(Object.entries(atlas.sheets).map(([id, shee
 
 function announce(message) {
   byId('world-announcement').textContent = message;
+}
+
+function renderRunToggle() {
+  runToggle.setAttribute('aria-pressed', String(runEnabled));
+  runToggle.textContent = runEnabled ? 'Chạy · Bật' : 'Chạy · Tắt';
+}
+
+function toggleRun() {
+  if (world.mode !== 'explore') return;
+  runEnabled = !runEnabled;
+  renderRunToggle();
+  announce(runEnabled ? 'Đã bật chạy.' : 'Đã chuyển sang đi bộ.');
+  try {
+    localStorage.setItem(runPreference, runEnabled ? 'on' : 'off');
+  } catch {
+    // Keep the in-memory choice for the rest of the session.
+  }
 }
 
 function setHint(message, shouldAnnounce = false) {
@@ -272,6 +298,7 @@ function renderBattle() {
 }
 
 function render() {
+  runToggle.hidden = world.mode !== 'explore';
   byId('location').textContent = locationOf(world.player.cell);
   const terrain = TERRAIN[world.player.cell].rampart;
   const level = terrain?.stair ? ' · Cầu thang' : terrain?.elevation ? ' · Sàn lũy' : '';
@@ -300,11 +327,11 @@ function step(target) {
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
   if (delta) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
-  const groundDuration = shiftHeld ? 280 : 485;
-  const duration = onStairs ? 630 : groundDuration;
+  const gait = onStairs ? 'climb' : runEnabled ? 'run' : 'walk';
+  const duration = stepDurations[gait];
   field.style.setProperty('--step-time', duration + 'ms');
   nextStepAt = performance.now() + duration;
-  heroMotion.travel(onStairs, duration);
+  heroMotion.travel(gait, duration);
   field.classList.add('walking');
   render();
   if (world.mode === 'battle') {
@@ -398,6 +425,8 @@ function reset() {
 }
 
 byId('field-hint').textContent = walkHint;
+renderRunToggle();
+runToggle.addEventListener('click', toggleRun);
 createMap();
 createActions();
 render();
@@ -405,7 +434,6 @@ field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
 
 map.addEventListener('click', (event) => {
-  shiftHeld = event.shiftKey;
   const tile = event.target.closest('button[data-cell]');
   if (!tile) return;
   const cell = Number(tile.dataset.cell);
@@ -416,7 +444,11 @@ map.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-  shiftHeld = event.shiftKey;
+  if (event.key === 'Shift' && !event.repeat) {
+    pendingShiftTap = world.mode === 'explore' && !event.ctrlKey && !event.metaKey && !event.altKey;
+  } else if (event.key !== 'Shift' && !Object.hasOwn(keys, event.key.toLowerCase())) {
+    pendingShiftTap = false;
+  }
   if (event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
   if (Object.hasOwn(keys, key)) {
@@ -450,11 +482,14 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-document.addEventListener('keyup', event => { shiftHeld = event.shiftKey; });
-window.addEventListener('blur', () => { shiftHeld = false; });
+document.addEventListener('keyup', event => {
+  if (event.key !== 'Shift') return;
+  if (pendingShiftTap) toggleRun();
+  pendingShiftTap = false;
+});
+window.addEventListener('blur', () => { pendingShiftTap = false; });
 
-guide.addEventListener('click', (event) => {
-  shiftHeld = event.shiftKey;
+guide.addEventListener('click', () => {
   field.focus({ preventScroll: true });
   go(world.cleared ? CONTINUE : toPoint(world.player.cell).col < 14 ? GATE : TRAIL_ENTRY);
 });

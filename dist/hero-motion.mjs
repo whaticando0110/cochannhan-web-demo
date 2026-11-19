@@ -31,7 +31,7 @@ export function createHeroMotion(sprite, reducedMotion) {
 
   function stop() {
     clearTimeout(restTimer);
-    sprite.classList.remove('at-rest', 'striding', 'climbing');
+    sprite.classList.remove('at-rest', 'striding', 'climbing', 'running');
     if (!current) return;
     current.onfinish = null;
     current.cancel();
@@ -43,14 +43,16 @@ export function createHeroMotion(sprite, reducedMotion) {
     if (!reducedMotion.matches) sprite.classList.add('at-rest');
   }
 
-  function travel(onStairs, duration) {
+  function travel(gait, duration) {
     if (reducedMotion.matches) return;
     if (!sprite.classList.contains('striding')) {
       stop();
       sprite.classList.add('striding');
     }
-    sprite.classList.toggle('climbing', onStairs);
-    sprite.style.setProperty('--gait-period', Math.round(duration * 0.68) + 'ms');
+    sprite.classList.toggle('climbing', gait === 'climb');
+    sprite.classList.toggle('running', gait === 'run');
+    const stride = gait === 'run' ? 0.95 : 0.68;
+    sprite.style.setProperty('--gait-period', Math.round(duration * stride) + 'ms');
     clearTimeout(restTimer);
     restTimer = setTimeout(stand, duration + 32);
   }

@@ -85,6 +85,8 @@
 .world-actions .action-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin:0 0 5px; }
 .world-actions .action-card { min-height:44px; }
 .world-frame .field-footer { min-height:26px; padding:4px clamp(12px,2vw,28px); font-size:.82rem; }
+.run-toggle { margin-left:auto; min-height:36px; padding:4px 12px; border:1px solid #576554; border-radius:3px; color:#d5dbc9; background:#1b2920; cursor:pointer; }
+.run-toggle[aria-pressed="true"] { border-color:#cdb67e; color:#f6dfaa; background:#383222; }
 .world-frame:has(.in-battle) .field-footer { display:none; }
 @media(max-width:680px) {
   .journey .seal, .journey .region { display:none; }

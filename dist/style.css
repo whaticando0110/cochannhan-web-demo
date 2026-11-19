@@ -186,12 +186,13 @@ dialog li + li { margin-top: 6px; }
 /* Pixel cels are sampled directly to keep soles, hair and sleeve outlines sharp. */
 .sprite.at-rest, .sprite.striding {
   background-image: url("assets/huyen-bao-travel.png");
-  background-size: 800% 300%;
+  background-size: 800% 400%;
   animation: hero-cels 2.8s steps(8, end) infinite;
-  background-position-y: 100%;
+  background-position-y: 66.666667%;
 }
 .sprite.striding { animation-duration: var(--gait-period); background-position-y: 0%; }
-.sprite.climbing { background-position-y: 50%; }
+.sprite.climbing { background-position-y: 33.333333%; }
+.sprite.running { background-position-y: 100%; }
 @keyframes hero-cels { from { background-position-x: 0%; } to { background-position-x: 114.285714%; } }
 .combat-layout { grid-template-rows: auto auto auto; grid-template-areas: "arena intent" "arena actions" "arena log"; align-content: start; align-items: start; }
 .combat-layout .actions-heading span { display: none; }
