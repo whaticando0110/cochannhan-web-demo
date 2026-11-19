@@ -4,6 +4,8 @@
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 
+Chọn **Khai Khiếu** để thử vượt sông ngầm và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
+
 ![Cuộc chạm trán với sói trên cùng bản đồ vừa khám phá](docs/forest-encounter.png)
 
 ## Chơi thử

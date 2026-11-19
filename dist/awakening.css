@@ -1,0 +1,28 @@
+body.ceremony { background: #101619; }
+.ceremony-shell { width: min(100% - 32px, 1280px); margin: auto; padding: 18px 0; }
+.ceremony-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+.ceremony-head h1 { font-size: clamp(1.55rem, 4vw, 2.9rem); }
+.ceremony-head .nav-link { flex-shrink: 0; }
+.garden-frame { position: relative; border: 1px solid #536d69; background: #121f24; border-radius: 7px; overflow: hidden; }
+.ceremony-hud { display: grid; grid-template-columns: minmax(76px, .7fr) minmax(110px, 1fr) 1.3fr; gap: 13px; padding: 11px 16px; border-bottom: 1px solid #506862; }
+.ceremony-hud strong { display: block; color: #e2f0dc; font-size: 1rem; line-height: 1.2; }
+.ceremony-hud .label { display: block; color: #afc8c2; font-size: .79rem; margin-bottom: 5px; }
+.ceremony-hud progress { display: block; width: 100%; height: 9px; accent-color: #c4dfa0; }
+.ceremony-hud progress::-webkit-progress-bar { background: #2c4342; }
+.ceremony-hud progress::-webkit-progress-value { background: #c4dfa0; }
+#garden { display: block; width: 100%; height: clamp(290px, 65svh, 645px); image-rendering: pixelated; background: #101f2a; touch-action: manipulation; cursor: crosshair; }
+#garden:focus-visible { outline: 2px solid #cce6a5; outline-offset: -2px; }
+.garden-foot { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 16px; border-top: 1px solid #506862; background: #18282b; }
+.garden-foot p { color: #c8ddd2; font-size: .9rem; line-height: 1.4; }
+.garden-foot button { flex-shrink: 0; }
+.garden-foot button:disabled { opacity: .5; cursor: default; }
+.result-actions { display: flex; justify-content: center; gap: 10px; }
+@media (max-width: 540px) {
+  .ceremony-shell { width: calc(100% - 16px); padding-top: 10px; }
+  .ceremony-head { margin-bottom: 9px; }
+  .ceremony-hud { gap: 6px; padding: 9px 7px; }
+  .ceremony-hud strong { font-size: .87rem; }
+  #garden { height: clamp(288px, 58svh, 560px); }
+  .garden-foot { padding: 7px; gap: 6px; }
+  .garden-foot p { font-size: .79rem; }
+}
