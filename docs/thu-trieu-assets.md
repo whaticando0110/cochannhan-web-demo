@@ -45,3 +45,16 @@ Tài liệu kỹ thuật trên nhánh `antigravity/gu-vfx-thu-trieu` phục vụ
   - Hàng 3 (`blood` — Huyết Nguyệt): Cột `0..3` = `blood_release`; Cột `4..7` = `blood_wake` (dư ảnh huyết nguyệt răng cưa & giọt máu tản xạ).
   - Hàng 4 (`common`): Cột `0..3` = `foot_dust` (bụi gió dạt ngược dưới chân cổ sư khi xuất chiêu, `groundPivot: [32, 52]`); Cột `4..7` = `hit_flash` (sao chớp 8 cánh xác nhận trúng đích).
 - **Hàm điều khiển**: `buildGuWakeSchedule()`, `spawnEnhancedGuCast()`, `spawnEnhancedGuImpact()` trong `dist/rampart-fx.mjs`.
+
+## 6. Rương Tiếp Tế & Hiệu Ứng Hấp Thụ Nguyên Thạch (`primeval-stone.png` + `stone-absorb-fx.png`)
+
+- **Căn cứ nguyên tác**: *Cổ Chân Nhân* Chương 6–7 — Nguyên thạch hình bầu dục cỡ trứng vịt, sắc xám tro (`thanh hôi sắc`), ẩn chứa thiên địa nguyên khí dày đặc; khi cổ sư rút cạn nguyên khí đưa vào Không Khiếu thì vỏ đá nứt vỡ, hóa thành một nắm bột phấn xám rơi khỏi kẽ tay.
+- **Rương tiếp tế & Icon Nguyên Thạch (`dist/assets/rampart/primeval-stone.png` + `primeval-stone.json`)**:
+  - Kích thước & lưới: `256 × 128` (`4 cột × 2 hàng`, ô `64 × 64`, `groundPivot: [32, 54]`, alpha nhị phân `0 | 255`).
+  - Hàng 0 (`supply_crate`, `4` khung): Khung `0..2` = rương gỗ nẹp đồng mở nắp tại `SUPPLY_POST` (`col 9, row 13`) với các viên nguyên thạch xám bầu dục thở nhịp nguyên khí xanh ngọc; Khung `3` = trạng thái sau khi đã lấy & hút cạn 1 viên, còn vương bột đá xám trên miệng rương.
+  - Hàng 1 (`stone_icon`, `4` khung): Icon viên nguyên thạch cho HUD `#stone-status` (`dormant -> awakening -> cracking -> powder`).
+- **Hiệu ứng Hấp Thụ Nguyên Thạch (`dist/assets/rampart/stone-absorb-fx.png` + `stone-absorb-fx.json`)**:
+  - Kích thước & lưới: `512 × 128` (`8 cột × 2 hàng`, ô `64 × 64`, `groundPivot: [32, 54]`, `dantianCenter: [32, 34]`, tổng thời lượng `1500 ms` khớp `ABSORB_MS = 1500`, alpha nhị phân `0 | 255`).
+  - Hàng 0 (`qi_spiral_over`, lớp `over-actor`): Khung `0..1` = viên nguyên thạch trước ngực/đan điền bừng sáng vân ngọc; Khung `2..4` = hai dải thiên địa nguyên khí xanh ngọc xoắn kép vào Không Khiếu; Khung `5` = Không Khiếu lóe sáng vòng Thanh Đồng Nguyên Hải đầy ắp, vỏ nguyên thạch nứt đôi; Khung `6..7` = viên đá vỡ vụn thành thác bột phấn xám trắng rơi lả tả xuống đất.
+  - Hàng 1 (`ground_ring_under`, lớp `under-actor`): Vòng cộng hưởng nguyên khí dưới chân (`0..5`) chuyển sang vòng bụi bột đá xám lắng xuống nền đá (`6..7`).
+- **Hàm điều khiển**: `buildStoneAbsorptionSchedule()`, `createSupplyStationFx()` trong `dist/rampart-fx.mjs` (hỗ trợ `cancelAbsorption()` khi người chơi bước đi giữa chừng mà chưa làm vỡ viên nguyên thạch).

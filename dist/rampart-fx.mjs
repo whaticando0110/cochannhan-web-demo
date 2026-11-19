@@ -465,3 +465,146 @@ export function spawnEnhancedGuImpact(effectsLayer, reducedMotion, { target, ang
   const fAnim = flashArt.animate([4, 5, 6, 7].map(c => cel(c, 7, 4, 4)), { duration: 160 });
   fAnim.onfinish = () => flashNode.remove();
 }
+
+export const PRIMEVAL_STONE_FRAME_WEIGHTS = Object.freeze([180, 185, 190, 190, 190, 195, 185, 185]);
+
+export function buildStoneAbsorptionSchedule({ durationMs = 1500 } = {}) {
+  const scale = durationMs / 1500;
+  let elapsed = 0;
+  const frames = PRIMEVAL_STONE_FRAME_WEIGHTS.map((w, col) => {
+    const startMs = Math.round(elapsed * scale);
+    elapsed += w;
+    const endMs = col === 7 ? durationMs : Math.round(elapsed * scale);
+    const phase = col <= 1 ? 'ignite' : col <= 4 ? 'spiral-absorb' : col === 5 ? 'aperture-full' : 'crumble-powder';
+    return {
+      col,
+      phase,
+      startMs,
+      endMs,
+      durationMs: endMs - startMs,
+      offset: Number((startMs / durationMs).toFixed(4)),
+    };
+  });
+  return {
+    durationMs,
+    apertureFullFrame: 5,
+    apertureFullMs: frames[5].startMs,
+    powderStartFrame: 6,
+    powderStartMs: frames[6].startMs,
+    frames,
+  };
+}
+
+export function createSupplyStationFx(plane, reducedMotion) {
+  let crateNode;
+  let crateArt;
+  let crateLoop;
+  let absorbRoot;
+  let underRingArt;
+  let overSpiralArt;
+  const animations = new Set();
+
+  function stopAbsorbAnimations() {
+    for (const anim of animations) {
+      anim.onfinish = null;
+      anim.cancel();
+    }
+    animations.clear();
+    if (absorbRoot) absorbRoot.hidden = true;
+  }
+
+  function mountCrate(post, { depleted = false } = {}) {
+    if (!crateNode && plane) {
+      crateNode = document.createElement('div');
+      crateNode.className = 'supply-crate-unit';
+      crateNode.setAttribute('aria-hidden', 'true');
+      crateArt = document.createElement('i');
+      crateArt.className = 'supply-crate-art';
+      crateNode.append(crateArt);
+      plane.append(crateNode);
+    }
+    if (crateNode && post) {
+      crateNode.style.left = tile(post.col);
+      crateNode.style.top = tile(post.row);
+    }
+    setDepleted(depleted);
+  }
+
+  function setDepleted(depleted) {
+    if (!crateArt) return;
+    if (crateLoop) {
+      crateLoop.cancel();
+      crateLoop = undefined;
+    }
+    if (depleted) {
+      Object.assign(crateArt.style, cel(3, 3, 0, 1));
+    } else if (reducedMotion?.matches) {
+      Object.assign(crateArt.style, cel(0, 3, 0, 1));
+    } else {
+      crateLoop = crateArt.animate([0, 1, 2, 1].map(c => cel(c, 3, 0, 1)), {
+        duration: 1200,
+        iterations: Infinity,
+      });
+    }
+  }
+
+  function startAbsorption(post, { durationMs = 1500, onComplete } = {}) {
+    stopAbsorbAnimations();
+    const schedule = buildStoneAbsorptionSchedule({ durationMs });
+    if (!plane || reducedMotion?.matches) return schedule;
+    if (!absorbRoot) {
+      absorbRoot = document.createElement('div');
+      absorbRoot.className = 'stone-absorb-unit';
+      absorbRoot.setAttribute('aria-hidden', 'true');
+      underRingArt = document.createElement('i');
+      underRingArt.className = 'stone-absorb-under';
+      overSpiralArt = document.createElement('i');
+      overSpiralArt.className = 'stone-absorb-over';
+      absorbRoot.append(underRingArt, overSpiralArt);
+      plane.append(absorbRoot);
+    }
+    if (post) {
+      absorbRoot.style.left = tile(post.col);
+      absorbRoot.style.top = tile(post.row);
+    }
+    absorbRoot.hidden = false;
+
+    const overKeyframes = schedule.frames.map(f => ({
+      ...cel(f.col, 7, 0, 1),
+      offset: f.offset,
+    }));
+    const underKeyframes = schedule.frames.map(f => ({
+      ...cel(f.col, 7, 1, 1),
+      offset: f.offset,
+    }));
+
+    const overAnim = overSpiralArt.animate(overKeyframes, { duration: durationMs, fill: 'forwards' });
+    const underAnim = underRingArt.animate(underKeyframes, { duration: durationMs, fill: 'forwards' });
+    animations.add(overAnim);
+    animations.add(underAnim);
+    overAnim.onfinish = () => {
+      animations.delete(overAnim);
+      animations.delete(underAnim);
+      if (absorbRoot) absorbRoot.hidden = true;
+      setDepleted(true);
+      if (onComplete) onComplete();
+    };
+    return schedule;
+  }
+
+  function cancelAbsorption() {
+    // Player stepped away before completion: stop qi spiral without crumbling the stone into powder
+    stopAbsorbAnimations();
+  }
+
+  function destroy() {
+    stopAbsorbAnimations();
+    if (crateLoop) crateLoop.cancel();
+    crateNode?.remove();
+    absorbRoot?.remove();
+    crateNode = undefined;
+    absorbRoot = undefined;
+  }
+
+  return { mountCrate, setDepleted, startAbsorption, cancelAbsorption, destroy };
+}

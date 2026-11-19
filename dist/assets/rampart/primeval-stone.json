@@ -1,0 +1,175 @@
+{
+  "name": "Rương Tiếp Tế & Nguyên Thạch",
+  "id": "primeval-stone",
+  "file": "primeval-stone.png",
+  "width": 256,
+  "height": 128,
+  "cellSize": [
+    64,
+    64
+  ],
+  "grid": [
+    4,
+    2
+  ],
+  "backgroundSize": "400% 200%",
+  "groundPivot": [
+    32,
+    54
+  ],
+  "novelSource": "Cổ Chân Nhân Chương 6–7: Nguyên thạch hình bầu dục cỡ trứng vịt, sắc xám tro, ẩn chứa thiên địa nguyên khí; sau khi hút cạn nguyên khí thì hóa thành bột phấn xám.",
+  "clips": {
+    "supply_crate": {
+      "row": 0,
+      "startCol": 0,
+      "count": 4,
+      "loop": true,
+      "durationMs": 900,
+      "activeFrames": [
+        0,
+        1,
+        2
+      ],
+      "depletedFrame": 3,
+      "frames": [
+        {
+          "col": 0,
+          "row": 0,
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 300,
+          "state": "available",
+          "bbox": [
+            14,
+            20,
+            50,
+            54
+          ]
+        },
+        {
+          "col": 1,
+          "row": 0,
+          "x": 64,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 300,
+          "state": "available",
+          "bbox": [
+            14,
+            18,
+            50,
+            54
+          ]
+        },
+        {
+          "col": 2,
+          "row": 0,
+          "x": 128,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 300,
+          "state": "available",
+          "bbox": [
+            14,
+            17,
+            50,
+            54
+          ]
+        },
+        {
+          "col": 3,
+          "row": 0,
+          "x": 192,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 300,
+          "state": "depleted-powder",
+          "bbox": [
+            14,
+            27,
+            50,
+            54
+          ]
+        }
+      ]
+    },
+    "stone_icon": {
+      "row": 1,
+      "startCol": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 800,
+      "frames": [
+        {
+          "col": 0,
+          "row": 1,
+          "x": 0,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 200,
+          "state": "dormant",
+          "bbox": [
+            19,
+            23,
+            45,
+            41
+          ]
+        },
+        {
+          "col": 1,
+          "row": 1,
+          "x": 64,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 200,
+          "state": "awakening",
+          "bbox": [
+            14,
+            18,
+            50,
+            46
+          ]
+        },
+        {
+          "col": 2,
+          "row": 1,
+          "x": 128,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 200,
+          "state": "cracking",
+          "bbox": [
+            12,
+            17,
+            52,
+            47
+          ]
+        },
+        {
+          "col": 3,
+          "row": 1,
+          "x": 192,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 200,
+          "state": "powder",
+          "bbox": [
+            20,
+            25,
+            45,
+            42
+          ]
+        }
+      ]
+    }
+  }
+}

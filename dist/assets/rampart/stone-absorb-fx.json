@@ -1,0 +1,297 @@
+{
+  "name": "Hiệu Ứng Hấp Thụ Nguyên Thạch & Hóa Bột Phấn Xám",
+  "id": "stone-absorb-fx",
+  "file": "stone-absorb-fx.png",
+  "width": 512,
+  "height": 128,
+  "cellSize": [
+    64,
+    64
+  ],
+  "grid": [
+    8,
+    2
+  ],
+  "backgroundSize": "800% 200%",
+  "groundPivot": [
+    32,
+    54
+  ],
+  "dantianCenter": [
+    32,
+    34
+  ],
+  "durationMs": 1500,
+  "powderStartFrame": 6,
+  "powderStartMs": 1130,
+  "clips": {
+    "qi_spiral_over": {
+      "row": 0,
+      "startCol": 0,
+      "count": 8,
+      "loop": false,
+      "layerRole": "over-actor",
+      "durationMs": 1500,
+      "frames": [
+        {
+          "col": 0,
+          "row": 0,
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 180,
+          "phase": "ignite",
+          "bbox": [
+            14,
+            26,
+            50,
+            48
+          ]
+        },
+        {
+          "col": 1,
+          "row": 0,
+          "x": 64,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "phase": "ignite",
+          "bbox": [
+            19,
+            27,
+            45,
+            48
+          ]
+        },
+        {
+          "col": 2,
+          "row": 0,
+          "x": 128,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "phase": "spiral-absorb",
+          "bbox": [
+            20,
+            28,
+            44,
+            48
+          ]
+        },
+        {
+          "col": 3,
+          "row": 0,
+          "x": 192,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "phase": "spiral-absorb",
+          "bbox": [
+            21,
+            30,
+            43,
+            45
+          ]
+        },
+        {
+          "col": 4,
+          "row": 0,
+          "x": 256,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "phase": "spiral-absorb",
+          "bbox": [
+            23,
+            30,
+            41,
+            44
+          ]
+        },
+        {
+          "col": 5,
+          "row": 0,
+          "x": 320,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 195,
+          "phase": "aperture-full",
+          "bbox": [
+            15,
+            21,
+            49,
+            47
+          ]
+        },
+        {
+          "col": 6,
+          "row": 0,
+          "x": 384,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "phase": "crumble-powder",
+          "bbox": [
+            20,
+            24,
+            45,
+            52
+          ]
+        },
+        {
+          "col": 7,
+          "row": 0,
+          "x": 448,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "phase": "crumble-powder",
+          "bbox": [
+            21,
+            38,
+            43,
+            56
+          ]
+        }
+      ]
+    },
+    "ground_ring_under": {
+      "row": 1,
+      "startCol": 0,
+      "count": 8,
+      "loop": false,
+      "layerRole": "under-actor",
+      "durationMs": 1500,
+      "frames": [
+        {
+          "col": 0,
+          "row": 1,
+          "x": 0,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 180,
+          "bbox": [
+            19,
+            49,
+            45,
+            60
+          ]
+        },
+        {
+          "col": 1,
+          "row": 1,
+          "x": 64,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "bbox": [
+            18,
+            48,
+            46,
+            60
+          ]
+        },
+        {
+          "col": 2,
+          "row": 1,
+          "x": 128,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "bbox": [
+            17,
+            48,
+            47,
+            60
+          ]
+        },
+        {
+          "col": 3,
+          "row": 1,
+          "x": 192,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "bbox": [
+            16,
+            47,
+            48,
+            61
+          ]
+        },
+        {
+          "col": 4,
+          "row": 1,
+          "x": 256,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 190,
+          "bbox": [
+            15,
+            47,
+            49,
+            61
+          ]
+        },
+        {
+          "col": 5,
+          "row": 1,
+          "x": 320,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 195,
+          "bbox": [
+            13,
+            47,
+            51,
+            62
+          ]
+        },
+        {
+          "col": 6,
+          "row": 1,
+          "x": 384,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "bbox": [
+            18,
+            48,
+            47,
+            60
+          ]
+        },
+        {
+          "col": 7,
+          "row": 1,
+          "x": 448,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 185,
+          "bbox": [
+            15,
+            47,
+            49,
+            61
+          ]
+        }
+      ]
+    }
+  }
+}

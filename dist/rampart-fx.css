@@ -107,3 +107,56 @@
   image-rendering: pixelated;
   background: url("assets/rampart/gu-cast-fx.png") 0 0 / 800% 500% no-repeat;
 }
+
+/* Supply Crate & Primeval Stone Absorption (Hòm Tiếp Tế & Hấp Thụ Nguyên Thạch) */
+.supply-crate-unit {
+  position: absolute;
+  width: calc(var(--tile) * 1.18);
+  aspect-ratio: 1;
+  transform: translate(-50%, -84%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.supply-crate-art {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background: url("assets/rampart/primeval-stone.png") 0 0 / 400% 200% no-repeat;
+  filter: drop-shadow(1px 2px 1px #101813d9);
+}
+
+.stone-icon-badge {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  image-rendering: pixelated;
+  background: url("assets/rampart/primeval-stone.png") 0 100% / 400% 200% no-repeat;
+}
+
+.stone-absorb-unit {
+  position: absolute;
+  width: calc(var(--tile) * 1.46);
+  aspect-ratio: 1;
+  transform: translate(-50%, -84%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.stone-absorb-under,
+.stone-absorb-over {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background: url("assets/rampart/stone-absorb-fx.png") 0 0 / 800% 200% no-repeat;
+}
+
+.stone-absorb-under {
+  z-index: 1;
+  background-position: 0 100%;
+}
+
+.stone-absorb-over {
+  z-index: 3;
+}

@@ -7,6 +7,7 @@ import {
   BEAST_KING_TREMOR_STEPS,
   buildAnimeImpactSchedule,
   buildGuWakeSchedule,
+  buildStoneAbsorptionSchedule,
   buildTremorKeyframes,
 } from '../dist/rampart-fx.mjs';
 
@@ -174,4 +175,31 @@ test('rampart-fx schedules generate deterministic tremor keyframes, anime impact
   assert.equal(wake.wakes.length, 3);
   assert.ok(wake.wakes[0].col > wake.wakes[1].col && wake.wakes[1].col > wake.wakes[2].col);
   assert.ok(wake.wakes[0].opacity > wake.wakes[2].opacity);
+});
+
+test('primeval-stone and stone-absorb-fx atlases match 1500ms absorption schedule and binary alpha', () => {
+  const stone = assertAtlasIntegrity('primeval-stone.json', 256, 128, [64, 64], [4, 2], {
+    supply_crate: 4,
+    stone_icon: 4,
+  });
+  assert.deepEqual(stone.groundPivot, [32, 54]);
+  assert.deepEqual(stone.clips.supply_crate.activeFrames, [0, 1, 2]);
+  assert.equal(stone.clips.supply_crate.depletedFrame, 3);
+
+  const absorb = assertAtlasIntegrity('stone-absorb-fx.json', 512, 128, [64, 64], [8, 2], {
+    qi_spiral_over: 8,
+    ground_ring_under: 8,
+  });
+  assert.equal(absorb.durationMs, 1500);
+  assert.deepEqual(absorb.dantianCenter, [32, 34]);
+  assert.equal(absorb.powderStartFrame, 6);
+
+  const schedule = buildStoneAbsorptionSchedule({ durationMs: 1500 });
+  assert.equal(schedule.durationMs, 1500);
+  assert.equal(schedule.frames.length, 8);
+  assert.equal(schedule.frames[0].startMs, 0);
+  assert.equal(schedule.frames.at(-1).endMs, 1500);
+  assert.equal(schedule.frames[5].phase, 'aperture-full');
+  assert.equal(schedule.frames[6].phase, 'crumble-powder');
+  assert.equal(schedule.powderStartMs, 1130);
 });
