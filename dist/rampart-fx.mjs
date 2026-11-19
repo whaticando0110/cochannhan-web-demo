@@ -1,0 +1,467 @@
+// Cinematic combat & Gu VFX helpers for Thú triều Thanh Mao Sơn (Act 1):
+// 1. Beast King approaching seismic arena tremor (rung sàn đấu khi thú vương tới)
+// 2. Kim Chung Tráo hit flash + 2-step Anime Impact Frame (lóe sáng + impact frame anime)
+// 3. Enhanced Gu launch burst, foot back-draft, flight wake afterimages & hit-confirm flash
+
+export const BEAST_KING_TREMOR_STEPS = Object.freeze([
+  Object.freeze({ step: 1, label: 'footstep-far', delayMs: 0, durationMs: 240, amplitudePx: 5, lightning: false, danger: 0 }),
+  Object.freeze({ step: 2, label: 'footstep-mid', delayMs: 520, durationMs: 280, amplitudePx: 8, lightning: true, danger: 0.08 }),
+  Object.freeze({ step: 3, label: 'footstep-near', delayMs: 1020, durationMs: 320, amplitudePx: 11, lightning: true, danger: 0.14 }),
+  Object.freeze({ step: 4, label: 'roar-quake', delayMs: 1480, durationMs: 620, amplitudePx: 14, lightning: true, danger: 0.25 }),
+]);
+
+export function buildTremorKeyframes(amplitudePx = 10, samples = 8) {
+  const amp = Math.max(0, Number(amplitudePx) || 0);
+  const frames = [{ offset: 0, translate: '0px 0px' }];
+  for (let i = 1; i < samples; i++) {
+    const t = i / samples;
+    const decay = Math.pow(1 - t, 1.35);
+    const sign = (i % 2 === 1) ? 1 : -1;
+    const dx = Math.round(-sign * amp * 0.72 * decay);
+    const dy = Math.round(sign * amp * decay);
+    frames.push({
+      offset: Number(t.toFixed(4)),
+      translate: `${dx}px ${dy}px`,
+    });
+  }
+  frames.push({ offset: 1, translate: '0px 0px' });
+  return frames;
+}
+
+export function buildAnimeImpactSchedule({
+  hitStopMs = 45,
+  frameAMs = 48,
+  frameBMs = 48,
+  flashMs = 240,
+  rippleMs = 470,
+} = {}) {
+  const t0 = 0;
+  const tA = t0 + hitStopMs;
+  const tB = tA + frameAMs;
+  const tFlash = tB + frameBMs;
+  const tEnd = tFlash + Math.max(flashMs, rippleMs);
+  return {
+    hitStop: { startMs: t0, endMs: tA, durationMs: hitStopMs },
+    animeFrameA: { startMs: tA, endMs: tB, durationMs: frameAMs, className: 'anime-impact-a', atlasCol: 0 },
+    animeFrameB: { startMs: tB, endMs: tFlash, durationMs: frameBMs, className: 'anime-impact-b', atlasCol: 1 },
+    goldenFlash: { startMs: tFlash, endMs: tFlash + flashMs, durationMs: flashMs, className: 'bell-bloom', atlasCols: [2, 3, 4, 5, 6, 7] },
+    sonicRipple: { startMs: tA, endMs: tA + rippleMs, durationMs: rippleMs, row: 1 },
+    totalDurationMs: tEnd,
+  };
+}
+
+export function buildGuWakeSchedule({
+  from,
+  target,
+  bend = 0,
+  count = 3,
+  duration = 260,
+  releaseDelay = 0,
+} = {}) {
+  const dx = target.col - from.col;
+  const dy = target.row - from.row;
+  const releaseAngle = Math.atan2(-dy, -dx);
+  const wakes = [];
+  for (let i = 1; i <= count; i++) {
+    const t = i / (count + 1);
+    const col = from.col + dx * t;
+    const row = from.row + dy * t + 4 * t * (1 - t) * bend;
+    const localDy = dy + 4 * (1 - 2 * t) * bend;
+    const angleRad = Math.atan2(-localDy, -dx);
+    wakes.push({
+      index: i - 1,
+      progress: Number(t.toFixed(4)),
+      col: Number(col.toFixed(4)),
+      row: Number(row.toFixed(4)),
+      angleRad: Number(angleRad.toFixed(4)),
+      delayMs: Math.round(releaseDelay + duration * t * 0.82),
+      durationMs: 200,
+      opacity: Number((0.88 - (i - 1) * 0.18).toFixed(2)),
+    });
+  }
+  return {
+    releaseBurst: {
+      col: from.col,
+      row: from.row,
+      angleRad: Number(releaseAngle.toFixed(4)),
+      delayMs: releaseDelay,
+      durationMs: 180,
+    },
+    footDust: {
+      col: Number((from.col + (dx < 0 ? 0.24 : -0.24)).toFixed(4)),
+      row: Number((from.row + 0.42).toFixed(4)),
+      flipX: dx < 0,
+      delayMs: releaseDelay,
+      durationMs: 210,
+    },
+    wakes,
+  };
+}
+
+const GU_ROW_BY_KIND = Object.freeze({
+  moonlight: 0,
+  whirl: 1,
+  needles: 2,
+  blood: 3,
+  'huyet-nguyet': 3,
+});
+
+function tile(value) {
+  return `calc(var(--tile) * ${value})`;
+}
+
+function cel(col, maxCol, rowIndex = 0, maxRow = 1) {
+  const xPct = maxCol > 0 ? (col * 100) / maxCol : 0;
+  const yPct = maxRow > 0 ? (rowIndex * 100) / maxRow : 0;
+  return {
+    backgroundPosition: `${xPct}% ${yPct}%`,
+    easing: 'steps(1, end)',
+  };
+}
+
+export function playBeastKingTremor(field, plane, effectsLayer, reducedMotion, {
+  dustPoints = [{ col: 3.2, row: 10.2 }, { col: 5.4, row: 10.6 }, { col: 7.8, row: 11.1 }],
+  onComplete,
+} = {}) {
+  const timers = new Set();
+  const animations = new Set();
+
+  function cleanup() {
+    for (const id of timers) clearTimeout(id);
+    timers.clear();
+    for (const anim of animations) {
+      anim.onfinish = null;
+      anim.cancel();
+    }
+    animations.clear();
+    field?.classList.remove('beast-king-quake');
+  }
+
+  if (reducedMotion?.matches) {
+    if (onComplete) onComplete();
+    return { stop: cleanup };
+  }
+
+  for (const step of BEAST_KING_TREMOR_STEPS) {
+    const timer = setTimeout(() => {
+      timers.delete(timer);
+      if (field) {
+        field.classList.toggle('beast-king-quake', step.danger >= 0.15);
+        const shake = field.animate(buildTremorKeyframes(step.amplitudePx, step.step === 4 ? 12 : 8), {
+          duration: step.durationMs,
+          easing: 'ease-out',
+        });
+        animations.add(shake);
+        shake.onfinish = () => {
+          animations.delete(shake);
+          if (step.step === 4) field.classList.remove('beast-king-quake');
+        };
+      }
+      if (effectsLayer) {
+        dustPoints.forEach((pt, idx) => {
+          const node = document.createElement('span');
+          node.className = 'rampart-fx-tremor';
+          node.style.left = tile(pt.col);
+          node.style.top = tile(pt.row);
+          const dust = document.createElement('i');
+          dust.className = 'tremor-dust-art';
+          node.append(dust);
+          if (step.lightning && idx <= 1) {
+            const arc = document.createElement('i');
+            arc.className = 'tremor-lightning-art';
+            node.append(arc);
+            const arcAnim = arc.animate(Array.from({ length: 8 }, (_, c) => cel(c, 7, 1, 1)), {
+              duration: 460,
+            });
+            animations.add(arcAnim);
+          }
+          effectsLayer.append(node);
+          const dustAnim = dust.animate(Array.from({ length: 8 }, (_, c) => cel(c, 7, 0, 1)), {
+            duration: 520,
+          });
+          animations.add(dustAnim);
+          dustAnim.onfinish = () => {
+            animations.delete(dustAnim);
+            node.remove();
+          };
+        });
+      }
+    }, step.delayMs);
+    timers.add(timer);
+  }
+
+  const last = BEAST_KING_TREMOR_STEPS.at(-1);
+  const doneTimer = setTimeout(() => {
+    timers.delete(doneTimer);
+    field?.classList.remove('beast-king-quake');
+    if (onComplete) onComplete();
+  }, last.delayMs + last.durationMs);
+  timers.add(doneTimer);
+
+  return { stop: cleanup };
+}
+
+export function createKimChungDefense(field, plane, effectsLayer, reducedMotion) {
+  let root;
+  let backArt;
+  let frontArt;
+  let impactArt;
+  let rippleArt;
+  let clashArt;
+  const timers = new Set();
+  const animations = new Set();
+
+  function clearTimers() {
+    for (const id of timers) clearTimeout(id);
+    timers.clear();
+    for (const anim of animations) {
+      anim.onfinish = null;
+      anim.cancel();
+    }
+    animations.clear();
+    field?.classList.remove('anime-impact-a', 'anime-impact-b');
+    root?.classList.remove('bell-bloom');
+  }
+
+  function ensureMounted(post) {
+    if (!root && plane) {
+      root = document.createElement('div');
+      root.className = 'kim-chung-unit';
+      root.setAttribute('aria-hidden', 'true');
+      backArt = document.createElement('i');
+      backArt.className = 'kim-chung-back';
+      frontArt = document.createElement('i');
+      frontArt.className = 'kim-chung-front';
+      impactArt = document.createElement('i');
+      impactArt.className = 'kim-chung-impact-art';
+      rippleArt = document.createElement('i');
+      rippleArt.className = 'kim-chung-ripple-art';
+      clashArt = document.createElement('i');
+      clashArt.className = 'kim-chung-clash-art';
+      root.append(backArt, frontArt, rippleArt, clashArt, impactArt);
+      plane.append(root);
+    }
+    if (root && post) {
+      root.style.left = tile(post.col);
+      root.style.top = tile(post.row);
+    }
+  }
+
+  function startSustainLoop() {
+    if (!root || reducedMotion?.matches) return;
+    backArt.hidden = false;
+    frontArt.hidden = false;
+    const backLoop = backArt.animate(Array.from({ length: 8 }, (_, c) => cel(c, 7, 1, 4)), {
+      duration: 640,
+      iterations: Infinity,
+    });
+    const frontLoop = frontArt.animate(Array.from({ length: 8 }, (_, c) => cel(c, 7, 2, 4)), {
+      duration: 640,
+      iterations: Infinity,
+    });
+    animations.add(backLoop);
+    animations.add(frontLoop);
+  }
+
+  function activate(post) {
+    clearTimers();
+    ensureMounted(post);
+    if (!root) return;
+    impactArt.hidden = true;
+    rippleArt.hidden = true;
+    clashArt.hidden = true;
+    backArt.hidden = true;
+    frontArt.hidden = false;
+    if (reducedMotion?.matches) {
+      backArt.hidden = false;
+      Object.assign(backArt.style, cel(0, 7, 1, 4));
+      Object.assign(frontArt.style, cel(0, 7, 2, 4));
+      return;
+    }
+    const castAnim = frontArt.animate(Array.from({ length: 6 }, (_, c) => cel(c, 7, 0, 4)), {
+      duration: 420,
+    });
+    animations.add(castAnim);
+    castAnim.onfinish = () => {
+      animations.delete(castAnim);
+      startSustainLoop();
+    };
+  }
+
+  function triggerHit(post, { shatter = false, onComplete } = {}) {
+    clearTimers();
+    ensureMounted(post);
+    if (!root) return;
+    const schedule = buildAnimeImpactSchedule();
+    if (reducedMotion?.matches) {
+      Object.assign(frontArt.style, cel(0, 7, shatter ? 4 : 3, 4));
+      if (onComplete) onComplete();
+      return schedule;
+    }
+
+    impactArt.hidden = false;
+    rippleArt.hidden = false;
+    clashArt.hidden = false;
+
+    // Frame A: Stark monochrome B&W + gold core anime impact
+    const tA = setTimeout(() => {
+      timers.delete(tA);
+      field?.classList.add('anime-impact-a');
+      Object.assign(impactArt.style, cel(0, 7, 0, 2));
+      Object.assign(clashArt.style, cel(0, 7, 2, 2));
+    }, schedule.animeFrameA.startMs);
+    timers.add(tA);
+
+    // Frame B: Inverted pitch-black / blazing white-gold anime speed-lines
+    const tB = setTimeout(() => {
+      timers.delete(tB);
+      field?.classList.remove('anime-impact-a');
+      field?.classList.add('anime-impact-b');
+      Object.assign(impactArt.style, cel(1, 7, 0, 2));
+      Object.assign(clashArt.style, cel(1, 7, 2, 2));
+    }, schedule.animeFrameB.startMs);
+    timers.add(tB);
+
+    // Blinding Golden Bell Flash + Sonic Bronze Shockwave + Camera Kick
+    const tFlash = setTimeout(() => {
+      timers.delete(tFlash);
+      field?.classList.remove('anime-impact-a', 'anime-impact-b');
+      root.classList.add('bell-bloom');
+      if (field) {
+        const kick = field.animate(buildTremorKeyframes(9, 6), { duration: 240, easing: 'ease-out' });
+        animations.add(kick);
+      }
+      const bellRow = shatter ? 4 : 3;
+      if (shatter) backArt.hidden = true;
+      const bellAnim = frontArt.animate(Array.from({ length: 6 }, (_, c) => cel(c, 7, bellRow, 4)), {
+        duration: shatter ? 495 : 455,
+        fill: 'forwards',
+      });
+      const flashAnim = impactArt.animate([2, 3, 4, 5, 6, 7].map(c => cel(c, 7, 0, 2)), {
+        duration: 360,
+      });
+      const rippleAnim = rippleArt.animate(Array.from({ length: 8 }, (_, c) => cel(c, 7, 1, 2)), {
+        duration: schedule.sonicRipple.durationMs,
+      });
+      const clashAnim = clashArt.animate([2, 3, 4, 5, 6, 7].map(c => cel(c, 7, 2, 2)), {
+        duration: 320,
+      });
+      animations.add(bellAnim);
+      animations.add(flashAnim);
+      animations.add(rippleAnim);
+      animations.add(clashAnim);
+      bellAnim.onfinish = () => {
+        animations.delete(bellAnim);
+        root.classList.remove('bell-bloom');
+        impactArt.hidden = true;
+        rippleArt.hidden = true;
+        clashArt.hidden = true;
+        if (!shatter) startSustainLoop();
+        if (onComplete) onComplete();
+      };
+    }, schedule.goldenFlash.startMs);
+    timers.add(tFlash);
+
+    return schedule;
+  }
+
+  function stop() {
+    clearTimers();
+    root?.remove();
+    root = undefined;
+  }
+
+  return { activate, triggerHit, stop };
+}
+
+export function spawnEnhancedGuCast(effectsLayer, reducedMotion, {
+  kind = 'moonlight',
+  from,
+  target,
+  bend = 0,
+  duration = 260,
+  releaseDelay = 0,
+} = {}) {
+  const schedule = buildGuWakeSchedule({ from, target, bend, duration, releaseDelay });
+  if (!effectsLayer || reducedMotion?.matches) return schedule;
+  const row = GU_ROW_BY_KIND[kind] ?? 0;
+
+  // 1. Palm Release Muzzle Burst
+  const burstNode = document.createElement('span');
+  burstNode.className = `rampart-gu-fx release-burst ${kind}`;
+  burstNode.style.left = tile(schedule.releaseBurst.col);
+  burstNode.style.top = tile(schedule.releaseBurst.row);
+  const burstArt = document.createElement('i');
+  burstArt.style.rotate = `${schedule.releaseBurst.angleRad}rad`;
+  burstNode.append(burstArt);
+  effectsLayer.append(burstNode);
+  burstNode.animate([{ opacity: 1 }, { opacity: 1, offset: 0.75 }, { opacity: 0 }], {
+    duration: schedule.releaseBurst.durationMs,
+    delay: schedule.releaseBurst.delayMs,
+    fill: 'both',
+  });
+  const bAnim = burstArt.animate([0, 1, 2, 3].map(c => cel(c, 7, row, 4)), {
+    duration: schedule.releaseBurst.durationMs,
+    delay: schedule.releaseBurst.delayMs,
+  });
+  bAnim.onfinish = () => burstNode.remove();
+
+  // 2. Caster Foot Back-Draft Dust
+  const dustNode = document.createElement('span');
+  dustNode.className = 'rampart-gu-fx foot-dust';
+  dustNode.style.left = tile(schedule.footDust.col);
+  dustNode.style.top = tile(schedule.footDust.row);
+  const dustArt = document.createElement('i');
+  if (schedule.footDust.flipX) dustArt.style.transform = 'scaleX(-1)';
+  dustNode.append(dustArt);
+  effectsLayer.append(dustNode);
+  dustNode.animate([{ opacity: 0.92 }, { opacity: 0 }], {
+    duration: schedule.footDust.durationMs,
+    delay: schedule.footDust.delayMs,
+    fill: 'both',
+  });
+  const dAnim = dustArt.animate([0, 1, 2, 3].map(c => cel(c, 7, 4, 4)), {
+    duration: schedule.footDust.durationMs,
+    delay: schedule.footDust.delayMs,
+  });
+  dAnim.onfinish = () => dustNode.remove();
+
+  // 3. Staggered Flight Qi Wake / Afterimages
+  for (const w of schedule.wakes) {
+    const wakeNode = document.createElement('span');
+    wakeNode.className = `rampart-gu-fx flight-wake ${kind}`;
+    wakeNode.style.left = tile(w.col);
+    wakeNode.style.top = tile(w.row);
+    const wakeArt = document.createElement('i');
+    wakeArt.style.rotate = `${w.angleRad}rad`;
+    wakeNode.append(wakeArt);
+    effectsLayer.append(wakeNode);
+    wakeNode.animate([{ opacity: 0 }, { opacity: w.opacity, offset: 0.2 }, { opacity: 0 }], {
+      duration: w.durationMs,
+      delay: w.delayMs,
+      fill: 'both',
+    });
+    const wAnim = wakeArt.animate([4, 5, 6, 7].map(c => cel(c, 7, row, 4)), {
+      duration: w.durationMs,
+      delay: w.delayMs,
+    });
+    wAnim.onfinish = () => wakeNode.remove();
+  }
+
+  return schedule;
+}
+
+export function spawnEnhancedGuImpact(effectsLayer, reducedMotion, { target, angleRad = 0 } = {}) {
+  if (!effectsLayer || reducedMotion?.matches || !target) return;
+  const flashNode = document.createElement('span');
+  flashNode.className = 'rampart-gu-fx hit-flash';
+  flashNode.style.left = tile(target.col);
+  flashNode.style.top = tile(target.row);
+  const flashArt = document.createElement('i');
+  flashArt.style.rotate = `${angleRad}rad`;
+  flashNode.append(flashArt);
+  effectsLayer.append(flashNode);
+  flashNode.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'both' });
+  const fAnim = flashArt.animate([4, 5, 6, 7].map(c => cel(c, 7, 4, 4)), { duration: 160 });
+  fAnim.onfinish = () => flashNode.remove();
+}
