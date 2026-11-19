@@ -1,0 +1,109 @@
+/* Cinematic Combat & Gu VFX Styles for Thú triều Thanh Mao Sơn (Act 1) */
+
+.field-window.beast-king-quake::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: radial-gradient(circle at 38% 52%, transparent 56%, #781c1448 84%, #b52b1d75 100%);
+  animation: beast-king-peril-pulse 280ms ease-in-out infinite alternate;
+}
+
+@keyframes beast-king-peril-pulse {
+  from { opacity: 0.45; }
+  to { opacity: 0.95; }
+}
+
+/* 2-Step Anime Impact Frame Screen Filters (Kim Chung Tráo Block / Shatter) */
+.field-window.anime-impact-a {
+  filter: contrast(2.85) saturate(0.16) brightness(1.32);
+}
+
+.field-window.anime-impact-b {
+  filter: invert(1) hue-rotate(180deg) contrast(3.1) brightness(1.15);
+}
+
+/* Beast King Seismic Tremor Dust & Ground Lightning */
+.rampart-fx-tremor {
+  position: absolute;
+  width: calc(var(--tile) * 1.35);
+  aspect-ratio: 1;
+  transform: translate(-50%, -72%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.rampart-fx-tremor i {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background: url("assets/rampart/tremor-dust.png") 0 0 / 800% 200% no-repeat;
+}
+
+/* Kim Chung Tráo Golden Bell Dome + Anime Impact Overlay */
+.kim-chung-unit {
+  position: absolute;
+  width: calc(var(--tile) * 2.0);
+  aspect-ratio: 1;
+  transform: translate(-50%, -85%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.kim-chung-unit.bell-bloom {
+  filter: brightness(1.85) drop-shadow(0 0 8px #ffe46b) drop-shadow(0 0 18px #e8a825);
+}
+
+.kim-chung-back,
+.kim-chung-front {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background: url("assets/rampart/kim-chung-trao.png") 0 0 / 800% 500% no-repeat;
+}
+
+.kim-chung-back {
+  z-index: 1;
+  opacity: 0.88;
+}
+
+.kim-chung-front {
+  z-index: 3;
+}
+
+.kim-chung-impact-art,
+.kim-chung-ripple-art,
+.kim-chung-clash-art {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  transform: scaleX(-1);
+  image-rendering: pixelated;
+  background: url("assets/rampart/kim-chung-impact.png") 0 0 / 800% 300% no-repeat;
+}
+
+/* Enhanced Gu Cast Release Burst, Foot Back-Draft, Flight Wake & Hit Flash */
+.rampart-gu-fx {
+  position: absolute;
+  width: calc(var(--tile) * 1.32);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+}
+
+.rampart-gu-fx.foot-dust {
+  width: calc(var(--tile) * 1.15);
+  transform: translate(-50%, -81%);
+  z-index: 2;
+}
+
+.rampart-gu-fx i {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(-1);
+  image-rendering: pixelated;
+  background: url("assets/rampart/gu-cast-fx.png") 0 0 / 800% 500% no-repeat;
+}
