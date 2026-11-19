@@ -21,11 +21,11 @@
         <legend>Chọn nhân vật</legend>
         <div class="character-options">
           <label><input type="radio" name="hero" value="huyen-bao" checked>
-            <img src="assets/huyen-bao-selection.png" width="128" height="128" alt="">
+            <span class="hero-stage"><img src="assets/huyen-bao-selection.png" width="128" height="128" alt=""></span>
             <strong>Huyền bào</strong><span>Nam cổ sư</span>
           </label>
           <label><input type="radio" name="hero" value="ao-reu">
-            <img src="assets/ao-reu-selection.png" width="128" height="128" alt="">
+            <span class="hero-stage"><img src="assets/ao-reu-selection.png" width="128" height="128" alt=""></span>
             <strong>Áo rêu</strong><span>Nữ cổ sư</span>
           </label>
         </div>
@@ -34,19 +34,37 @@
     </form>
     <section class="garden-frame" id="ceremony-stage" aria-label="Hang Nguyệt Lan" hidden>
       <div class="ceremony-hud">
-        <div><span class="label">Độ sâu</span><strong><span id="depth">0</span> bước</strong></div>
-        <div><span class="label">Tư chất</span><strong id="grade">Chưa khai khiếu</strong></div>
-        <label><span class="label">Sức chống áp lực</span><progress id="resolve" max="27" value="27"></progress></label>
+        <div class="hud-stat">
+          <span class="label">Độ sâu</span>
+          <strong><span id="depth">0</span> <small>/ 49 bước</small></strong>
+        </div>
+        <div class="hud-stat hud-grade">
+          <span class="label">Tư chất</span>
+          <strong id="grade">Chưa khai khiếu</strong>
+          <div class="tier-track" id="tier-track" aria-hidden="true">
+            <span data-tier="10">Đinh</span>
+            <span data-tier="20">Bính</span>
+            <span data-tier="30">Ất</span>
+            <span data-tier="40">Giáp</span>
+          </div>
+        </div>
+        <div class="hud-stat hud-hope">
+          <span class="label">Hy Vọng Cổ (<span id="hope-count">0</span>/7)</span>
+          <div class="hope-pips" id="hope-pips" role="img" aria-label="0 trên 7 cụm Hy Vọng Cổ">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
       </div>
       <canvas id="garden" tabindex="0" aria-label="Bản đồ hang Nguyệt Lan" aria-describedby="garden-hint"></canvas>
-      <div class="narration">
+      <div class="narration" id="narration-bar" aria-live="polite">
+        <span class="narration-tag">Nhân Tổ truyện</span>
         <p id="story-line" role="status"></p>
-        <button class="subtle" id="story-continue" type="button" hidden>Tiếp tục</button>
       </div>
       <div class="result" id="ceremony-result" hidden>
         <div class="result-panel">
           <p class="region" id="result-depth"></p>
           <h2 id="result-grade" tabindex="-1"></h2>
+          <p class="result-hope" id="result-hope"></p>
           <p id="result-note"></p>
           <div class="result-actions">
             <button class="subtle" id="retry" type="button">Thử lại</button>

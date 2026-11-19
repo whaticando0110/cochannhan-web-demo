@@ -3,47 +3,94 @@ body.ceremony { background: #101619; }
 .ceremony-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
 .ceremony-head h1 { font-size: clamp(1.55rem, 4vw, 2.9rem); }
 .ceremony-head .nav-link { flex-shrink: 0; }
+
 .character-select { max-width: 650px; margin: clamp(18px, 7svh, 84px) auto 0; text-align: center; }
 .character-select fieldset { margin: 0 0 18px; padding: 0; border: 0; }
 .character-select legend { margin: 0 auto 16px; color: #e6dbc3; font: 1.4rem var(--display); }
 .character-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
 .character-options label {
-  display: grid; place-items: center; padding: 15px 8px; border: 1px solid #465953; border-radius: 5px;
-  background: radial-gradient(ellipse at 50% 40%, #2c4a44, #182727 72%); color: #e7ddc3; cursor: pointer;
+  display: grid; place-items: center; padding: 18px 10px 16px; border: 1px solid #465953; border-radius: 6px;
+  background: radial-gradient(ellipse at 50% 42%, #2b4640, #162324 74%); color: #e7ddc3; cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
+.character-options label:hover { border-color: #8ea99a; }
 .character-options label:has(:checked) { border-color: #e3ce9b; box-shadow: inset 0 0 0 1px #e3ce9b; }
 .character-options label:has(:focus-visible) { outline: 2px solid #cce6a5; outline-offset: 3px; }
-.character-options input { accent-color: #d8c48d; margin: 0; }
-.character-options img { width: min(128px, 100%); height: auto; image-rendering: pixelated; }
+.character-options input { accent-color: #d8c48d; margin: 0 0 8px; }
+.hero-stage {
+  position: relative; width: 128px; height: 96px; overflow: hidden; display: grid; place-items: end center; margin-bottom: 6px;
+}
+.hero-stage::after {
+  content: ""; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+  width: 48px; height: 10px; border-radius: 50%; background: rgba(8, 13, 15, 0.62); pointer-events: none;
+}
+.character-options img {
+  position: relative; z-index: 1; width: 128px; height: 128px; margin-top: -24px;
+  object-fit: cover; object-position: 50% 92%; image-rendering: pixelated;
+}
 .character-options strong { font: 1.3rem var(--display); }
-.character-options span { color: #c3cebd; margin-top: 4px; font-size: .87rem; }
+.character-options span:last-child { color: #c3cebd; margin-top: 4px; font-size: .87rem; }
+
 .garden-frame { position: relative; border: 1px solid #536d69; background: #121f24; border-radius: 7px; overflow: hidden; }
-.ceremony-hud { display: grid; grid-template-columns: minmax(76px, .7fr) minmax(110px, 1fr) 1.3fr; gap: 13px; padding: 11px 16px; border-bottom: 1px solid #506862; }
-.ceremony-hud strong { display: block; color: #e2f0dc; font-size: 1rem; line-height: 1.2; }
-.ceremony-hud .label { display: block; color: #afc8c2; font-size: .79rem; margin-bottom: 5px; }
-.ceremony-hud progress { display: block; width: 100%; height: 9px; accent-color: #c4dfa0; }
-.ceremony-hud progress::-webkit-progress-bar { background: #2c4342; }
-.ceremony-hud progress::-webkit-progress-value { background: #c4dfa0; }
+.ceremony-hud {
+  display: grid; grid-template-columns: minmax(110px, .7fr) minmax(170px, 1.35fr) minmax(115px, .95fr);
+  gap: 14px; align-items: start; padding: 11px 16px; border-bottom: 1px solid #506862;
+}
+.hud-stat strong { display: block; color: #e2f0dc; font-size: 1rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.hud-stat strong small { font-size: .78rem; font-weight: 500; color: #9cb4ae; }
+.ceremony-hud .label { display: block; color: #afc8c2; font-size: .79rem; margin-bottom: 4px; }
+.tier-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; max-width: 240px; }
+.tier-track span {
+  text-align: center; font-size: .68rem; letter-spacing: .02em; padding: 2px 4px; border-radius: 3px;
+  color: #7c9690; background: #1a2c2e; border: 1px solid #2b4244; transition: color 180ms, background-color 180ms, border-color 180ms;
+}
+.tier-track span.reached { color: #f4e6be; background: #2d463e; border-color: #93b89a; }
+.tier-track span.current { color: #12211d; background: #cde3b5; border-color: #e7f4d7; font-weight: 700; }
+
+.hope-pips { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.hope-pips i {
+  width: 12px; height: 12px; border-radius: 50%; display: block;
+  background: #1b2c30; border: 1px solid #355052; transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
+}
+.hope-pips i.lit {
+  background: radial-gradient(circle at 40% 35%, #fcf7df, #cbb06e 72%);
+  border-color: #e5d295; box-shadow: 0 0 6px rgba(229, 210, 149, 0.55);
+}
+
 #garden { display: block; width: 100%; height: clamp(288px, 64svh, 576px); image-rendering: pixelated; background: #0d1217; touch-action: manipulation; cursor: crosshair; }
 #garden:focus-visible { outline: 2px solid #cce6a5; outline-offset: -2px; }
+
 .narration {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px 16px; background: #211f18; border-top: 1px solid #77674c; color: #f0dfb2;
+  display: flex; align-items: baseline; gap: 11px;
+  padding: 10px 16px; background: #1e1c16; border-top: 1px solid #6b5d44; color: #f0dfb2;
+  transition: background-color 320ms ease;
 }
-.narration p { font: 1rem/1.45 var(--display); }
-.narration button { flex-shrink: 0; min-height: 40px; color: #f0dfb2; }
+.narration.pulse { background: #2c271c; }
+.narration-tag {
+  flex-shrink: 0; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; border: 1px solid #756445; color: #d8c28d; background: #282319;
+}
+.narration p { font: 0.98rem/1.48 var(--display); color: #f1e3bc; }
+
 .garden-foot { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 16px; border-top: 1px solid #506862; background: #18282b; }
 .garden-foot p { color: #c8ddd2; font-size: .9rem; line-height: 1.4; }
 .garden-foot button { flex-shrink: 0; }
 .garden-foot button:disabled { opacity: .5; cursor: default; }
+.result-hope { margin: 4px 0 8px !important; font-size: .86rem; color: #dcd0a6 !important; }
 .result-actions { display: flex; justify-content: center; gap: 10px; }
+
 @media (max-width: 540px) {
   .ceremony-shell { width: calc(100% - 16px); padding-top: 10px; }
   .ceremony-head { margin-bottom: 9px; }
-  .ceremony-hud { gap: 6px; padding: 9px 7px; }
-  .ceremony-hud strong { font-size: .87rem; }
+  .ceremony-hud { grid-template-columns: minmax(78px, .8fr) 1.3fr; gap: 8px 10px; padding: 9px 10px; }
+  .hud-hope { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hud-hope .label { margin-bottom: 0; }
+  .hope-pips { margin-top: 0; }
+  .hud-stat strong { font-size: .88rem; }
+  .tier-track { max-width: none; gap: 4px; margin-top: 4px; }
   #garden { height: clamp(256px, 41svh, 304px); }
-  .narration { padding: 8px; gap: 7px; }
-  .garden-foot { padding: 7px; gap: 6px; }
+  .narration { flex-direction: column; gap: 4px; padding: 8px 10px; }
+  .narration p { font-size: .92rem; line-height: 1.4; }
+  .garden-foot { padding: 7px 10px; gap: 6px; }
   .garden-foot p { font-size: .79rem; }
 }
