@@ -2,6 +2,8 @@
 
 Đi tự do từ **Cổ Nguyệt Sơn Trại** qua đường rừng đến **bãi săn Thanh Mao**. Khi chạm trán sói, bản đồ giữ nguyên vị trí và chuyển sang chiến đấu theo lượt. Hạ sói để tiếp tục đi theo lối mòn phía đông.
 
+[Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
+
 ![Cuộc chạm trán với sói trên cùng bản đồ vừa khám phá](docs/forest-encounter.png)
 
 ## Chơi thử

@@ -15,10 +15,9 @@ const lift = [0, 0, 0, 0, 0, 3, 4, 2];
 const kneeLead = [0, 1, 1, 0, 0, 2, 4, 2];
 const weight = [0, 1, 0, -1, 0, 1, 0, -1];
 // Longer reach at contact, folded recovery leg, then a short flight phase.
-const runAnkle = [42, 37, 29, 21, 22, 26, 34, 40];
+const runAnkle = [40, 36, 29, 22, 23, 26, 32, 37];
 const runLift = [0, 0, 0, 2, 5, 8, 7, 3];
 const runKnee = [1, 3, 2, 0, 2, 6, 8, 4];
-const runWeight = [0, 2, 1, -1, 0, 2, 1, -1];
 const idleSources = [0, 1, 2, 3, 4, 5, 1, 0];
 const breath = [0, 0, 1, 1, 1, 0, 0, 0];
 const clamp = n => Math.min(1, Math.max(0, n));
@@ -27,7 +26,9 @@ function paint(column, row, x, y, sx, sy, sourceFrame = 0) {
   sx = Math.round(sx);
   sy = Math.round(sy);
   if (sx < 0 || sx >= size || sy < 0 || sy >= size) return;
-  const read = 4 * (sy * source.width + sourceFrame * size + sx);
+  const sourceX = (sourceFrame % 8) * size + sx;
+  const sourceY = Math.floor(sourceFrame / 8) * size + sy;
+  const read = 4 * (sourceY * source.width + sourceX);
   if (!source.data[read + 3]) return;
   source.data.copy(pixels, 4 * ((row * size + y) * width + column * size + x), read, read + 4);
 }
@@ -50,9 +51,26 @@ function leg(frame, row, near) {
   }
 }
 
+function paintRun(frame) {
+  const runRow = 3;
+  leg(frame, runRow, false);
+  leg(frame, runRow, true);
+  // The approved lunge poses supply a lowered shoulder and bent forearm.
+  // Keep the face intact and flex the trailing robe independently of the feet.
+  const pose = [20, 20, 21, 25, 20, 20, 21, 25][frame];
+  const hemSwing = [0, 1, 2, 1, 0, -1, -2, -1][frame];
+  for (let y = 23; y <= 54; y++) {
+    for (let x = 9; x <= 49; x++) {
+      const looseCloth = clamp((y - 40) / 12) * clamp((32 - x) / 14);
+      const sx = x + 4 + looseCloth * hemSwing;
+      const sy = y + looseCloth * Math.abs(hemSwing);
+      if (sy <= 52) paint(frame, runRow, x, y, sx, sy, pose);
+    }
+  }
+}
+
 for (let frame = 0; frame < 8; frame++) {
-  for (const row of [0, 1, 3]) {
-    const running = row === 3;
+  for (const row of [0, 1]) {
     leg(frame, row, false);
     leg(frame, row, true);
     for (let y = 17; y < 57; y++) {
@@ -60,11 +78,8 @@ for (let frame = 0; frame < 8; frame++) {
         const arm = clamp((y - 34) / 14) * clamp((32 - x) / 5);
         const hem = clamp((y - 41) / 14);
         const swing = Math.sin(frame * Math.PI / 4);
-        const lean = running ? 4 * clamp((51 - y) / 20) : 0;
-        const sleeveSwing = running ? 4.5 : 2.4;
-        const trail = running ? 2.8 : 1;
-        const sx = x - 1 - lean + sleeveSwing * swing * arm + hem * (trail + Math.cos(frame * Math.PI / 4));
-        const sy = y - (running ? runWeight : weight)[frame] * (1 - hem);
+        const sx = x - 1 + 2.4 * swing * arm + hem * (1 + Math.cos(frame * Math.PI / 4));
+        const sy = y - weight[frame] * (1 - hem);
         if (sy <= 53 + (sx < 30 ? 1 : 0)) paint(frame, row, x, y, sx, sy);
       }
     }
@@ -74,5 +89,6 @@ for (let frame = 0; frame < 8; frame++) {
     paint(frame, 2, x, y, x + cuff * Math.sin(frame * Math.PI / 4),
       y + breath[frame] * clamp((57 - y) / 17), idleSources[frame]);
   }
+  paintRun(frame);
 }
 fs.writeFileSync(path.join(assets, 'huyen-bao-travel.png'), encode(pixels, width, size * rows));
