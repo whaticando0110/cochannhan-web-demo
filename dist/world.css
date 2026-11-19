@@ -56,6 +56,12 @@
 .beast .unit-shadow { border-color: #ffad85; }
 .rampart-wolf .unit-shadow { border-color: transparent; }
 .rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
+.wall-impact {
+  position: absolute; left: 99%; top: 40%; width: 2px; height: 2px;
+  opacity: 0; background: #d1ac78;
+  box-shadow: -4px -3px #947d58, 1px -7px #b89264, 4px 2px #806344,
+    -8px 1px #ad9165, -3px 5px #c1a87f, 2px 7px #93744b;
+}
 .cursor { z-index: 5; border: 2px solid #fff3bf; box-shadow: inset 0 0 0 2px #222c26aa, 0 0 11px #2b382f; }
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }

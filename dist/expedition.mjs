@@ -237,15 +237,20 @@ function createRampartWolves() {
     unit.hidden = false;
     unit.style.left = `calc(var(--tile) * ${col})`;
     unit.style.top = `calc(var(--tile) * ${row})`;
+    const impact = document.createElement('i');
+    impact.className = 'wall-impact';
+    unit.append(impact);
     plane.append(unit);
-    rampartWolves.push(createWolfMotion(unit, motion));
+    rampartWolves.push(createWolfMotion(unit, motion, impact));
   }
 }
 
 function animateRampartWolves() {
   rampartWolves.forEach((wolf, index) => {
     const { col, row, startCol, startRow } = RAMPART_WOLVES[index];
-    wolf.run(startCol - col, startRow - row, { duration: 1500, delay: 280 + index * 160 });
+    wolf.run(startCol - col, startRow - row, {
+      duration: 1500, delay: 280 + index * 290, after: wolf.attackWall,
+    });
   });
 }
 
