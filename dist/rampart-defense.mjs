@@ -1,4 +1,7 @@
-import { RAMPART_GUARD, RAMPART_INSTRUCTOR, RAMPART_MOONWHIRL_GUARD, RAMPART_WOLVES } from './rampart.mjs';
+import {
+  RAMPART_GUARD, RAMPART_INSTRUCTOR, RAMPART_MOONWHIRL_GUARD, RAMPART_WOLVES,
+  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
+} from './rampart.mjs';
 import { MOONLIGHT } from './world.mjs';
 
 const wolfMaxHp = 52;
@@ -18,6 +21,11 @@ function place(node, { col, row }) {
 
 function cel(index, last, row = 0) {
   return { backgroundPosition: `${index * 100 / last}% ${row}%`, easing: 'steps(1, end)' };
+}
+
+function guardPalm(post, x, y) {
+  // Mirror the measured 128px hand socket and match the size and baseline of .guard-art.
+  return { col: post.col + .5 - 1.46 * (x / 128 - .5), row: post.row + .89 - 1.46 * (1 - y / 128) };
 }
 
 function addGuard(plane, post, style) {
@@ -45,6 +53,8 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
   const guard = addGuard(plane, RAMPART_GUARD, 'sand-guard');
   const whirlGuard = addGuard(plane, RAMPART_MOONWHIRL_GUARD, 'slate-guard');
   const needleGuard = addGuard(plane, RAMPART_INSTRUCTOR, 'indigo-guard');
+  const northGuard = addGuard(plane, RAMPART_NORTH_REINFORCEMENT, 'russet-guard');
+  const southGuard = addGuard(plane, RAMPART_SOUTH_REINFORCEMENT, 'ivory-guard');
   const effects = document.createElement('div');
   effects.className = 'rampart-defense-effects';
   effects.setAttribute('aria-hidden', 'true');
@@ -86,7 +96,7 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       235, () => blood.node.remove());
   }
 
-  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime }, contact) {
+  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime, chargeFrom = from }, contact) {
     const dx = target.col - from.col;
     const dy = target.row - from.row;
     const whirl = kind === 'whirl';
@@ -103,7 +113,7 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       animate(sprite, poses, { duration: castDuration, delay });
     }
     if (windup && !reducedMotion.matches && kind !== 'needles') {
-      const charge = effect(`${kind} charge`, from, angle);
+      const charge = effect(`${kind} charge`, chargeFrom, angle);
       animate(charge.node, [{ opacity: 0, scale: '.18' }, { opacity: .88, scale: '.32' }],
         { duration: windup - 120, delay: delay + 120 }, () => charge.node.remove());
     }
@@ -125,9 +135,9 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     });
   }
 
-  function damage(index) {
+  function damage(index, amount = MOONLIGHT.damage) {
     if (!health[index]) return false;
-    health[index] = Math.max(0, health[index] - MOONLIGHT.damage);
+    health[index] = Math.max(0, health[index] - amount);
     const { unit, motion } = wolves[index];
     updateWolfHealth(unit, health[index], wolfMaxHp);
     if (!health[index]) motion.fall();
@@ -148,11 +158,15 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     shoot({ from: { col: RAMPART_GUARD.col + .03, row: RAMPART_GUARD.row + .23 },
       sprite: guard, target: targets[0], delay: 2780 }, () => damage(0));
     shoot({ from: { col: RAMPART_INSTRUCTOR.col + .47, row: RAMPART_INSTRUCTOR.row + .05 },
-      sprite: needleGuard, target: targets[0], delay: 3950, kind: 'needles' }, () => damage(0));
-    for (const delay of [3120, 4250]) {
-      shoot({ from: { col: RAMPART_MOONWHIRL_GUARD.col -.04, row: RAMPART_MOONWHIRL_GUARD.row + .30 },
-        sprite: whirlGuard, target: targets[2], delay, kind: 'whirl' }, () => damage(2));
-    }
+      sprite: needleGuard, target: targets[0], delay: 3950, kind: 'needles' }, () => damage(0, 13));
+    shoot({ from: { col: RAMPART_MOONWHIRL_GUARD.col - .04, row: RAMPART_MOONWHIRL_GUARD.row + .30 },
+      sprite: whirlGuard, target: targets[2], delay: 3120, kind: 'whirl' }, () => damage(2));
+    shoot({ from: guardPalm(RAMPART_NORTH_REINFORCEMENT, 96, 63.5),
+      chargeFrom: guardPalm(RAMPART_NORTH_REINFORCEMENT, 67.5, 69.5),
+      sprite: northGuard, target: targets[0], delay: 4520 }, () => damage(0, 13));
+    shoot({ from: guardPalm(RAMPART_SOUTH_REINFORCEMENT, 94, 64.5),
+      chargeFrom: guardPalm(RAMPART_SOUTH_REINFORCEMENT, 68.5, 66),
+      sprite: southGuard, target: targets[2], delay: 4250, kind: 'whirl' }, () => damage(2));
   }
 
   return {

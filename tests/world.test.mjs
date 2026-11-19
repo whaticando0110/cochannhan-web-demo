@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
-import { chooseRampartFrame, EAST_CORNER, RAMPART_EDGE, RAMPART_GUARD, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
+import {
+  chooseRampartFrame, EAST_CORNER, RAMPART_EDGE, RAMPART_GUARD, RAMPART_WOLVES, STAIRS,
+  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
+} from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
   advanceHunt, clearShot, createWorld, findPath, hitHunt, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk, TRAINING_POST,
@@ -39,12 +42,16 @@ test('the west palisade runs longer than the north palisade and joins the south 
   }
 });
 
-test('the guard occupies the raised west deck and leaves room to walk past', () => {
+test('the guard posts occupy the raised west deck and leave room to walk past', () => {
+  const posts = [RAMPART_GUARD, RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT];
+  for (const { col, row } of posts) {
+    const cell = toCell(col, row);
+    assert.equal(TERRAIN[cell].rampart.elevation, 1);
+    assert.equal(isWalkable(cell), false);
+    assert.equal(isWalkable(toCell(col + 1, row)), true);
+  }
   const { col, row } = RAMPART_GUARD;
   const guardCell = toCell(col, row);
-  assert.equal(TERRAIN[guardCell].rampart.elevation, 1);
-  assert.equal(isWalkable(guardCell), false);
-  assert.equal(isWalkable(toCell(col + 1, row)), true);
   const world = createWorld();
   const beforePost = { ...world, player: { ...world.player, cell: toCell(col, row - 1) } };
   const route = findPath(beforePost, toCell(col, row + 1));

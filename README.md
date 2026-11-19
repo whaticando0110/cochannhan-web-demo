@@ -6,6 +6,8 @@ Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Đi
 
 Trên lũy có nữ cổ sư áo nâu dùng **Nguyệt Quang**, nam cổ sư áo xanh đá dùng **Nguyệt Toàn**, và nữ cổ sư áo chàm phóng **Tùng Châm**. Họ đánh hai mục tiêu bên sườn. Người chơi tập trên con Điện Lang ở giữa. Thanh sinh lực nằm trên đầu sói, còn máu bắn từ vị trí trúng đòn. Các atlas bay, va chạm và máu lấy từ bộ asset Antigravity. Trong truyện, Thanh Thư dùng nguyệt nhận xanh lục bay cong và phóng lá thông từ tóc. [Chương 22](https://truyenhoan.com/co-chan-nhan/chuong-22.html) · [Chương 104](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-104.html) · [Chương 141](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-141)
 
+Hai cổ sư tiếp viện đứng tại chốt. Người áo nâu đỏ ở đầu bắc phóng **Nguyệt Quang**. Người áo ngà thắt đai xanh ở phía nam phóng **Nguyệt Toàn**. Mỗi bộ sprite có bốn khung 128 × 128 cho đứng, thu tay lấy đà, phóng và thu thế. Hiệu ứng dùng lại các atlas của Antigravity.
+
 Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước cổng đông, nối lũy bắc với đoạn tường sát cổng.
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)

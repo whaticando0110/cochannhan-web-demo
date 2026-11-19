@@ -81,6 +81,8 @@
 }
 .slate-guard .guard-art { background-image: url("assets/rampart/guard-slate.png"); }
 .indigo-guard .guard-art { background: url("assets/rampart/guard-indigo.png") 0 0 / 100% 100% no-repeat; }
+.russet-guard .guard-art { background-image: url("assets/rampart/guard-russet.png"); }
+.ivory-guard .guard-art { background-image: url("assets/rampart/guard-ivory.png"); }
 .rampart-defense-effects { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .rampart-moon {
   position: absolute; width: calc(var(--tile) * .70); aspect-ratio: 1;
