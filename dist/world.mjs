@@ -82,7 +82,7 @@ export function isWalkable(cell) {
 }
 
 function canExploreStep(from, to) {
-  if (!isWalkable(to)) return false;
+  if (!isWalkable(from) || !isWalkable(to)) return false;
   const source = TERRAIN[from].rampart;
   const target = TERRAIN[to].rampart;
   const a = source?.stair;

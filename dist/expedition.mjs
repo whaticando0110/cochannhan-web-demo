@@ -17,7 +17,7 @@ const beast = byId('wolf-unit');
 const cursor = byId('target-cursor');
 const guide = byId('guide');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
-const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Bấm ô để đi';
+const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Giữ Shift để chạy · Bấm ô để đi';
 const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
 
 const keys = {
@@ -45,6 +45,7 @@ let selecting = false;
 let selectedCell = world.player.cell;
 let stepTimer;
 let nextStepAt = 0;
+let shiftHeld = false;
 let route = [];
 let markedThreats = [];
 let markedMoves = [];
@@ -81,15 +82,19 @@ function surfaceTexture() {
   }
 }
 
-function drawRampartOrnament(layer, cell, { frame: id, flip, width, height }) {
+function drawRampartOrnament(layer, cell, { frame: id, flip, width, height, uphill }) {
   const { col, row } = toPoint(cell);
   const frame = atlas.frames[id];
   const node = document.createElement('span');
   node.className = 'map-ornament';
-  node.style.left = `calc(var(--tile) * ${col})`;
-  node.style.top = `calc(var(--tile) * ${row})`;
-  node.style.width = `calc(var(--tile) * ${width ?? frame.width / atlas.tileSize})`;
-  node.style.height = `calc(var(--tile) * ${height ?? frame.height / atlas.tileSize})`;
+  // Center the two-tile artwork on the lane. Its rails occupy the adjacent blocked cells.
+  const insetX = uphill === 'north' ? 0.5 : 0;
+  const insetY = uphill === 'west' ? 0.5 : 0;
+  node.style.left = `calc(var(--tile) * ${col + insetX})`;
+  node.style.top = `calc(var(--tile) * ${row + insetY})`;
+  node.style.width = `calc(var(--tile) * ${(width ?? frame.width / atlas.tileSize) - 2 * insetX})`;
+  node.style.height = `calc(var(--tile) * ${(height ?? frame.height / atlas.tileSize) - 2 * insetY})`;
+  if (uphill) node.style.zIndex = '1';
   if (flip) node.style.transform = 'scaleX(-1)';
   paintRampartFrame(node, id);
   layer.append(node);
@@ -295,7 +300,8 @@ function step(target) {
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
   if (delta) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
-  const duration = onStairs ? 630 : 485;
+  const groundDuration = shiftHeld ? 280 : 485;
+  const duration = onStairs ? 630 : groundDuration;
   field.style.setProperty('--step-time', duration + 'ms');
   nextStepAt = performance.now() + duration;
   heroMotion.travel(onStairs, duration);
@@ -314,10 +320,16 @@ function step(target) {
   return true;
 }
 
+function afterCurrentStep(advance) {
+  const remaining = Math.ceil(nextStepAt - performance.now());
+  if (remaining > 0) stepTimer = setTimeout(() => afterCurrentStep(advance), remaining);
+  else advance();
+}
+
 function followRoute() {
   if (!route.length) return;
   const target = route.shift();
-  if (step(target) && route.length) stepTimer = setTimeout(followRoute, motion.matches ? 45 : Math.max(0, nextStepAt - performance.now()));
+  if (step(target) && route.length) afterCurrentStep(followRoute);
 }
 
 function go(target) {
@@ -326,7 +338,7 @@ function go(target) {
   route = findPath(world, target);
   if (route.length) {
     byId('field-hint').textContent = walkHint;
-    followRoute();
+    afterCurrentStep(followRoute);
   } else {
     setHint('Ô này bị chắn hoặc chưa có đường tới.', true);
   }
@@ -393,6 +405,7 @@ field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
 
 map.addEventListener('click', (event) => {
+  shiftHeld = event.shiftKey;
   const tile = event.target.closest('button[data-cell]');
   if (!tile) return;
   const cell = Number(tile.dataset.cell);
@@ -403,6 +416,7 @@ map.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  shiftHeld = event.shiftKey;
   if (event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
   if (Object.hasOwn(keys, key)) {
@@ -411,7 +425,7 @@ document.addEventListener('keydown', (event) => {
     if (world.mode === 'explore') {
       if (event.repeat && performance.now() < nextStepAt) return;
       stopWalk();
-      step(world.player.cell + keys[key]);
+      afterCurrentStep(() => step(world.player.cell + keys[key]));
     } else {
       const candidate = selectedCell + keys[key];
       if (neighbors(selectedCell, MAP).includes(candidate) && insideHunt(candidate)) {
@@ -436,7 +450,11 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-guide.addEventListener('click', () => {
+document.addEventListener('keyup', event => { shiftHeld = event.shiftKey; });
+window.addEventListener('blur', () => { shiftHeld = false; });
+
+guide.addEventListener('click', (event) => {
+  shiftHeld = event.shiftKey;
   field.focus({ preventScroll: true });
   go(world.cleared ? CONTINUE : toPoint(world.player.cell).col < 14 ? GATE : TRAIL_ENTRY);
 });

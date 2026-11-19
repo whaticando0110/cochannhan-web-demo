@@ -14,7 +14,7 @@ npm run preview
 
 Mở [bản demo local](http://127.0.0.1:4173). Bản đồ có **42 × 20 ô**. Dùng WASD, phím mũi tên hoặc chạm một ô để đi tới đó. Các ô có vật cản chặn đường. Nếu đang đi theo một đường đã chọn, nhân vật dừng ở ô bắt đầu cuộc chạm trán.
 
-Ở sơn trại, đi lên một trong hai cầu thang để tới sàn lũy gỗ. Nhân vật xuống sân bằng cầu thang trước khi tiếp tục qua cổng đông. Mỗi lượt **Chơi lại** chọn biến thể nền theo mã riêng và giữ vị trí các tuyến đường, cọc và bậc thang.
+Giữ **Shift** khi khám phá để chạy trên sân, sàn lũy hoặc đường rừng. Cả hai cầu thang có lối đi rộng một ô ở chính giữa. Lên và xuống dùng cùng tốc độ bước, kể cả khi giữ Shift. Mỗi lượt **Chơi lại** chọn biến thể nền theo mã riêng và giữ vị trí các tuyến đường, cọc và bậc thang.
 
 Khi giao chiến, ô đỏ cho biết vùng sói sắp đánh. Mỗi hành động kết thúc lượt và sói phản ứng theo ý định hiển thị. Nếu gục, chọn **Thử lại trận** để trở về lúc sói xuất hiện.
 

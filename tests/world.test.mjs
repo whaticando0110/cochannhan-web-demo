@@ -44,8 +44,8 @@ test('walls block direct movement, and the village has space to explore off the 
 test('both modeled stairs connect the ground and the rampart in both directions', () => {
   for (const stair of STAIRS) {
     const isNorth = stair.uphill === 'north';
-    const lower = isNorth ? toCell(stair.col, stair.row + stair.height) : toCell(stair.col + stair.width, stair.row);
-    const upper = isNorth ? toCell(stair.col, stair.row - 1) : toCell(stair.col - 1, stair.row);
+    const lower = isNorth ? toCell(stair.col + 1, stair.row + stair.height) : toCell(stair.col + stair.width, stair.row + 1);
+    const upper = isNorth ? toCell(stair.col + 1, stair.row - 1) : toCell(stair.col - 1, stair.row + 1);
     const world = createWorld();
     const start = { ...world, player: { ...world.player, cell: lower } };
     const climb = findPath(start, upper);
@@ -54,6 +54,12 @@ test('both modeled stairs connect the ground and the rampart in both directions'
     for (const cell of climb.slice(0, -1)) {
       assert.equal(TERRAIN[cell].rampart.stair, stair);
       current = walk(current, cell);
+      const side = isNorth ? 1 : MAP.columns;
+      for (const rail of [cell - side, cell + side]) {
+        assert.equal(isWalkable(rail), false);
+        assert.strictEqual(walk(current, rail), current);
+        assert.deepEqual(findPath(world, rail), []);
+      }
     }
     current = walk(current, upper);
     assert.equal(current.player.cell, upper);

@@ -3,10 +3,10 @@ import atlas from './assets/rampart/atlas.mjs';
 export const RAMPART_EDGE = 14;
 export const STAIRS = Object.freeze([
   {
-    frame: 'stairs-up-north', col: 10, row: 7, width: 2, height: 2, uphill: 'north',
+    frame: 'stairs-up-north', col: 9, row: 7, width: 3, height: 2, uphill: 'north',
   },
   {
-    frame: 'stairs-up-west', col: 6, row: 12, width: 2, height: 2, uphill: 'west',
+    frame: 'stairs-up-west', col: 6, row: 11, width: 2, height: 3, uphill: 'west',
   },
 ]);
 
@@ -27,6 +27,7 @@ export function rampartTile(col, row, mapRows, gateRow) {
   const canopy = col <= 1 || row <= 1 || row === mapRows - 1;
   const inside = row > fenceRow && col > fenceCol;
   const stair = stairAt(col, row);
+  const rail = stair && (stair.uphill === 'north' ? col !== stair.col + 1 : row !== stair.row + 1);
   let family = inside ? 'stone' : canopy ? 'bamboo' : 'mud';
   let elevation = 0;
   let blocked = boundary || canopy;
@@ -46,7 +47,7 @@ export function rampartTile(col, row, mapRows, gateRow) {
     if (row <= deckBottom || col <= deckRight) {
       family = row <= deckBottom ? 'deck-east' : 'deck-south';
       elevation = 1;
-    } else if (!stair) {
+    } else if (!stair || rail) {
       if (row === deckBottom + 1) ornaments.push({ frame: 'platform-edge-south' });
       if (col === deckRight + 1) ornaments.push({ frame: 'platform-edge-east' });
     }
@@ -59,7 +60,7 @@ export function rampartTile(col, row, mapRows, gateRow) {
   if (stair && stair.col === col && stair.row === row) ornaments.push(stair);
   if (boundary) family = 'bamboo';
   if (col === RAMPART_EDGE && entrance) family = 'stone';
-  return { family, elevation, blocked, stair, ornaments };
+  return { family, elevation, blocked: blocked || Boolean(rail), stair, ornaments };
 }
 
 export function chooseRampartFrame(family, cell, seed) {
