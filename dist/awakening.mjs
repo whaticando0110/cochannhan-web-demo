@@ -1,4 +1,4 @@
-import { aptitude, baseStepMs, cellId, createCeremony, finalDepth, flowerBank, height,
+import { aptitude, awakeningStorageKey, baseStepMs, cellId, createCeremony, finalDepth, flowerBank, height,
   hopeCells, move, routeTo, seaEssenceLabel, seaEssenceRatio, stepPace, terrain, width } from './awakening-rules.mjs';
 
 const byId = id => document.getElementById(id);
@@ -232,7 +232,7 @@ function resize() {
 
 function saveOutcome(grade, seaPct) {
   try {
-    sessionStorage.setItem('cochannhan.awakening', JSON.stringify({
+    sessionStorage.setItem(awakeningStorageKey, JSON.stringify({
       hero: selectedHero,
       depth: state.depth,
       grade,

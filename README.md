@@ -2,7 +2,7 @@
 
 Sau **Đại điển Khai Khiếu**, lên lũy tây **Cổ Nguyệt Sơn Trại** để tập dùng Nguyệt Quang. Qua cổng đông để tới **bãi săn Thanh Mao**, nơi Điện Lang áp sát và vồ trong thời gian thực. Hạ sói để tiếp tục đi theo lối mòn phía đông.
 
-Khi trở về Sơn Trại, giáo tập **Cổ Nguyệt Tĩnh Nghi** đón người chơi ở chân cầu thang. Chân dung và lời thoại hiện ở đáy màn hình. Chọn **Tới vị trí bắn** để đi theo lộ trình hướng dẫn, hoặc bấm **Esc** để tự đi.
+Sau khi xác nhận ở Đại điển, màn hình hiện **Vài năm sau đại điển** và **Thú triều tập kích sơn trại**. Chọn **Tiếp tục** để qua ngay. Giáo tập **Cổ Nguyệt Tĩnh Nghi**, Tam chuyển đỉnh phong, đón người chơi ở chân cầu thang. Chân dung và lời thoại hiện ở đáy màn hình. Chọn **Tới vị trí bắn** để đi theo lộ trình hướng dẫn, hoặc bấm **Esc** để tự đi.
 
 Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Điện Lang** chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây. Chúng thay nhau vồ vào cọc gỗ, làm bật dăm rồi lùi lấy đà. Con gặp ở bãi săn dùng cùng tạo hình và có động tác đứng, chạy áp sát, cắn, vồ và giật mình khi trúng đòn.
 
@@ -14,7 +14,7 @@ Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 
-Khi mở demo, chọn **Huyền bào** hoặc **Áo rêu** để vào Đại điển Khai Khiếu. Vượt sông ngầm, đọc chuyện Nhân Tổ và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. Nhân vật đã chọn theo bạn khi trở về Sơn Trại. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
+Khi mở demo, chọn **Huyền bào** hoặc **Áo rêu** để vào Đại điển Khai Khiếu. Vượt sông ngầm, đọc chuyện Nhân Tổ và đi sâu vào vườn Nguyệt Lan tới khi Hy Vọng Cổ hội tụ. Sơn Trại tiếp nhận skin và độ sâu, rồi dùng cùng quy tắc với Đại điển để hiển thị tư chất và dung lượng Nguyên Hải trên HUD. Có thể mở trực tiếp `village.html` để thử lũy tây khi chưa chơi qua Đại điển. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
 
 ![Cuộc chạm trán với sói trên cùng bản đồ vừa khám phá](docs/forest-encounter.png)
 

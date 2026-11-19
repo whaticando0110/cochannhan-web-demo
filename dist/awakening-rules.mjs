@@ -5,6 +5,7 @@ export const flowerBank = 6;
 export const finalDepth = 49;
 export const minAwakeningDepth = 12;
 export const baseStepMs = 145;
+export const awakeningStorageKey = 'cochannhan.awakening';
 
 // The seven clusters trace a scenic winding route through the Moon Orchid sea.
 const clusters = [[8, 4], [14, 3], [20, 3], [26, 4], [32, 5], [38, 5], [44, 4]];

@@ -110,6 +110,15 @@
 #cast-moon { margin-left: auto; white-space: nowrap; }
 #cast-moon small { margin-left: 5px; color: #bcb99e; }
 #cast-moon[aria-disabled=true] { opacity: .58; }
+.raid-intro {
+  position: fixed; inset: 0; width: min(740px, calc(100% - 30px)); max-width: none; margin: auto;
+  padding: clamp(20px, 6vw, 48px) 16px; border: 0; color: #dbc49b; background: transparent; text-align: center;
+}
+.raid-intro::backdrop { background: #0c1411; }
+.raid-intro h2 {
+  margin: .28em 0 .72em; color: #f4d9a3; font: 600 clamp(1.8rem, 5vw, 3.2rem) / 1.12 var(--display);
+  text-wrap: balance;
+}
 .mentor-dialog {
   position: fixed; inset: auto 0 0; width: min(760px, calc(100% - 24px));
   max-width: none; max-height: calc(100dvh - 30px); margin: 0 auto clamp(12px, 4vh, 36px);
@@ -128,12 +137,14 @@
   background: radial-gradient(ellipse at 50% 38%, #33493b, #233129 72%);
 }
 .mentor-copy h2 { color: #f4dca9; font: 600 1.25rem var(--display); margin-bottom: 6px; }
+.mentor-rank { display: inline-block; margin-inline-start: .36rem; color: #d7c7a1; font: 500 .78rem system-ui, sans-serif; }
 .mentor-copy p { font-size: .96rem; line-height: 1.52; }
 #mentor-next { align-self: end; }
 @media (max-width: 540px) {
   .mentor-dialog-content { grid-template-columns: 72px minmax(0, 1fr); gap: 9px 11px; }
   .mentor-portrait { width: 72px; height: 72px; align-self: start; }
   .mentor-copy h2 { font-size: 1.05rem; }
+  .mentor-rank { margin-inline-start: 0; }
   .mentor-copy p { font-size: .89rem; }
   #mentor-next { grid-column: 2; }
 }
@@ -194,6 +205,7 @@
   gap: 4px; width: 189px; padding: 8px 11px 8px 48px; background: linear-gradient(100deg,#101c18f7,#14221ee8);
   border-left: 2px solid #b39c64; box-shadow: 0 2px 6px #08130b70; }
 .hero-heading h2 { font: 600 1rem var(--display); color:#f2deb1; }
+.awakening-summary { color: #c2d9c6; font-size: .76rem; line-height: 1.25; text-wrap: balance; }
 .hero-heading .hero-portrait { left: 4px; top: 8px; width: 40px; height: 48px; }
 .hero-ao-reu .hero-heading .hero-portrait { background-image: url("assets/ao-reu-selection.png"); }
 .field-vital .vital-note { display:flex; justify-content:space-between; font-size:.77rem; }

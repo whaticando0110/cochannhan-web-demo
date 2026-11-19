@@ -1,6 +1,8 @@
 import { coordinate } from './combat.mjs';
+import { awakeningStorageKey } from './awakening-rules.mjs';
 import { createHeroMotion, MOONLIGHT_RELEASE_MS, releasePalm } from './hero-motion.mjs';
 import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
+import { readVillageArrival } from './village-arrival.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
@@ -21,21 +23,36 @@ const heroSprite = hero.querySelector('.sprite');
 const beast = byId('wolf-unit');
 const castButton = byId('cast-moon');
 const guide = byId('guide');
+const introDialog = byId('raid-intro');
 const mentorDialog = byId('mentor-dialog');
 const mentorNext = byId('mentor-next');
 const mentorLines = [
-  'Con vừa khai khiếu, đúng lúc Điện Lang kéo tới lũy tây. Lên cầu thang đi, ta chỉ con cách dùng Nguyệt Quang.',
+  'Nhóc con! Ngươi muốn chết hay sao mà đứng ngây ra đó, hãy lên phụ giúp đi.',
   'Tới ô đánh dấu, bấm F hoặc chạm nút Nguyệt Quang. Con Điện Lang ở giữa là mục tiêu của con. Chờ cổ hồi rồi bắn thêm một phát.',
 ];
 let mentorLine = 0;
+let introTimer;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
 const runToggle = byId('run-toggle');
 const runPreference = 'cochannhan.explore.run';
-const wearsAoReu = new URLSearchParams(location.search).get('hero') === 'ao-reu';
+let savedAwakening = null;
+try {
+  savedAwakening = sessionStorage.getItem(awakeningStorageKey);
+} catch {
+  // The ceremony passes the result in the URL if browser storage is unavailable.
+}
+const arrival = readVillageArrival(location.search, savedAwakening);
+const wearsAoReu = arrival.hero === 'ao-reu';
 if (wearsAoReu) {
   document.body.classList.add('hero-ao-reu');
   byId('hero-name').textContent = 'Cổ sư Áo rêu';
+}
+if (arrival.outcome) {
+  const { grade, seaPct } = arrival.outcome;
+  const summary = byId('awakening-summary');
+  summary.textContent = `${grade} · Nguyên Hải ${seaPct}%`;
+  summary.hidden = false;
 }
 const heroMotion = createHeroMotion(heroSprite, motion, wearsAoReu);
 const wolfMotion = createWolfMotion(beast, motion);
@@ -255,17 +272,26 @@ function showMentorLine() {
   mentorNext.textContent = mentorLine === mentorLines.length - 1 ? 'Tới vị trí bắn' : 'Tiếp tục';
 }
 
+function showMentor() {
+  mentorLine = 0;
+  mentorDialog.returnValue = '';
+  showMentorLine();
+  mentorDialog.showModal();
+  aimCamera();
+}
+
 function beginArrival() {
   rampartDefense.stop();
   for (const wolf of rampartWolves) {
     wolf.motion.stop();
     wolf.unit.hidden = true;
   }
-  mentorLine = 0;
-  mentorDialog.returnValue = '';
-  showMentorLine();
-  mentorDialog.showModal();
-  aimCamera();
+  if (!arrival.outcome) {
+    showMentor();
+    return;
+  }
+  introDialog.showModal();
+  if (!motion.matches) introTimer = setTimeout(() => introDialog.close(), 4500);
 }
 
 function place(node, cell, size) {
@@ -579,6 +605,10 @@ const rampartDefense = createRampartDefense(plane, rampartWolves, motion, (index
   render();
 });
 castButton.addEventListener('click', castMoon);
+introDialog.addEventListener('close', () => {
+  clearTimeout(introTimer);
+  showMentor();
+});
 mentorNext.addEventListener('click', () => {
   if (++mentorLine === mentorLines.length) mentorDialog.close('guide');
   else showMentorLine();
@@ -603,7 +633,7 @@ map.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', event => {
-  if (mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+  if (introDialog.open || mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
   if (key === 'shift') {
     if (!event.repeat) pendingShiftTap = true;
