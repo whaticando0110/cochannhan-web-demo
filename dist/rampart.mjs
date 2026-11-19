@@ -17,6 +17,16 @@ const deckBottom = 6;
 const deckRight = 5;
 
 export const RAMPART_FOREST_WIDTH = 5;
+export const RAMPART_GUARD = Object.freeze({ col: fenceCol + 1, row: 10 });
+export const RAMPART_MOONWHIRL_GUARD = Object.freeze({ col: fenceCol + 1, row: 13 });
+export const RAMPART_INSTRUCTOR = Object.freeze({ col: fenceCol + 1, row: 8 });
+export const RAMPART_NORTH_REINFORCEMENT = Object.freeze({ col: fenceCol + 1, row: 6 });
+export const RAMPART_SOUTH_REINFORCEMENT = Object.freeze({ col: fenceCol + 1, row: 15 });
+export const RAMPART_MENTOR = Object.freeze({ col: 8, row: 11 });
+const guardPosts = [
+  RAMPART_GUARD, RAMPART_MOONWHIRL_GUARD, RAMPART_INSTRUCTOR,
+  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT, RAMPART_MENTOR,
+];
 export const RAMPART_WOLVES = Object.freeze([
   { col: fenceCol - 1, row: 7, startCol: -2.6, startRow: 6.1 },
   { col: fenceCol - 1, row: 10, startCol: -2, startRow: 10.2 },
@@ -51,9 +61,10 @@ export function rampartTile(col, row, mapRows, gateRow) {
   const stair = stairAt(col, row);
   const rail = stair && (stair.uphill === 'north' ? col !== stair.col + 1 : row !== stair.row + 1);
   const wolfAtRest = RAMPART_WOLVES.some(wolf => col === wolf.col && row === wolf.row);
+  const guardAtPost = guardPosts.some(post => post.col === col && post.row === row);
   let family = inside ? 'stone' : canopy ? 'bamboo' : 'mud';
   let elevation = 0;
-  let blocked = boundary || canopy || wolfAtRest;
+  let blocked = boundary || canopy || wolfAtRest || guardAtPost;
   const ornaments = [];
 
   if (row === eastReturn && col >= RAMPART_EDGE) {

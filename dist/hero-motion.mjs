@@ -25,13 +25,33 @@ const guard = keyframes([
 ], guardDuration);
 const ready = keyframes([[0, 13]], 470);
 
+export const MOONLIGHT_RELEASE_MS = 330;
+const castTimes = [0, 48, 112, 200, MOONLIGHT_RELEASE_MS, 406, 475, 536];
+const recoveryTimes = [0, 30, 60, 110, 155, 215, 285, 370];
+
+export function releasePalm(useAoReu) {
+  return useAoReu ? [99.5 / 128, 72.5 / 128] : [97.5 / 128, 73.5 / 128];
+}
+
+function actionFrames(times, duration, row) {
+  const frames = times.map((time, i) => ({
+    offset: time / duration, backgroundPosition: `${100 * i / 7}% ${row}%`, easing: 'steps(1, end)',
+  }));
+  return [...frames, { ...frames.at(-1), offset: 1 }];
+}
+
+const castClip = actionFrames(castTimes, 610, 0);
+const hitClip = actionFrames(recoveryTimes, 420, 100);
+
 export function createHeroMotion(sprite, reducedMotion, useAoReu = false) {
   let current;
   let restTimer;
+  let stride;
+  let pendingHit = false;
 
   function stop() {
     clearTimeout(restTimer);
-    sprite.classList.remove('at-rest', 'striding', 'climbing', 'running', 'guarding');
+    sprite.classList.remove('at-rest', 'striding', 'climbing', 'running', 'guarding', 'casting', 'taking-hit');
     if (!current) return;
     current.onfinish = null;
     current.cancel();
@@ -40,19 +60,23 @@ export function createHeroMotion(sprite, reducedMotion, useAoReu = false) {
 
   function stand() {
     stop();
+    stride = undefined;
+    pendingHit = false;
     if (!reducedMotion.matches) sprite.classList.add('at-rest');
   }
 
   function travel(gait, duration) {
     if (reducedMotion.matches) return;
+    stride = { gait, end: performance.now() + duration };
+    if (sprite.classList.contains('casting') || sprite.classList.contains('taking-hit')) return;
     if (!sprite.classList.contains('striding')) {
       stop();
       sprite.classList.add('striding');
     }
     sprite.classList.toggle('climbing', gait === 'climb');
     sprite.classList.toggle('running', gait === 'run');
-    const stride = gait === 'run' ? 0.95 : 0.68;
-    sprite.style.setProperty('--gait-period', Math.round(duration * stride) + 'ms');
+    const gaitRatio = gait === 'run' ? 0.95 : 0.68;
+    sprite.style.setProperty('--gait-period', Math.round(duration * gaitRatio) + 'ms');
     clearTimeout(restTimer);
     restTimer = setTimeout(stand, duration + 32);
   }
@@ -86,7 +110,37 @@ export function createHeroMotion(sprite, reducedMotion, useAoReu = false) {
     current.onfinish = stand;
   }
 
+  function playAction(className, frames, duration) {
+    if (reducedMotion.matches) return;
+    stop();
+    sprite.classList.add(className);
+    current = sprite.animate(frames, { duration, fill: 'both' });
+    current.onfinish = () => {
+      if (pendingHit) {
+        pendingHit = false;
+        hit();
+      } else if (stride?.end > performance.now()) {
+        stop();
+        travel(stride.gait, stride.end - performance.now());
+      } else stand();
+    };
+  }
+
+  function cast() {
+    playAction('casting', castClip, 610);
+    return current;
+  }
+
+  function hit() {
+    if (sprite.classList.contains('casting') && current.currentTime < MOONLIGHT_RELEASE_MS) {
+      pendingHit = true;
+      return;
+    }
+    pendingHit = false;
+    playAction('taking-hit', hitClip, 420);
+  }
+
   reducedMotion.addEventListener('change', stand);
   stand();
-  return { stand, travel, playBattle };
+  return { stand, travel, playBattle, cast, hit };
 }

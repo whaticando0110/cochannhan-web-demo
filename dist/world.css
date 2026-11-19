@@ -47,15 +47,96 @@
 .world-tile.reachable.threat::before { background: #ffce93; }
 .field-window.in-battle .world-tile.outside-hunt::after { background: #14201d45; }
 .field-window.walking .field-world { transition: transform var(--step-time, 105ms) linear; }
-.field-window.ready .field-unit { transition: transform var(--step-time, 105ms) linear; }
+.field-window.ready .field-unit.hero { transition: transform var(--step-time, 105ms) linear; }
 .field-unit, .field-marker { position: absolute; left: 0; top: 0; width: var(--tile); height: var(--tile); pointer-events: none; }
 .field-unit { z-index: 3; }
 .field-unit .sprite { position: absolute; left: 50%; bottom: 13%; width: 118%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); filter: drop-shadow(0 0 1px #b6ffdd) drop-shadow(1px 2px 1px #171f19); }
-.field-unit .wolf-art { position: absolute; left: 50%; bottom: 11%; width: 106%; aspect-ratio: 48 / 44; transform: translateX(-50%) scaleX(var(--face, 1)); background: url("assets/world/wolf.png") center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #ffe4bb) drop-shadow(1px 2px 1px #290e12); }
+.field-unit .wolf-art { position: absolute; left: 50%; bottom: 0; width: 133%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); background: url("assets/world/dien-lang.png") 0 0 / 400% 400% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #dbccad) drop-shadow(1px 2px 1px #17141d); }
 .unit-shadow { position: absolute; bottom: 11%; left: 18%; width: 64%; height: 20%; border: 1px solid #94e9c0; border-radius: 50%; background: #0c13179e; }
 .beast .unit-shadow { border-color: #ffad85; }
 .rampart-wolf .unit-shadow { border-color: transparent; }
-.rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
+.rampart-wolf .wolf-art { transform-origin: 50% 84%; filter: drop-shadow(1px 2px 1px #141914c9); }
+.rampart-wolf.wolf-down .wolf-art {
+  scale: 1 .58; translate: -15% 8%; filter: brightness(.72) drop-shadow(1px 2px 1px #141914c9);
+}
+.wall-impact {
+  position: absolute; left: 99%; top: 40%; width: 2px; height: 2px;
+  opacity: 0; background: #d1ac78;
+  box-shadow: -4px -3px #947d58, 1px -7px #b89264, 4px 2px #806344,
+    -8px 1px #ad9165, -3px 5px #c1a87f, 2px 7px #93744b;
+}
+.rampart-guard .unit-shadow { border-color: transparent; }
+.mentor .unit-shadow { border-color: #c4aa77b5; }
+.mentor-art {
+  position: absolute; width: 146%; left: 50%; bottom: 11%; aspect-ratio: 1;
+  transform: translateX(-50%); image-rendering: pixelated;
+  background: url("assets/rampart/tinh-nghi-sprite.png") center / contain no-repeat;
+  filter: drop-shadow(1px 2px 1px #101913);
+}
+.wolf-health {
+  appearance: none; position: absolute; left: 19%; top: 19%; width: 62%; height: 4px;
+  border: 1px solid #21181b; background: #462b35; accent-color: #d76b68;
+}
+.wolf-health::-webkit-progress-bar { background: #462b35; }
+.wolf-health::-webkit-progress-value { background: #e47770; }
+.wolf-health::-moz-progress-bar { background: #e47770; }
+.guard-art {
+  position: absolute; left: 50%; bottom: 11%; width: 146%; aspect-ratio: 1;
+  transform: translateX(-50%) scaleX(-1);
+  background: url("assets/rampart/son-trai-nu-nguyet-quang.png") 0 0 / 400% 100% no-repeat;
+  image-rendering: pixelated; filter: drop-shadow(1px 2px 1px #171712db);
+}
+.slate-guard .guard-art { background-image: url("assets/rampart/guard-slate.png"); }
+.indigo-guard .guard-art { background: url("assets/rampart/guard-indigo.png") 0 0 / 100% 100% no-repeat; }
+.russet-guard .guard-art { background-image: url("assets/rampart/guard-russet.png"); }
+.ivory-guard .guard-art { background-image: url("assets/rampart/guard-ivory.png"); }
+.rampart-defense-effects { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.rampart-moon {
+  position: absolute; width: calc(var(--tile) * .70); aspect-ratio: 1;
+  transform: translate(-50%, -50%); opacity: 0;
+}
+.rampart-moon i {
+  position: absolute; inset: 0; transform: scaleX(-1); image-rendering: pixelated;
+  background: url("assets/rampart/nguyet-quang.png") 0 0 / 800% 200% no-repeat;
+}
+.rampart-moon.whirl { width: calc(var(--tile) * 1.35); }
+.rampart-moon.whirl i { background-image: url("assets/rampart/nguyet-toan.png"); }
+.rampart-moon.needles { width: calc(var(--tile) * 1.25); }
+.rampart-moon.needles i { background-image: url("assets/rampart/tung-cham.png"); }
+.rampart-moon.blood { width: calc(var(--tile) * .95); }
+.rampart-moon.blood i {
+  transform: scaleX(var(--blood-facing)); background: url("assets/rampart/hit-bleed.png") 0 0 / 400% 100% no-repeat;
+}
+#cast-moon { margin-left: auto; white-space: nowrap; }
+#cast-moon small { margin-left: 5px; color: #bcb99e; }
+#cast-moon[aria-disabled=true] { opacity: .58; }
+.mentor-dialog {
+  position: fixed; inset: auto 0 0; width: min(760px, calc(100% - 24px));
+  max-width: none; max-height: calc(100dvh - 30px); margin: 0 auto clamp(12px, 4vh, 36px);
+  padding: 0; border: 1px solid #9b804f; border-radius: 4px;
+  color: #e6dec4; background: #17231e;
+  box-shadow: 0 12px 40px #060a08b8, inset 0 0 0 3px #202c23;
+}
+.mentor-dialog::backdrop { background: #0c141155; }
+.mentor-dialog-content {
+  display: grid; grid-template-columns: 104px 1fr auto; align-items: center;
+  gap: 14px; padding: 12px 14px 12px 12px;
+}
+.mentor-portrait {
+  display: block; width: 104px; height: 104px; image-rendering: pixelated;
+  border: 1px solid #79694b;
+  background: radial-gradient(ellipse at 50% 38%, #33493b, #233129 72%);
+}
+.mentor-copy h2 { color: #f4dca9; font: 600 1.25rem var(--display); margin-bottom: 6px; }
+.mentor-copy p { font-size: .96rem; line-height: 1.52; }
+#mentor-next { align-self: end; }
+@media (max-width: 540px) {
+  .mentor-dialog-content { grid-template-columns: 72px minmax(0, 1fr); gap: 9px 11px; }
+  .mentor-portrait { width: 72px; height: 72px; align-self: start; }
+  .mentor-copy h2 { font-size: 1.05rem; }
+  .mentor-copy p { font-size: .89rem; }
+  #mentor-next { grid-column: 2; }
+}
 .cursor { z-index: 5; border: 2px solid #fff3bf; box-shadow: inset 0 0 0 2px #222c26aa, 0 0 11px #2b382f; }
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }
@@ -89,6 +170,26 @@
   background-image: url("assets/ao-reu-guard.png");
   background-size: 100% 100%;
 }
+.field-unit .sprite:is(.casting, .taking-hit) {
+  background-image: url("assets/huyen-bao-combat.png");
+  background-size: 800% 200%;
+}
+.hero-ao-reu .field-unit .sprite:is(.casting, .taking-hit) {
+  background-image: url("assets/ao-reu-combat.png");
+}
+.field-unit .sprite.casting::after {
+  content: ""; position: absolute; left: 67%; top: 58%; width: 14%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: url("assets/rampart/nguyet-quang.png") 0 0 / 800% 200% no-repeat;
+  opacity: 0; animation: gather-moon 330ms linear;
+}
+.hero-ao-reu .field-unit .sprite.casting::after { left: 69%; top: 57%; }
+@keyframes gather-moon {
+  0%, 30% { opacity: 0; scale: .46; }
+  69% { opacity: .85; scale: .82; }
+  90% { opacity: .95; scale: 1; }
+  100% { opacity: 0; scale: .65; }
+}
 .field-status { position: absolute; z-index: 5; top: 10px; left: 10px; pointer-events: none; display: grid;
   gap: 4px; width: 189px; padding: 8px 11px 8px 48px; background: linear-gradient(100deg,#101c18f7,#14221ee8);
   border-left: 2px solid #b39c64; box-shadow: 0 2px 6px #08130b70; }
@@ -111,18 +212,10 @@
 .trail-guide { margin-left:auto; flex-shrink:0; padding:8px 16px; min-height:40px; color:#251e12; background:#d8c797; border:1px solid #e5d5a5; cursor:pointer; border-radius:3px; font-weight:650; }
 .trail-guide:hover { background:#ebdcaf; }
 .encounter-intent .panel-label { color:#ecb098; }
-.encounter-log { order:2; padding:5px clamp(12px,2vw,28px); font-size:.85rem; color:#d6cba7; }
-.encounter-log summary { cursor:pointer; width:fit-content; }
-.encounter-log ul { padding-left:1rem; }
 .world-layout:has(.in-battle) #objective-card { display:none; }
-.world-actions { grid-area:auto; padding:8px clamp(12px,2vw,28px); border:0; border-radius:0; }
-.world-actions .actions-heading { position:absolute; clip-path:inset(50%); width:1px; height:1px; overflow:hidden; }
-.world-actions .action-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin:0 0 5px; }
-.world-actions .action-card { min-height:44px; }
 .world-frame .field-footer { min-height:26px; padding:4px clamp(12px,2vw,28px); font-size:.82rem; }
 .run-toggle { margin-left:auto; min-height:36px; padding:4px 12px; border:1px solid #576554; border-radius:3px; color:#d5dbc9; background:#1b2920; cursor:pointer; }
 .run-toggle[aria-pressed="true"] { border-color:#cdb67e; color:#f6dfaa; background:#383222; }
-.world-frame:has(.in-battle) .field-footer { display:none; }
 @media(max-width:680px) {
   .journey .seal, .journey .region { display:none; }
   .journey .topbar-inner { flex-wrap:nowrap; gap:5px; }
@@ -137,8 +230,6 @@
   .hero-heading .hero-portrait { left:2px; width:29px; height:36px; }
   #objective-card, .encounter-intent { flex-wrap:wrap; gap:3px 7px; padding:6px 10px; }
   #objective-detail { order:2; width:100%; }
-  .world-actions .action-card { padding:5px; }
-  .world-actions .action-meta span { display:none; }
   .encounter-intent p { width:100%; }
 }
 @media(max-width:360px) {
@@ -146,4 +237,5 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .field-window .field-world, .field-window.ready .field-unit { transition:none !important; }
+  .rampart-defense-effects { visibility: hidden; }
 }

@@ -1,12 +1,14 @@
-import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
-import { createHeroMotion } from './hero-motion.mjs';
+import { coordinate } from './combat.mjs';
+import { createHeroMotion, MOONLIGHT_RELEASE_MS, releasePalm } from './hero-motion.mjs';
+import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
+import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
-  chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_WOLVES, westForestFamily,
+  chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_MENTOR, RAMPART_WOLVES, westForestFamily,
 } from './rampart.mjs';
 import {
-  CONTINUE, FIELD_ACTIONS, GATE, MAP, TERRAIN, TRAIL_ENTRY,
-  createWorld, fight, findPath, insideHunt, locationOf, retryEncounter, toPoint, walk,
+  CONTINUE, GATE, MAP, MOONLIGHT, TERRAIN, TRAIL_ENTRY, TRAINING_POST,
+  advanceHunt, cellDistance, clearShot, createWorld, findPath, hitHunt, insideHunt, locationOf, retryEncounter, toCell, toPoint, walk,
 } from './world.mjs';
 
 const byId = (id) => document.getElementById(id);
@@ -15,9 +17,17 @@ const plane = byId('world-plane');
 const map = byId('map');
 const artwork = byId('map-ornaments');
 const hero = byId('hero-unit');
+const heroSprite = hero.querySelector('.sprite');
 const beast = byId('wolf-unit');
-const cursor = byId('target-cursor');
+const castButton = byId('cast-moon');
 const guide = byId('guide');
+const mentorDialog = byId('mentor-dialog');
+const mentorNext = byId('mentor-next');
+const mentorLines = [
+  'Con vừa khai khiếu, đúng lúc Điện Lang kéo tới lũy tây. Lên cầu thang đi, ta chỉ con cách dùng Nguyệt Quang.',
+  'Tới ô đánh dấu, bấm F hoặc chạm nút Nguyệt Quang. Con Điện Lang ở giữa là mục tiêu của con. Chờ cổ hồi rồi bắn thêm một phát.',
+];
+let mentorLine = 0;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
 const runToggle = byId('run-toggle');
@@ -27,7 +37,8 @@ if (wearsAoReu) {
   document.body.classList.add('hero-ao-reu');
   byId('hero-name').textContent = 'Cổ sư Áo rêu';
 }
-const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion, wearsAoReu);
+const heroMotion = createHeroMotion(heroSprite, motion, wearsAoReu);
+const wolfMotion = createWolfMotion(beast, motion);
 const stepDurations = { walk: 485, run: 280, climb: 630 };
 
 const keys = {
@@ -36,23 +47,13 @@ const keys = {
   arrowright: 1, d: 1,
   arrowdown: MAP.columns, s: MAP.columns,
 };
-const actionNotes = {
-  move: 'Tối đa 2 ô',
-  strike: 'Tầm 1 ô · +1 nguyên',
-  moon: 'Tầm 4 ô · −2 nguyên',
-  guard: 'Giảm sát thương · +1 nguyên',
-};
-const actionHints = {
-  move: 'Đi tối đa 2 ô. Cây, đá và đối thủ chặn đường.',
-  strike: 'Đánh tay không ở ô kế bên và hồi 1 chân nguyên.',
-  moon: 'Dùng 2 chân nguyên để gây 26 sát thương trong tầm 4 ô.',
-  guard: 'Giảm một nửa sát thương trong lượt và hồi 1 chân nguyên.',
-};
-
 const newTrip = () => createWorld({ seed: (Math.random() * 2 ** 32) >>> 0 });
 let world = newTrip();
-let selecting = false;
-let selectedCell = world.player.cell;
+let trainingComplete = false;
+let castReadyAt = 0;
+let regenAt = Infinity;
+let castEpoch = 0;
+let pendingCast;
 let stepTimer;
 let nextStepAt = 0;
 let runEnabled = false;
@@ -64,8 +65,6 @@ try {
 }
 let route = [];
 let markedThreats = [];
-let markedMoves = [];
-const buttons = {};
 const tiles = [];
 const rampartSurfaces = [];
 const rampartWolves = [];
@@ -93,7 +92,7 @@ function renderRunToggle() {
 }
 
 function toggleRun() {
-  if (world.mode !== 'explore') return;
+  if (world.mode === 'defeat') return;
   runEnabled = !runEnabled;
   renderRunToggle();
   announce(runEnabled ? 'Đã bật chạy.' : 'Đã chuyển sang đi bộ.');
@@ -105,8 +104,7 @@ function toggleRun() {
 }
 
 function setHint(message, shouldAnnounce = false) {
-  const hint = world.mode === 'battle' ? 'field-action-hint' : 'field-hint';
-  byId(hint).textContent = message;
+  byId('field-hint').textContent = message;
   if (shouldAnnounce) announce(message);
 }
 
@@ -230,52 +228,44 @@ function createRampartWolves() {
     const unit = beast.cloneNode(true);
     unit.removeAttribute('id');
     unit.classList.add('rampart-wolf');
-    unit.hidden = false;
+    unit.hidden = true;
     unit.style.left = `calc(var(--tile) * ${col})`;
     unit.style.top = `calc(var(--tile) * ${row})`;
+    const impact = document.createElement('i');
+    impact.className = 'wall-impact';
+    unit.append(impact);
     plane.append(unit);
-    rampartWolves.push(unit);
+    rampartWolves.push({ unit, motion: createWolfMotion(unit, motion, impact) });
   }
 }
 
 function animateRampartWolves() {
-  rampartWolves.forEach((unit, index) => {
-    unit.getAnimations().forEach(animation => animation.cancel());
-    if (motion.matches) return;
+  rampartWolves.forEach(({ unit, motion: wolf }, index) => {
     const { col, row, startCol, startRow } = RAMPART_WOLVES[index];
-    unit.style.setProperty('--face', startCol < col ? -1 : 1);
-    unit.animate([
-      { translate: `${100 * (startCol - col)}% ${100 * (startRow - row)}%` },
-      { translate: '0 0' },
-    ], { delay: 280 + index * 160, duration: 1500, easing: 'ease-out', fill: 'backwards' });
+    unit.hidden = false;
+    wolf.run(startCol - col, startRow - row, {
+      duration: 1500, delay: 280 + index * 290, after: wolf.attackWall,
+    });
   });
+  rampartDefense.begin();
 }
 
-function createActions() {
-  for (const [id, action] of Object.entries(FIELD_ACTIONS)) {
-    const node = document.createElement('button');
-    node.type = 'button';
-    node.className = 'action-card';
-    node.dataset.action = id;
-    node.setAttribute('aria-keyshortcuts', action.key);
-    const meta = document.createElement('span');
-    meta.className = 'action-meta';
-    meta.setAttribute('aria-hidden', 'true');
-    const key = document.createElement('kbd');
-    key.textContent = action.key;
-    const details = document.createElement('span');
-    details.textContent = actionNotes[id];
-    meta.append(key, details);
-    const label = document.createElement('b');
-    label.textContent = action.name;
-    node.append(meta, label);
-    node.addEventListener('click', () => chooseAction(id));
-    node.addEventListener('pointerenter', () => {
-      if (world.mode === 'battle' && !selecting) setHint(actionBlock(world.battle, id) || actionHints[id]);
-    });
-    buttons[id] = node;
-    byId('field-action-grid').append(node);
+function showMentorLine() {
+  byId('mentor-line').textContent = mentorLines[mentorLine];
+  mentorNext.textContent = mentorLine === mentorLines.length - 1 ? 'Tới vị trí bắn' : 'Tiếp tục';
+}
+
+function beginArrival() {
+  rampartDefense.stop();
+  for (const wolf of rampartWolves) {
+    wolf.motion.stop();
+    wolf.unit.hidden = true;
   }
+  mentorLine = 0;
+  mentorDialog.returnValue = '';
+  showMentorLine();
+  mentorDialog.showModal();
+  aimCamera();
 }
 
 function place(node, cell, size) {
@@ -292,21 +282,17 @@ function aimCamera() {
   if (!size || !field.clientWidth) return;
   const offset = (point, screen, length, min = 0) =>
     Math.min(Math.max(0, length * size - screen), Math.max(min, (point + 0.5) * size - screen / 2));
-  const lookWest = 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
+  const lookWest = mentorDialog.open ? 0 : 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
   const westEdge = nearRampart ? -RAMPART_FOREST_WIDTH * size : 0;
   const x = offset(col - lookWest, field.clientWidth, MAP.columns, westEdge);
   const y = offset(row, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
+  place(byId('mentor-unit'), toCell(RAMPART_MENTOR.col, RAMPART_MENTOR.row), size);
   place(byId('gate-marker'), GATE, size);
   place(byId('end-marker'), CONTINUE, size);
-  if (!beast.hidden) {
-    place(beast, world.battle.rival.cell, size);
-    const face = toPoint(world.battle.rival.cell).col >= col ? 1 : -1;
-    hero.style.setProperty('--face', face);
-    beast.style.setProperty('--face', face);
-  }
-  if (selecting) place(cursor, selectedCell, size);
+  place(byId('training-marker'), TRAINING_POST, size);
+  if (!beast.hidden) place(beast, world.battle.rival.cell, size);
 }
 
 function meter(name, current, max) {
@@ -317,7 +303,7 @@ function meter(name, current, max) {
 }
 
 function renderObjective() {
-  const inBattle = world.mode === 'battle';
+  const atPost = world.player.cell === TRAINING_POST;
   const pastGate = toPoint(world.player.cell).col >= 14;
   let title = 'Ra cổng đông';
   let detail = 'Qua cổng đông để vào đường rừng.';
@@ -325,87 +311,70 @@ function renderObjective() {
   if (world.mode === 'defeat') {
     title = 'Thử lại cuộc săn';
     detail = world.notice;
-  } else if (inBattle) {
-    title = 'Hạ sói rừng';
-    detail = 'Chọn đường tránh vùng đỏ hoặc dùng Thủ thế. Đánh tay không để hồi chân nguyên.';
+  } else if (world.mode === 'battle') {
+    title = 'Hạ Điện Lang';
+    detail = 'Di chuyển để né ô đỏ. Bấm F hoặc chạm Nguyệt Quang để bắn.';
   } else if (world.reached) {
     title = 'Đã tới lối mòn';
     detail = world.notice;
   } else if (world.cleared) {
     title = 'Đi tiếp về phía đông';
-    detail = 'Sói rừng đã gục. Bạn có thể tự do đi lại qua bãi săn.';
+    detail = 'Điện Lang đã gục. Bạn có thể tự do đi lại qua bãi săn.';
     button = 'Đi tới lối mòn';
   } else if (pastGate) {
     title = 'Tới bãi săn';
-    detail = 'Theo lối đất giữa rừng. Chạm trán thú sẽ bắt đầu lượt ngay trên bản đồ.';
+    detail = 'Theo lối đất giữa rừng tới nơi Điện Lang phục kích.';
     button = 'Theo đường rừng';
+  } else if (!trainingComplete) {
+    title = atPost ? 'Tập phóng Nguyệt Quang' : 'Lên sàn lũy tây';
+    detail = atPost ? 'Bấm F hoặc chạm Nguyệt Quang hai lần để hạ con Điện Lang trước mặt.'
+      : 'Theo cầu thang lên vị trí bắn. Quan sát các cổ sư phòng thủ.';
+    button = 'Tới vị trí bắn';
   }
   byId('objective-title').textContent = title;
   byId('objective-detail').textContent = detail;
   guide.textContent = button;
-  guide.hidden = world.mode !== 'explore' || world.reached;
-}
-
-function renderBattle() {
-  const inBattle = world.mode === 'battle';
-  const defeat = world.mode === 'defeat';
-  const { battle } = world;
-  const intent = battle?.intent;
-  byId('wolf-status').hidden = !inBattle;
-  byId('wolf-intent').hidden = !inBattle;
-  byId('field-actions').hidden = !inBattle;
-  byId('defeat').hidden = !defeat;
-  byId('encounter-log').hidden = !battle;
-  beast.hidden = !inBattle && !defeat;
-
-  if (inBattle) {
-    meter('wolf-hp', battle.rival.hp, battle.rival.maxHp);
-    byId('wolf-intent-name').textContent = intent.name;
-    byId('wolf-intent-detail').textContent = intent.cells.length
-      ? `Sói gây ${intent.damage} sát thương ở vùng đỏ trong lượt này.`
-      : 'Sói sẽ tiến về phía bạn tối đa hai ô.';
-    for (const [id, node] of Object.entries(buttons)) {
-      const reason = actionBlock(battle, id);
-      node.setAttribute('aria-disabled', String(Boolean(reason)));
-      node.title = reason || actionHints[id];
-    }
-  }
-  buttons.move.setAttribute('aria-pressed', String(selecting));
-
-  const log = byId('world-log');
-  log.replaceChildren(...(battle?.report.slice(0, 4) ?? []).map(({ text, tone }) => {
-    const item = document.createElement('li');
-    item.className = tone;
-    item.textContent = text;
-    return item;
-  }));
-  field.classList.toggle('in-battle', inBattle);
-  for (const cell of markedThreats) tiles[cell].classList.remove('threat');
-  for (const cell of markedMoves) tiles[cell].classList.remove('reachable');
-  markedThreats = inBattle ? intent.cells : [];
-  markedMoves = selecting ? moveTargets(battle) : [];
-  for (const cell of markedThreats) tiles[cell].classList.add('threat');
-  for (const cell of markedMoves) tiles[cell].classList.add('reachable');
-  cursor.hidden = !selecting;
+  guide.hidden = world.mode !== 'explore' || world.reached || (atPost && !trainingComplete);
 }
 
 function render() {
-  runToggle.hidden = world.mode !== 'explore';
+  const now = performance.now();
+  const fighting = world.mode === 'battle';
+  const defeated = world.mode === 'defeat';
+  const inTraining = world.player.cell === TRAINING_POST && !trainingComplete && now >= nextStepAt;
+  runToggle.hidden = defeated;
+  castButton.hidden = !fighting && !inTraining;
+  castButton.setAttribute('aria-disabled', String(world.player.qi < MOONLIGHT.cost || now < castReadyAt));
   byId('location').textContent = locationOf(world.player.cell);
   const terrain = TERRAIN[world.player.cell].rampart;
   const level = terrain?.stair ? ' · Cầu thang' : terrain?.elevation ? ' · Sàn lũy' : '';
   byId('coordinates').textContent = `Ô ${coordinate(world.player.cell, MAP.columns)}${level}`;
-  byId('mode').textContent = world.mode === 'battle'
-    ? `Giao chiến · Lượt ${world.battle.turn}` : world.mode === 'defeat' ? 'Thất bại' : 'Khám phá';
+  byId('mode').textContent = fighting ? 'Giao chiến' : defeated ? 'Thất bại' : trainingComplete ? 'Khám phá' : 'Tập phòng thủ';
   meter('world-hp', world.player.hp, world.player.maxHp);
   meter('world-qi', world.player.qi, world.player.maxQi);
+  byId('training-marker').hidden = trainingComplete || world.player.cell === TRAINING_POST;
   byId('end-marker').hidden = !world.cleared;
-  byId('gate-marker').hidden = toPoint(world.player.cell).col >= 22;
+  byId('gate-marker').hidden = !trainingComplete || toPoint(world.player.cell).col >= 22;
+  byId('wolf-status').hidden = !fighting;
+  byId('wolf-intent').hidden = !fighting;
+  byId('defeat').hidden = !defeated;
+  beast.hidden = !world.battle;
+  if (world.battle) {
+    const { hp, maxHp } = world.battle.rival;
+    updateWolfHealth(beast, hp, maxHp);
+    meter('wolf-hp', hp, maxHp);
+  }
+  if (fighting) {
+    byId('wolf-intent-name').textContent = world.battle.intent ? 'Vồ mồi' : 'Điện Lang';
+    byId('wolf-intent-detail').textContent = world.battle.intent ? 'Rời vùng màu đỏ trước khi sói lao tới.' : 'Giữ khoảng cách và bắn khi Điện Lang trong tầm.';
+  }
+  field.classList.toggle('in-battle', fighting);
+  for (const cell of markedThreats) tiles[cell].classList.remove('threat');
+  markedThreats = fighting ? world.battle.intent?.cells ?? [] : [];
+  for (const cell of markedThreats) tiles[cell].classList.add('threat');
   renderObjective();
-  renderBattle();
   aimCamera();
 }
-
 function stopWalk() {
   clearTimeout(stepTimer);
   stepTimer = undefined;
@@ -414,10 +383,14 @@ function stopWalk() {
 
 function step(target) {
   const previous = world;
-  world = walk(world, target);
+  if (!trainingComplete && toPoint(target).col >= RAMPART_EDGE) {
+    setHint('Tập phóng Nguyệt Quang trên lũy tây trước khi rời trại.', true);
+    return false;
+  }
+  world = walk(world, target, performance.now());
   if (world === previous) return false;
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
-  if (delta) hero.style.setProperty('--face', Math.sign(delta));
+  if (delta && !pendingCast) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
   const gait = onStairs ? 'climb' : runEnabled ? 'run' : 'walk';
   const duration = stepDurations[gait];
@@ -426,11 +399,10 @@ function step(target) {
   heroMotion.travel(gait, duration);
   field.classList.add('walking');
   render();
-  if (world.mode === 'battle') {
+  if (world.mode === 'battle' && previous.mode !== 'battle') {
+    wolfMotion.idle();
     stopWalk();
-    byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh. Chọn Di chuyển để xem các ô có thể đến.';
-    setHint('Sói xuất hiện. Né vùng đỏ hoặc chọn một hành động.', true);
-    if (document.activeElement === guide) field.focus({ preventScroll: true });
+    setHint(world.notice, true);
   } else if (world.reached && !previous.reached) {
     announce(world.notice);
   } else if (locationOf(previous.player.cell) !== locationOf(world.player.cell)) {
@@ -456,65 +428,139 @@ function go(target) {
   if (target === world.player.cell) return;
   route = findPath(world, target);
   if (route.length) {
-    byId('field-hint').textContent = walkHint;
+    if (world.mode !== 'battle') setHint(walkHint);
     afterCurrentStep(followRoute);
   } else {
     setHint('Ô này bị chắn hoặc chưa có đường tới.', true);
   }
 }
 
-function resolve(action, cell) {
-  const { state, error } = fight(world, action, cell);
-  if (error) return setHint(error, true);
-  world = state;
-  selecting = false;
-  field.style.removeProperty('--step-time');
+function direction(from, to) {
+  const { col, row } = toPoint(from);
+  const target = toPoint(to);
+  return [target.col - col, target.row - row];
+}
+
+function castMoon() {
+  const now = performance.now();
+  const training = !trainingComplete && world.player.cell === TRAINING_POST;
+  const inHunt = world.mode === 'battle';
+  if ((!training && !inHunt) || (training && (now < nextStepAt || !rampartDefense.targetHp()))) return;
+  if (now < castReadyAt) return setHint('Nguyệt Quang đang hồi.');
+  if (world.player.qi < MOONLIGHT.cost) return setHint('Đợi chân nguyên hồi lại.');
+  const aim = inHunt ? world.battle.rival.cell : undefined;
+  const { col, row } = toPoint(world.player.cell);
+  const target = inHunt ? toPoint(aim) : rampartDefense.trainingTarget;
+  const destination = inHunt ? { col: target.col + .5, row: target.row + .53 } : target;
+  if (inHunt && cellDistance(world.player.cell, aim) > MOONLIGHT.range) return setHint('Điện Lang ngoài tầm bắn.');
+  if (inHunt && !clearShot(world.player.cell, aim)) return setHint('Có vật cản trên đường bắn.');
+  const facing = destination.col < col + .5 ? -1 : 1;
+  hero.style.setProperty('--face', facing);
+  pendingCast = {
+    training, aim, destination, facing, animation: heroMotion.cast(), releaseAt: now + MOONLIGHT_RELEASE_MS,
+  };
+  castReadyAt = now + MOONLIGHT.cooldown;
+  regenAt = now + 1050;
+  world = { ...world, player: { ...world.player, qi: world.player.qi - MOONLIGHT.cost } };
   render();
-  const event = world.battle.events.find(entry => entry.actor === 'player');
-  if (event) {
-    const facing = Number(hero.style.getPropertyValue('--face')) || 1;
-    heroMotion.playBattle(event, facing, MAP.columns, 170);
-  }
-  if (world.mode === 'battle') {
-    setHint('Chọn hành động tiếp theo theo ý định của sói.');
-    announce(world.battle.report.slice(0, 2).map(entry => entry.text).join(' '));
-  } else {
-    byId('field-hint').textContent = world.notice;
-    announce(world.notice);
-    if (world.mode === 'defeat') byId('retry-encounter').focus();
-    else field.focus({ preventScroll: true });
+}
+
+function releaseMoon({ training, aim, destination, facing }) {
+  const sprite = heroSprite.getBoundingClientRect();
+  const { left, top } = plane.getBoundingClientRect();
+  const tile = hero.getBoundingClientRect().width;
+  const [handX, handY] = releasePalm(wearsAoReu);
+  const from = {
+    col: (sprite.left - left + sprite.width * (facing > 0 ? handX : 1 - handX)) / tile,
+    row: (sprite.top - top + sprite.height * handY) / tile,
+  };
+  if (training) rampartDefense.playerShot(from);
+  else if (world.mode === 'battle') {
+    if (cellDistance(world.player.cell, aim) > MOONLIGHT.range || !clearShot(world.player.cell, aim)) {
+      setHint('Đường bắn bị chắn hoặc Điện Lang đã ngoài tầm.');
+      return;
+    }
+    const epoch = castEpoch;
+    rampartDefense.shoot({ from, target: destination, windup: 0 }, () => {
+      if (epoch !== castEpoch) return false;
+      const next = hitHunt(world, aim, MOONLIGHT.damage);
+      if (next === world) {
+        if (world.mode === 'battle') setHint('Điện Lang đã tránh khỏi đường bắn.');
+        return false;
+      }
+      world = next;
+      if (world.cleared) wolfMotion.fall();
+      else if (!world.battle.intent) wolfMotion.play('hit', { direction: [facing, 0] });
+      setHint(world.notice, true);
+      render();
+      return true;
+    });
   }
 }
 
-function chooseAction(action) {
-  const error = actionBlock(world.battle, action);
-  if (error) return setHint(error, true);
-  if (action !== 'move') return resolve(action);
-  selecting = !selecting;
-  if (selecting) {
-    const targets = moveTargets(world.battle);
-    selectedCell = targets.find(cell => !world.battle.intent.cells.includes(cell)) ?? targets[0];
-    field.focus({ preventScroll: true });
+function tick(now) {
+  const castAnimation = pendingCast?.animation;
+  const atRelease = castAnimation && castAnimation.playState !== 'idle'
+    ? castAnimation.currentTime >= MOONLIGHT_RELEASE_MS : now >= pendingCast?.releaseAt;
+  if (pendingCast && atRelease) {
+    const cast = pendingCast;
+    pendingCast = undefined;
+    releaseMoon(cast);
   }
-  render();
-  setHint(selecting ? 'Chọn ô sáng; ô có vạch đỏ vẫn nguy hiểm. Dùng Enter để chốt ô đang chọn.' : 'Chọn hành động theo ý định của sói.', true);
+  if (world.player.cell === TRAINING_POST && !trainingComplete && castButton.hidden && now >= nextStepAt) render();
+  if (now >= regenAt && world.mode !== 'defeat') {
+    const qi = Math.min(world.player.maxQi, world.player.qi + 1);
+    world = { ...world, player: { ...world.player, qi } };
+    regenAt = qi === world.player.maxQi ? Infinity : now + 1050;
+    render();
+  }
+  if (now >= castReadyAt && castButton.getAttribute('aria-disabled') === 'true'
+    && world.player.qi >= MOONLIGHT.cost) castButton.setAttribute('aria-disabled', 'false');
+  const { state, event } = advanceHunt(world, now);
+  if (state !== world) {
+    const damaged = state.player.hp < world.player.hp;
+    world = state;
+    render();
+    if (event?.type === 'move') {
+      const [dx, dy] = direction(event.to, event.from);
+      wolfMotion.run(dx, dy);
+    } else if (event?.type === 'windup') {
+      const [dx, dy] = direction(world.battle.rival.cell, world.player.cell);
+      if (dx) beast.style.setProperty('--face', Math.sign(dx));
+      wolfMotion.play('huntPounce', { direction: [dx, dy] });
+      setHint(world.notice, true);
+    } else if (event?.type === 'pounce') {
+      if (damaged) heroMotion.hit();
+      setHint(world.notice, true);
+      if (world.mode === 'defeat') {
+        pendingCast = undefined;
+        stopWalk();
+        byId('retry-encounter').focus();
+      }
+    }
+  }
+  requestAnimationFrame(tick);
 }
+
 
 function reset() {
   stopWalk();
+  wolfMotion.stop();
+  trainingComplete = false;
+  castReadyAt = 0;
+  regenAt = Infinity;
+  castEpoch++;
+  pendingCast = undefined;
   world = newTrip();
   nextStepAt = 0;
   field.style.removeProperty('--step-time');
   surfaceTexture();
-  selecting = false;
   field.classList.remove('walking');
   hero.style.removeProperty('--face');
   heroMotion.stand();
   render();
-  animateRampartWolves();
   byId('field-hint').textContent = walkHint;
-  field.focus({ preventScroll: true });
-  announce('Bạn đang ở Cổ Nguyệt Sơn Trại.');
+  beginArrival();
 }
 
 byId('field-hint').textContent = walkHint;
@@ -522,57 +568,55 @@ renderRunToggle();
 runToggle.addEventListener('click', toggleRun);
 createMap();
 createRampartWolves();
-createActions();
+const rampartDefense = createRampartDefense(plane, rampartWolves, motion, (index, hp) => {
+  if (index !== 1) return;
+  if (hp) {
+    setHint(`Trúng đòn. Điện Lang còn ${hp} sinh lực.`, true);
+    return;
+  }
+  trainingComplete = true;
+  setHint('Đã hạ Điện Lang. Qua cổng đông để tới bãi săn.', true);
+  render();
+});
+castButton.addEventListener('click', castMoon);
+mentorNext.addEventListener('click', () => {
+  if (++mentorLine === mentorLines.length) mentorDialog.close('guide');
+  else showMentorLine();
+});
+mentorDialog.addEventListener('close', () => {
+  field.focus({ preventScroll: true });
+  aimCamera();
+  animateRampartWolves();
+  if (mentorDialog.returnValue === 'guide') go(TRAINING_POST);
+});
 render();
-animateRampartWolves();
 field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
+requestAnimationFrame(tick);
+beginArrival();
 
 map.addEventListener('click', (event) => {
   const tile = event.target.closest('button[data-cell]');
-  if (!tile) return;
-  const cell = Number(tile.dataset.cell);
+  if (!tile || world.mode === 'defeat') return;
   field.focus({ preventScroll: true });
-  if (world.mode === 'explore') go(cell);
-  if (world.mode === 'battle' && selecting) resolve('move', cell);
-  else if (world.mode === 'battle') setHint('Chọn Di chuyển để đổi vị trí trong lượt.', true);
+  go(Number(tile.dataset.cell));
 });
 
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Shift' && !event.repeat) {
-    pendingShiftTap = world.mode === 'explore' && !event.ctrlKey && !event.metaKey && !event.altKey;
-  } else if (event.key !== 'Shift' && !Object.hasOwn(keys, event.key.toLowerCase())) {
-    pendingShiftTap = false;
-  }
-  if (event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+document.addEventListener('keydown', event => {
+  if (mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
-  if (Object.hasOwn(keys, key)) {
-    if (world.mode === 'battle' && !selecting) return;
+  if (key === 'shift') {
+    if (!event.repeat) pendingShiftTap = true;
+  } else if (Object.hasOwn(keys, key)) {
     event.preventDefault();
-    if (world.mode === 'explore') {
-      if (event.repeat && performance.now() < nextStepAt) return;
-      stopWalk();
-      afterCurrentStep(() => step(world.player.cell + keys[key]));
-    } else {
-      const candidate = selectedCell + keys[key];
-      if (neighbors(selectedCell, MAP).includes(candidate) && insideHunt(candidate)) {
-        selectedCell = candidate;
-        aimCamera();
-        announce(`Chọn ô ${coordinate(candidate, MAP.columns)}.`);
-      }
-    }
-    return;
-  }
-  if (world.mode !== 'battle' || event.repeat) return;
-  if (selecting && (key === 'enter' || key === 'escape')) {
-    event.preventDefault();
-    if (key === 'enter') resolve('move', selectedCell);
-    else chooseAction('move');
+    if (event.repeat && performance.now() < nextStepAt) return;
+    stopWalk();
+    afterCurrentStep(() => step(world.player.cell + keys[key]));
   } else {
-    const action = Object.entries(FIELD_ACTIONS).find(([, info]) => info.key === key);
-    if (action) {
+    pendingShiftTap = false;
+    if (key === 'f' && !event.repeat) {
       event.preventDefault();
-      chooseAction(action[0]);
+      castMoon();
     }
   }
 });
@@ -586,15 +630,18 @@ window.addEventListener('blur', () => { pendingShiftTap = false; });
 
 guide.addEventListener('click', () => {
   field.focus({ preventScroll: true });
-  go(world.cleared ? CONTINUE : toPoint(world.player.cell).col < 14 ? GATE : TRAIL_ENTRY);
+  go(world.cleared ? CONTINUE : !trainingComplete ? TRAINING_POST : toPoint(world.player.cell).col < RAMPART_EDGE ? GATE : TRAIL_ENTRY);
 });
 byId('reset-trip').addEventListener('click', reset);
 byId('retry-encounter').addEventListener('click', () => {
-  world = retryEncounter(world);
-  selecting = false;
+  castEpoch++;
+  pendingCast = undefined;
+  castReadyAt = 0;
+  regenAt = Infinity;
+  world = retryEncounter(world, performance.now());
   heroMotion.stand();
+  wolfMotion.idle();
   render();
-  byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh.';
   setHint(world.notice, true);
   field.focus({ preventScroll: true });
 });
