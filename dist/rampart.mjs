@@ -15,6 +15,13 @@ const fenceRow = 4;
 const deckBottom = 6;
 const deckRight = 5;
 
+export const RAMPART_FOREST_DEPTH = 2;
+export const RAMPART_WOLVES = Object.freeze([
+  { col: 7, row: fenceRow - 1, startCol: 6, startRow: -0.3 },
+  { col: 9, row: fenceRow - 1, startCol: 10, startRow: -0.2 },
+  { col: 11, row: fenceRow - 1, startCol: 13, startRow: 0.5 },
+]);
+
 function stairAt(col, row) {
   return STAIRS.find(stair =>
     col >= stair.col && col < stair.col + stair.width && row >= stair.row && row < stair.row + stair.height
@@ -24,13 +31,15 @@ function stairAt(col, row) {
 export function rampartTile(col, row, mapRows, gateRow) {
   const entrance = Math.abs(row - gateRow) <= 1;
   const boundary = row === 0 || row === mapRows - 1 || col === 0;
-  const canopy = col <= 1 || row <= 1 || row === mapRows - 1;
+  const frontClearing = row < fenceRow && col >= 4 && col < RAMPART_EDGE;
+  const canopy = col <= 1 || (!frontClearing && row <= 1) || row === mapRows - 1;
   const inside = row > fenceRow && col > fenceCol;
   const stair = stairAt(col, row);
   const rail = stair && (stair.uphill === 'north' ? col !== stair.col + 1 : row !== stair.row + 1);
+  const wolfAtRest = RAMPART_WOLVES.some(wolf => col === wolf.col && row === wolf.row);
   let family = inside ? 'stone' : canopy ? 'bamboo' : 'mud';
   let elevation = 0;
-  let blocked = boundary || canopy;
+  let blocked = boundary || canopy || (frontClearing && row === 1) || wolfAtRest;
   const ornaments = [];
 
   if (row === fenceRow && col >= fenceCol) {
@@ -54,11 +63,14 @@ export function rampartTile(col, row, mapRows, gateRow) {
   }
 
   if (!inside && !canopy) {
-    if (row === 2) ornaments.push({ frame: 'bamboo-edge-south' });
+    if (row === 2 && !frontClearing) ornaments.push({ frame: 'bamboo-edge-south' });
     if (col === 2) ornaments.push({ frame: 'bamboo-edge-east' });
   }
+  if (frontClearing && (row === 0 || row === 1) && (col === 4 || col === 13)) {
+    ornaments.push({ frame: 'bamboo-fringe', flip: col === 13 });
+  }
   if (stair && stair.col === col && stair.row === row) ornaments.push(stair);
-  if (boundary) family = 'bamboo';
+  if (boundary && !frontClearing) family = 'bamboo';
   if (col === RAMPART_EDGE && entrance) family = 'stone';
   return { family, elevation, blocked: blocked || Boolean(rail), stair, ornaments };
 }

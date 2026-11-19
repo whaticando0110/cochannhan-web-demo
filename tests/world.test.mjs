@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { moveTargets, neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
-import { chooseRampartFrame, STAIRS } from '../dist/rampart.mjs';
+import { chooseRampartFrame, RAMPART_WOLVES, STAIRS } from '../dist/rampart.mjs';
 import {
-  CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF, WOLF_APPROACH,
+  CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
   createWorld, fight, findPath, insideHunt, isWalkable, locationOf, retryEncounter, toCell, toPoint, walk,
 } from '../dist/world.mjs';
 
@@ -14,17 +14,15 @@ function enterHunt() {
   return world;
 }
 
-test('the forest opening leaves sight lines and clear approach lanes for the wolves', () => {
-  for (let col = 22; col < 28; col++) {
-    for (let row = 7; row <= 13; row++) assert.ok(isWalkable(toCell(col, row)));
-  }
-  assert.equal(WOLF_APPROACH[0].to, WOLF);
-  for (const { from, to } of WOLF_APPROACH) {
-    const start = toPoint(from);
-    const end = toPoint(to);
-    assert.equal(start.row, end.row);
-    assert.ok(start.col > end.col);
-    for (let col = end.col; col <= start.col; col++) assert.ok(isWalkable(toCell(col, start.row)));
+test('wolves approach the clear strip outside the northern palisade', () => {
+  const world = createWorld();
+  for (const { col, row, startRow } of RAMPART_WOLVES) {
+    assert.ok(startRow < row);
+    assert.equal(TERRAIN[toCell(col, row)].rampart.family, 'mud');
+    assert.equal(TERRAIN[toCell(col, row - 1)].rampart.ornaments.length, 0);
+    assert.equal(isWalkable(toCell(col, row + 1)), false);
+    assert.equal(TERRAIN[toCell(col, row + 2)].rampart.elevation, 1);
+    assert.deepEqual(findPath(world, toCell(col, row)), []);
   }
 });
 

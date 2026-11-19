@@ -10,14 +10,9 @@ export const GATE = toCell(RAMPART_EDGE, gateRow);
 export const TRAIL_ENTRY = toCell(28, 10);
 export const WOLF = toCell(31, 10);
 export const CONTINUE = toCell(38, 10);
-export const WOLF_APPROACH = Object.freeze([
-  { from: toCell(35, 10), to: WOLF },
-  { from: toCell(36, 9), to: toCell(32, 9) },
-  { from: toCell(36, 11), to: toCell(33, 11) },
-]);
 
 const huntingGround = Object.freeze({ left: 28, right: 39, top: 5, bottom: 14 });
-const clearingRocks = new Set([toCell(30, 7), toCell(33, 13), toCell(37, 12), toCell(34, 6)]);
+const clearingRocks = new Set([toCell(30, 8), toCell(33, 12), toCell(36, 9), toCell(34, 6)]);
 
 function terrainAt(cell) {
   const { col, row } = toPoint(cell);
@@ -25,17 +20,16 @@ function terrainAt(cell) {
   const boundary = col === 0 || row === 0 || col === MAP.columns - 1 || row === MAP.rows - 1;
   const variant = (Math.imul(col + 13, 31) ^ Math.imul(row + 3, 17)) >>> 0;
   if (boundary) return { ground: 'mulch', prop: 'thicket', variant };
-  const clearing = col >= 22 && col <= huntingGround.right;
-  const treeline = row < (clearing ? 5 : 6) || row > (clearing ? 15 : 14);
-  if (treeline) return { ground: 'mulch', prop: variant % 5 !== 0 ? 'thicket' : 'bamboo', variant };
-  const center = col >= 17 && col <= 21 ? 11 : 10;
-  const distance = Math.abs(row - center);
-  const verge = variant % 11;
-  const path = distance <= 1 || (col >= 22 && distance === 2 && verge < 8);
-  let prop = clearingRocks.has(cell) ? 'rock' : null;
-  if (!prop && !clearing && distance > 3 && variant % 11 < 2) prop = 'bamboo';
-  const grassy = distance <= 3 || (distance <= 5 && verge < 8);
-  return { ground: path ? 'trail' : grassy ? 'grass' : 'mulch', prop, variant };
+  if (col === 27 && (row < 7 || row > 13)) return { ground: 'mulch', prop: 'thicket', variant };
+  if (col >= huntingGround.left) {
+    const outside = row < huntingGround.top || row > huntingGround.bottom;
+    const prop = outside ? 'thicket' : clearingRocks.has(cell) ? 'rock' : null;
+    const ground = !outside && row >= 7 && row <= 13 ? 'trail' : 'mulch';
+    return { ground, prop, variant };
+  }
+  const path = Math.abs(row - (col >= 20 && col <= 23 ? 11 : 10)) <= 1;
+  const prop = !path && variant % 7 < 2 ? (variant % 2 ? 'thicket' : 'bamboo') : null;
+  return { ground: path ? 'trail' : 'mulch', prop, variant };
 }
 
 export const TERRAIN = Object.freeze(Array.from({ length: MAP.columns * MAP.rows }, (_, cell) => terrainAt(cell)));

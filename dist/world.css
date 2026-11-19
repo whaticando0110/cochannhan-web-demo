@@ -2,10 +2,11 @@
 .field-window:focus-visible { outline: 2px solid #eed093; outline-offset: -3px; }
 .field-world { position: absolute; top: 0; left: 0; width: max-content; transform-origin: top left; }
 .field-tiles { display: grid; grid-template-columns: repeat(var(--columns), var(--tile)); }
+.rampart-forest { position:absolute; bottom:100%; left:0; display:grid; grid-template-columns:repeat(var(--columns), var(--tile)); grid-auto-rows:var(--tile); }
 .world-tile { width: var(--tile); height: var(--tile); position: relative; overflow: hidden; border: 0; border-radius: 0; padding: 0; cursor: pointer; background: #3f4935 no-repeat; background-position: var(--tile-x) center; background-size: 800% 100%; image-rendering: pixelated; }
 .world-tile::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: solid #171b183e; border-width: 0 1px 1px 0; }
 .world-tile.stone { background-image: url("assets/world/stone.png"); }
-.world-tile.grass { background-image: url("assets/world/grass.png"); background-color: #a0ad9d; background-blend-mode: multiply; }
+.world-tile.grass { background-image: url("assets/world/grass.png"); }
 .world-tile.mulch { background-image: url("assets/world/mulch.png"); }
 .world-tile.trail { background-image: url("assets/world/trail.png"); }
 .world-tile:hover::after { border: 1px solid #f5e2a58f; }
@@ -30,26 +31,7 @@
 .field-unit .wolf-art { position: absolute; left: 50%; bottom: 11%; width: 106%; aspect-ratio: 48 / 44; transform: translateX(-50%) scaleX(var(--face, 1)); background: url("assets/world/wolf.png") center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #ffe4bb) drop-shadow(1px 2px 1px #290e12); }
 .unit-shadow { position: absolute; bottom: 11%; left: 18%; width: 64%; height: 20%; border: 1px solid #94e9c0; border-radius: 50%; background: #0c13179e; }
 .beast .unit-shadow { border-color: #ffad85; }
-.field-window.pack-approach .beast {
-  transition: none;
-  animation: wolves-approach var(--approach-duration) linear both;
-}
-.field-window.pack-approach .pack-wolf { animation-name: wolves-approach, wolves-fade; }
-@keyframes wolves-approach {
-  from { translate: var(--approach-offset) 0; }
-  82%, to { translate: 0 0; }
-}
-@keyframes wolves-fade {
-  0%, 72% { opacity: 1; }
-  to { opacity: 0; }
-}
-.field-window.pack-approach .wolf-art {
-  animation: wolf-stride 180ms ease-in-out 6;
-}
-@keyframes wolf-stride {
-  0%, to { translate: 0 0; }
-  45% { translate: 0 -2px; }
-}
+.rampart-wolf .unit-shadow { border-color: transparent; }
 .cursor { z-index: 5; border: 2px solid #fff3bf; box-shadow: inset 0 0 0 2px #222c26aa, 0 0 11px #2b382f; }
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }
@@ -127,5 +109,4 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .field-window .field-world, .field-window.ready .field-unit { transition:none !important; }
-  .field-window.pack-approach .beast, .field-window.pack-approach .wolf-art { animation:none; }
 }
