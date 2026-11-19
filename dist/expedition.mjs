@@ -1,4 +1,5 @@
 import { actionBlock, coordinate, moveTargets, neighbors } from './combat.mjs';
+import { createHeroMotion } from './hero-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import { chooseRampartFrame } from './rampart.mjs';
 import {
@@ -16,6 +17,7 @@ const beast = byId('wolf-unit');
 const cursor = byId('target-cursor');
 const guide = byId('guide');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
+const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
 
 const keys = {
   arrowup: -MAP.columns, w: -MAP.columns,
@@ -278,16 +280,6 @@ function render() {
   aimCamera();
 }
 
-function animatePlayer(action) {
-  if (motion.matches) return;
-  const actor = hero.querySelector('.sprite');
-  const clips = { move: [23, 24, 25, 26], moon: [15, 16, 17, 49, 51], guard: [7, 8, 9, 10], strike: [48, 49, 51, 53] };
-  actor.getAnimations().forEach(animation => animation.cancel());
-  actor.animate(clips[action].map(frame => ({
-    backgroundPosition: `${(frame % 16) * 100 / 15}% ${Math.floor(frame / 16) * 100 / 9}%`, easing: 'steps(1)',
-  })), { duration: action === 'move' ? 168 : 350 });
-}
-
 function stopWalk() {
   clearTimeout(stepTimer);
   stepTimer = undefined;
@@ -302,7 +294,6 @@ function step(target) {
   if (delta) hero.style.setProperty('--face', Math.sign(delta));
   field.classList.add('walking');
   render();
-  animatePlayer('move');
   if (world.mode === 'battle') {
     stopWalk();
     byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh. Chọn Di chuyển để xem các ô có thể đến.';
@@ -340,7 +331,11 @@ function resolve(action, cell) {
   world = state;
   selecting = false;
   render();
-  animatePlayer(action);
+  const event = world.battle.events.find(entry => entry.actor === 'player');
+  if (event) {
+    const facing = Number(hero.style.getPropertyValue('--face')) || 1;
+    heroMotion.playBattle(event, facing, MAP.columns, 170);
+  }
   if (world.mode === 'battle') {
     setHint('Chọn hành động tiếp theo theo ý định của sói.');
     announce(world.battle.report.slice(0, 2).map(entry => entry.text).join(' '));
@@ -373,6 +368,7 @@ function reset() {
   selecting = false;
   field.classList.remove('walking');
   hero.style.removeProperty('--face');
+  heroMotion.stand();
   render();
   byId('field-hint').textContent = 'Bấm ô để đi, hoặc dùng WASD và phím mũi tên.';
   field.focus({ preventScroll: true });
@@ -436,6 +432,7 @@ byId('reset-trip').addEventListener('click', reset);
 byId('retry-encounter').addEventListener('click', () => {
   world = retryEncounter(world);
   selecting = false;
+  heroMotion.stand();
   render();
   byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh.';
   setHint(world.notice, true);

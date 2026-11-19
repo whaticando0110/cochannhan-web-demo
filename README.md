@@ -45,4 +45,4 @@ Mở **Đấu nhanh** để chơi trận thử ban đầu tại Thềm Hứng M�
 npm test
 ```
 
-Đồ họa đường rừng, vật cản, sói và atlas nhân vật lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Chỉ số được rút gọn cho demo portfolio.
+Đồ họa đường rừng, vật cản và sói lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Cả hai chế độ dùng **Huyền bào tay rộng** từ bản Activity ở mốc `5738f80f`. Bộ này có khung đứng, thủ, lao tới, bật lùi và né đổi hàng. Khi tung đòn, sprite giữ tư thế sẵn sàng trong lúc game hiện hiệu ứng. Chỉ số được rút gọn cho demo portfolio.

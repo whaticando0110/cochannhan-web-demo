@@ -1,4 +1,5 @@
 import { ACTIONS, BOARD, ROCKS, actionBlock, coordinate, createBattle, moveTargets, playTurn } from './combat.mjs';
+import { createHeroMotion } from './hero-motion.mjs';
 
 const byId = (id) => document.getElementById(id);
 const grid = byId('board');
@@ -8,6 +9,7 @@ const actionGrid = byId('action-grid');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const actors = { player: byId('player-actor'), rival: byId('rival-actor') };
 const playerSprite = actors.player.querySelector('.sprite');
+const heroMotion = createHeroMotion(playerSprite, reducedMotion);
 
 const summaries = {
   move: 'Tối đa 2 ô',
@@ -23,14 +25,6 @@ const tools = {
   guard: 'Giảm 70% sát thương trong lượt và hồi 1 chân nguyên.',
   heal: 'Hồi tối đa 20 sinh lực. Tốn 2 chân nguyên.',
 };
-const poses = {
-  move: [23, 24, 25, 26],
-  strike: [47, 48, 49, 50, 51, 52, 53, 54],
-  moon: [15, 16, 17, 49, 51, 52, 6],
-  guard: [119, 122, 125, 128],
-  heal: [120, 123, 126, 129],
-};
-
 let battle = createBattle();
 let selectingMove = false;
 let activeCell = battle.player.cell;
@@ -205,10 +199,6 @@ function render() {
   renderLog();
 }
 
-function tilePosition(frame) {
-  return `${(frame % 16) * 100 / 15}% ${Math.floor(frame / 16) * 100 / 9}%`;
-}
-
 function offset(from, to) {
   const box = grid.getBoundingClientRect();
   return {
@@ -235,15 +225,14 @@ function transient(node, frames, options) {
 function animateTurn(events) {
   effects.replaceChildren();
   for (const actor of Object.values(actors)) {
-    actor.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+    actor.getAnimations().forEach(animation => animation.cancel());
   }
   if (reducedMotion.matches) return;
 
   for (const event of events) {
     const actor = actors[event.actor];
     if (event.actor === 'player') {
-      playerSprite.animate(poses[event.type].map(frame => ({ backgroundPosition: tilePosition(frame), easing: 'steps(1)' })),
-        { duration: event.type === 'move' ? 290 : 470 });
+      heroMotion.playBattle(event, facing(), BOARD.columns, 300);
     }
     if (event.type === 'move') {
       const start = offset(event.to, event.from);
@@ -331,6 +320,7 @@ function restart() {
   focusCell(battle.player.cell, false);
   render();
   animateTurn([]);
+  heroMotion.stand();
   showHint(defaultHint());
   announce('Trận mới. Đối thủ đã nhắm vùng đỏ.');
   buttons.move.focus({ preventScroll: true });
