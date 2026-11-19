@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "baseCommit": "4b8d07b",
+  "novelSources": [
+    "Cổ Chân Nhân - Chương 4: Cổ Nguyệt Phương Nguyên (biển Nguyệt Lan bên kia sông ngầm trong hang đá vôi)",
+    "Cổ Chân Nhân - Chương 5: Nhân Tổ tam cổ, Hi Vọng khai khiếu (Hy Vọng Cổ bay lên hội tụ)"
+  ],
+  "assets": {
+    "nguyet-lan-tiles.png": {
+      "width": 128,
+      "height": 32,
+      "cols": 4,
+      "rows": 1,
+      "cellWidth": 32,
+      "cellHeight": 32,
+      "anchor": {
+        "x": 16,
+        "y": 31,
+        "label": "bottom-center"
+      },
+      "alphaMode": "binary",
+      "variants": [
+        {
+          "id": "crescent-tall",
+          "col": 0,
+          "frameX": 0,
+          "frameY": 0,
+          "w": 32,
+          "h": 32,
+          "bounds": {
+            "index": 0,
+            "minX": 4,
+            "maxX": 24,
+            "minY": 12,
+            "maxY": 31,
+            "w": 21,
+            "h": 20,
+            "opaque": 208
+          }
+        },
+        {
+          "id": "twin-bloom-bud",
+          "col": 1,
+          "frameX": 32,
+          "frameY": 0,
+          "w": 32,
+          "h": 32,
+          "bounds": {
+            "index": 1,
+            "minX": 4,
+            "maxX": 29,
+            "minY": 12,
+            "maxY": 31,
+            "w": 26,
+            "h": 20,
+            "opaque": 265
+          }
+        },
+        {
+          "id": "low-swaying-pair",
+          "col": 2,
+          "frameX": 64,
+          "frameY": 0,
+          "w": 32,
+          "h": 32,
+          "bounds": {
+            "index": 2,
+            "minX": 1,
+            "maxX": 30,
+            "minY": 16,
+            "maxY": 31,
+            "w": 30,
+            "h": 16,
+            "opaque": 270
+          }
+        },
+        {
+          "id": "lush-trio-clump",
+          "col": 3,
+          "frameX": 96,
+          "frameY": 0,
+          "w": 32,
+          "h": 32,
+          "bounds": {
+            "index": 3,
+            "minX": 1,
+            "maxX": 31,
+            "minY": 10,
+            "maxY": 31,
+            "w": 31,
+            "h": 22,
+            "opaque": 360
+          }
+        }
+      ]
+    },
+    "hy-vong-gu.png": {
+      "width": 64,
+      "height": 16,
+      "cols": 4,
+      "rows": 1,
+      "cellWidth": 16,
+      "cellHeight": 16,
+      "anchor": {
+        "x": 8,
+        "y": 8,
+        "label": "center"
+      },
+      "loopDelayMs": 180,
+      "alphaMode": "binary",
+      "frames": [
+        {
+          "index": 0,
+          "minX": 5,
+          "maxX": 10,
+          "minY": 4,
+          "maxY": 13,
+          "w": 6,
+          "h": 10,
+          "opaque": 32
+        },
+        {
+          "index": 1,
+          "minX": 3,
+          "maxX": 12,
+          "minY": 3,
+          "maxY": 12,
+          "w": 10,
+          "h": 10,
+          "opaque": 41
+        },
+        {
+          "index": 2,
+          "minX": 2,
+          "maxX": 13,
+          "minY": 2,
+          "maxY": 13,
+          "w": 12,
+          "h": 12,
+          "opaque": 48
+        },
+        {
+          "index": 3,
+          "minX": 4,
+          "maxX": 11,
+          "minY": 3,
+          "maxY": 12,
+          "w": 8,
+          "h": 10,
+          "opaque": 34
+        }
+      ]
+    }
+  }
+}
