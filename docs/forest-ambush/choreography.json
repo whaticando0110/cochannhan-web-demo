@@ -1,0 +1,1145 @@
+{
+  "name": "Ba Nhịp Chuyển Động Cảnh Rừng Phá Vây (Thanh Mao Sơn)",
+  "baseLayout": "docs/forest-ambush/layout.json",
+  "coordinatesUnit": "tile (0-indexed col, row on 42x26 world grid)",
+  "facingConvention": {
+    "eastRight": 1,
+    "westLeft": -1
+  },
+  "roleCatalog": {
+    "cover": {
+      "role": "cover",
+      "title": "Đội trưởng giữ sườn bắc",
+      "sprite": "slate-guard",
+      "motionAtlas": "assets/rampart/guard-slate-motion.png",
+      "metadata": "assets/rampart/guard-slate.json",
+      "cellSize": [
+        128,
+        128
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "anchorBaselineY": 119,
+      "sockets128": {
+        "chargePalm": [
+          88,
+          56
+        ],
+        "releasePalm": [
+          108,
+          65
+        ],
+        "wardContact": [
+          102,
+          58
+        ],
+        "footGround": [
+          64,
+          119
+        ]
+      }
+    },
+    "opens-gap": {
+      "role": "opens-gap",
+      "title": "Cổ sư hồng nâu bào phóng Nguyệt Quang mở khe",
+      "sprite": "russet-guard",
+      "motionAtlas": "assets/rampart/guard-russet-motion.png",
+      "metadata": "assets/rampart/guard-russet.json",
+      "cellSize": [
+        128,
+        128
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "anchorBaselineY": 121,
+      "sockets128": {
+        "chargePalm": [
+          67.5,
+          69.5
+        ],
+        "releasePalm": [
+          96,
+          63.5
+        ],
+        "footGround": [
+          64,
+          121
+        ]
+      }
+    },
+    "rear-guard": {
+      "role": "rear-guard",
+      "title": "Cổ sư bạch bào đoạn hậu",
+      "sprite": "ivory-guard",
+      "motionAtlas": "assets/rampart/guard-ivory-motion.png",
+      "metadata": "assets/rampart/guard-ivory.json",
+      "cellSize": [
+        128,
+        128
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "anchorBaselineY": 121,
+      "sockets128": {
+        "chargePalm": [
+          67,
+          68
+        ],
+        "releasePalm": [
+          94,
+          64.5
+        ],
+        "footGround": [
+          64,
+          121
+        ]
+      }
+    },
+    "scout-wolf": {
+      "role": "scout-wolf",
+      "title": "Điện Lang tách đàn mở trận theo lượt",
+      "sprite": "dien-lang",
+      "motionAtlas": "assets/world/dien-lang.png",
+      "cellSize": [
+        128,
+        128
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "anchorBaselineY": 102,
+      "sockets128": {
+        "eyeAlert": [
+          94,
+          48
+        ],
+        "forepawGround": [
+          88,
+          100
+        ],
+        "hitCenter": [
+          68,
+          66
+        ]
+      }
+    }
+  },
+  "segments": [
+    {
+      "id": "segment1_breakout",
+      "order": 1,
+      "title": "Đoạn 1 — Đội viện trợ bị ép rồi mở khe Đông Nam",
+      "triggerCell": [
+        27,
+        10
+      ],
+      "durationMs": 2200,
+      "actors": [
+        {
+          "role": "cover",
+          "sprite": "slate-guard",
+          "startCell": [
+            35,
+            8
+          ],
+          "endCell": [
+            37,
+            10
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                35,
+                8
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0,
+                1
+              ],
+              "note": "Đỡ cú táp của sói bắc (34,7)"
+            },
+            {
+              "atMs": 520,
+              "cell": [
+                35,
+                8
+              ],
+              "facing": 1,
+              "clip": "cast",
+              "frames": [
+                1,
+                2,
+                3,
+                0
+              ],
+              "note": "Quét chưởng đẩy lùi sói đông bắc (37,8)"
+            },
+            {
+              "atMs": 1220,
+              "cell": [
+                35,
+                8
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "note": "Rút xuống đường chính"
+            },
+            {
+              "atMs": 1520,
+              "cell": [
+                35,
+                10
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 1820,
+              "cell": [
+                36,
+                10
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 2120,
+              "cell": [
+                37,
+                10
+              ],
+              "facing": 1,
+              "clip": "cast",
+              "frames": [
+                0
+              ]
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 220,
+              "kind": "fang_ward_spark",
+              "role": "receive-block",
+              "socketCell": [
+                34.72,
+                7.82
+              ],
+              "durationMs": 240
+            },
+            {
+              "atMs": 1220,
+              "kind": "urgent_step_dust",
+              "role": "emit-foot",
+              "socketCell": [
+                35,
+                8.85
+              ],
+              "durationMs": 240
+            }
+          ]
+        },
+        {
+          "role": "opens-gap",
+          "sprite": "russet-guard",
+          "startCell": [
+            35,
+            10
+          ],
+          "endCell": [
+            38,
+            11
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                35,
+                10
+              ],
+              "facing": 1,
+              "clip": "cast",
+              "frames": [
+                0
+              ],
+              "note": "Giữ trục đường đất"
+            },
+            {
+              "atMs": 420,
+              "cell": [
+                35,
+                10
+              ],
+              "facing": 1,
+              "clip": "cast",
+              "frames": [
+                0,
+                1,
+                2,
+                3,
+                0
+              ],
+              "durationMs": 690,
+              "releaseAtMs": 750,
+              "note": "Phóng Nguyệt Quang dọc đường đất bắn bật sói đông (38,10)"
+            },
+            {
+              "atMs": 1120,
+              "cell": [
+                35,
+                10
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "note": "Dẫn đầu lao qua khe thoát Đông Nam"
+            },
+            {
+              "atMs": 1350,
+              "cell": [
+                36,
+                10
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 1580,
+              "cell": [
+                37,
+                10
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 1810,
+              "cell": [
+                37,
+                11
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 2040,
+              "cell": [
+                38,
+                11
+              ],
+              "facing": 1,
+              "clip": "cast",
+              "frames": [
+                0
+              ]
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 540,
+              "kind": "moonlight_charge",
+              "role": "emit-palm",
+              "socketCell": [
+                35.53,
+                10.22
+              ],
+              "durationMs": 210
+            },
+            {
+              "atMs": 750,
+              "kind": "gap_blast_wave",
+              "role": "emit-palm",
+              "socketCell": [
+                35.84,
+                10.15
+              ],
+              "targetCell": [
+                38,
+                10.15
+              ],
+              "travelMs": 230
+            },
+            {
+              "atMs": 1120,
+              "kind": "urgent_step_dust",
+              "role": "emit-foot",
+              "socketCell": [
+                35,
+                10.88
+              ],
+              "durationMs": 240
+            }
+          ]
+        },
+        {
+          "role": "rear-guard",
+          "sprite": "ivory-guard",
+          "startCell": [
+            36,
+            11
+          ],
+          "endCell": [
+            38,
+            11
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                36,
+                11
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0,
+                1,
+                2,
+                3,
+                0
+              ],
+              "durationMs": 690,
+              "releaseAtMs": 330,
+              "note": "Phóng Nguyệt Quang kìm chân sói nam (34,12)"
+            },
+            {
+              "atMs": 1320,
+              "cell": [
+                36,
+                11
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "note": "Bọc hậu rút qua (37,11) -> (38,11)"
+            },
+            {
+              "atMs": 1720,
+              "cell": [
+                37,
+                11
+              ],
+              "facing": 1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 2120,
+              "cell": [
+                38,
+                11
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0
+              ],
+              "note": "Quay lại cảnh giới phía sau"
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 330,
+              "kind": "moonlight_release",
+              "role": "emit-palm",
+              "socketCell": [
+                35.66,
+                11.17
+              ],
+              "targetCell": [
+                34.52,
+                11.92
+              ],
+              "travelMs": 150
+            },
+            {
+              "atMs": 1320,
+              "kind": "urgent_step_dust",
+              "role": "emit-foot",
+              "socketCell": [
+                36,
+                11.88
+              ],
+              "durationMs": 240
+            }
+          ]
+        },
+        {
+          "role": "pack-north",
+          "sprite": "dien-lang",
+          "startCell": [
+            34,
+            7
+          ],
+          "endCell": [
+            34,
+            7
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                34,
+                7
+              ],
+              "facing": 1,
+              "clip": "bite",
+              "frames": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "durationMs": 380
+            },
+            {
+              "atMs": 380,
+              "cell": [
+                34,
+                7
+              ],
+              "facing": 1,
+              "clip": "idle",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            }
+          ],
+          "fxEvents": []
+        },
+        {
+          "role": "pack-northeast",
+          "sprite": "dien-lang",
+          "startCell": [
+            37,
+            8
+          ],
+          "endCell": [
+            37.4,
+            7.8
+          ],
+          "waypoints": [
+            {
+              "atMs": 160,
+              "cell": [
+                37,
+                8
+              ],
+              "facing": -1,
+              "clip": "bite",
+              "frames": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "durationMs": 380
+            },
+            {
+              "atMs": 680,
+              "cell": [
+                37.4,
+                7.8
+              ],
+              "facing": -1,
+              "clip": "hit",
+              "frames": [
+                12,
+                13,
+                14,
+                15
+              ],
+              "durationMs": 240
+            }
+          ],
+          "fxEvents": []
+        },
+        {
+          "role": "pack-east",
+          "sprite": "dien-lang",
+          "startCell": [
+            38,
+            10
+          ],
+          "endCell": [
+            39,
+            9.5
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                38,
+                10
+              ],
+              "facing": -1,
+              "clip": "idle",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "atMs": 980,
+              "cell": [
+                38,
+                10
+              ],
+              "facing": -1,
+              "clip": "hit",
+              "frames": [
+                12,
+                13,
+                14,
+                15
+              ],
+              "durationMs": 280,
+              "note": "Trúng Nguyệt Quang của russet-guard, dạt khỏi khe thoát (38,10)"
+            },
+            {
+              "atMs": 1260,
+              "cell": [
+                39,
+                9.5
+              ],
+              "facing": -1,
+              "clip": "idle",
+              "frames": [
+                0,
+                1
+              ]
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 980,
+              "kind": "hit_flash",
+              "role": "receive-hit",
+              "socketCell": [
+                38.1,
+                10.15
+              ],
+              "durationMs": 180
+            }
+          ]
+        },
+        {
+          "role": "pack-south",
+          "sprite": "dien-lang",
+          "startCell": [
+            34,
+            12
+          ],
+          "endCell": [
+            33.7,
+            12.2
+          ],
+          "waypoints": [
+            {
+              "atMs": 100,
+              "cell": [
+                34,
+                12
+              ],
+              "facing": 1,
+              "clip": "bite",
+              "frames": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "durationMs": 380
+            },
+            {
+              "atMs": 480,
+              "cell": [
+                33.7,
+                12.2
+              ],
+              "facing": 1,
+              "clip": "hit",
+              "frames": [
+                12,
+                13,
+                14,
+                15
+              ],
+              "durationMs": 240
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 480,
+              "kind": "hit_flash",
+              "role": "receive-hit",
+              "socketCell": [
+                34.52,
+                11.92
+              ],
+              "durationMs": 180
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "segment2_scout_alert",
+      "order": 2,
+      "title": "Đoạn 2 — Điện Lang tách đàn phát hiện người chơi, áp sát (32,10) và lấy đà mở trận",
+      "triggerCell": [
+        29,
+        10
+      ],
+      "shoutText": "Cẩn thận!",
+      "durationMs": 1450,
+      "actors": [
+        {
+          "role": "scout-wolf",
+          "sprite": "dien-lang",
+          "startCell": [
+            34,
+            9
+          ],
+          "endCell": [
+            32,
+            10
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                34,
+                9
+              ],
+              "facing": -1,
+              "clip": "alert",
+              "frames": [
+                1,
+                2,
+                3
+              ],
+              "durationMs": 320,
+              "note": "Phát hiện người chơi ở cột 29, quay đầu gầm nhẹ"
+            },
+            {
+              "atMs": 320,
+              "cell": [
+                34,
+                9
+              ],
+              "facing": -1,
+              "clip": "run",
+              "frames": [
+                4,
+                5,
+                6,
+                7
+              ],
+              "durationMs": 300,
+              "note": "Lao tách đàn nhịp 1 tới (33, 9.5)"
+            },
+            {
+              "atMs": 620,
+              "cell": [
+                33,
+                9.5
+              ],
+              "facing": -1,
+              "clip": "run",
+              "frames": [
+                4,
+                5,
+                6,
+                7
+              ],
+              "durationMs": 300,
+              "note": "Lao tách đàn nhịp 2 vào vị trí mở trận (32, 10)"
+            },
+            {
+              "atMs": 920,
+              "cell": [
+                32,
+                10
+              ],
+              "facing": -1,
+              "clip": "skid",
+              "frames": [
+                10,
+                11
+              ],
+              "durationMs": 160,
+              "note": "Ghìm chân trước trên đường đất"
+            },
+            {
+              "atMs": 1080,
+              "cell": [
+                32,
+                10
+              ],
+              "facing": -1,
+              "clip": "coil",
+              "frames": [
+                8
+              ],
+              "durationMs": 370,
+              "note": "Hạ thấp thân lấy đà vồ mồi vào vùng đỏ quanh (29, 10)"
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 40,
+              "kind": "detection_glint",
+              "role": "emit-eye",
+              "socketCell": [
+                33.76,
+                8.58
+              ],
+              "durationMs": 260
+            },
+            {
+              "atMs": 940,
+              "kind": "pounce_coil_dust",
+              "role": "emit-paw",
+              "socketCell": [
+                31.85,
+                10.35
+              ],
+              "durationMs": 320
+            }
+          ]
+        },
+        {
+          "role": "hero",
+          "sprite": "player-skin",
+          "startCell": [
+            29,
+            10
+          ],
+          "endCell": [
+            29,
+            10
+          ],
+          "dodgeCell": [
+            30,
+            9
+          ],
+          "threatCells": [
+            [
+              29,
+              10
+            ],
+            [
+              28,
+              10
+            ],
+            [
+              30,
+              10
+            ],
+            [
+              29,
+              9
+            ],
+            [
+              29,
+              11
+            ]
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                29,
+                10
+              ],
+              "facing": 1,
+              "clip": "idle",
+              "note": "Đứng tại cột phát hiện 29, chuẩn bị chọn Ô né (30, 9) ở Lượt 1"
+            }
+          ],
+          "fxEvents": []
+        }
+      ]
+    },
+    {
+      "id": "segment3_regroup",
+      "order": 3,
+      "title": "Đoạn 3 — Đội viện trợ tụ lại tại chỗ nói chuyện khi trận kết thúc",
+      "triggerCondition": "scout-wolf-defeated",
+      "durationMs": 1650,
+      "rendezvous": {
+        "regroupLead": [
+          37,
+          11
+        ],
+        "talkFrom": [
+          36,
+          11
+        ],
+        "flankNorth": [
+          38,
+          10
+        ],
+        "flankSouth": [
+          38,
+          12
+        ]
+      },
+      "actors": [
+        {
+          "role": "scout-wolf",
+          "sprite": "dien-lang",
+          "startCell": [
+            32,
+            10
+          ],
+          "endCell": [
+            32,
+            10
+          ],
+          "waypoints": [
+            {
+              "atMs": 0,
+              "cell": [
+                32,
+                10
+              ],
+              "facing": -1,
+              "clip": "fall",
+              "frames": [
+                12,
+                13,
+                8,
+                8
+              ],
+              "durationMs": 320,
+              "note": "Điện Lang tách đàn gục xuống"
+            }
+          ],
+          "fxEvents": []
+        },
+        {
+          "role": "cover",
+          "sprite": "slate-guard",
+          "startCell": [
+            38,
+            11
+          ],
+          "endCell": [
+            37,
+            11
+          ],
+          "waypoints": [
+            {
+              "atMs": 240,
+              "cell": [
+                38,
+                11
+              ],
+              "facing": -1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "durationMs": 880,
+              "note": "Đội trưởng bước ra điểm hội quân (37, 11)"
+            },
+            {
+              "atMs": 1120,
+              "cell": [
+                37,
+                11
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0
+              ],
+              "note": "Đứng chờ người chơi tới (36, 11) nói chuyện"
+            }
+          ],
+          "fxEvents": [
+            {
+              "atMs": 1120,
+              "kind": "regroup_stance_ring",
+              "role": "emit-ground",
+              "socketCell": [
+                37,
+                11
+              ],
+              "durationMs": 360
+            },
+            {
+              "atMs": 1200,
+              "kind": "regroup_stance_ring",
+              "role": "emit-ground",
+              "socketCell": [
+                36,
+                11
+              ],
+              "durationMs": 360
+            }
+          ]
+        },
+        {
+          "role": "opens-gap",
+          "sprite": "russet-guard",
+          "startCell": [
+            39,
+            10
+          ],
+          "endCell": [
+            38,
+            10
+          ],
+          "waypoints": [
+            {
+              "atMs": 320,
+              "cell": [
+                39,
+                10
+              ],
+              "facing": -1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "durationMs": 900
+            },
+            {
+              "atMs": 1220,
+              "cell": [
+                38,
+                10
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0
+              ]
+            }
+          ],
+          "fxEvents": []
+        },
+        {
+          "role": "rear-guard",
+          "sprite": "ivory-guard",
+          "startCell": [
+            39,
+            12
+          ],
+          "endCell": [
+            38,
+            12
+          ],
+          "waypoints": [
+            {
+              "atMs": 400,
+              "cell": [
+                39,
+                12
+              ],
+              "facing": -1,
+              "clip": "walk",
+              "frames": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "durationMs": 920
+            },
+            {
+              "atMs": 1320,
+              "cell": [
+                38,
+                12
+              ],
+              "facing": -1,
+              "clip": "cast",
+              "frames": [
+                0
+              ]
+            }
+          ],
+          "fxEvents": []
+        }
+      ]
+    }
+  ]
+}

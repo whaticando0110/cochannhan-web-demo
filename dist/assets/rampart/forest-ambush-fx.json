@@ -1,0 +1,457 @@
+{
+  "name": "Hiệu Ứng Cảnh Rừng Phá Vây & Điện Lang Tách Đàn",
+  "id": "forest-ambush-fx",
+  "file": "forest-ambush-fx.png",
+  "width": 512,
+  "height": 192,
+  "cellSize": [
+    64,
+    64
+  ],
+  "grid": [
+    8,
+    3
+  ],
+  "backgroundSize": "800% 300%",
+  "facing": "right",
+  "clips": {
+    "detection_glint": {
+      "row": 0,
+      "startCol": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 260,
+      "pivot": [
+        32,
+        32
+      ],
+      "frames": [
+        {
+          "col": 0,
+          "row": 0,
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 65,
+          "bbox": {
+            "x0": 24,
+            "y0": 25,
+            "x1": 40,
+            "y1": 39
+          }
+        },
+        {
+          "col": 1,
+          "row": 0,
+          "x": 64,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 65,
+          "bbox": {
+            "x0": 17,
+            "y0": 19,
+            "x1": 47,
+            "y1": 45
+          }
+        },
+        {
+          "col": 2,
+          "row": 0,
+          "x": 128,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 65,
+          "bbox": {
+            "x0": 19,
+            "y0": 19,
+            "x1": 45,
+            "y1": 45
+          }
+        },
+        {
+          "col": 3,
+          "row": 0,
+          "x": 192,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 65,
+          "bbox": {
+            "x0": 25,
+            "y0": 26,
+            "x1": 39,
+            "y1": 38
+          }
+        }
+      ]
+    },
+    "pounce_coil_dust": {
+      "row": 0,
+      "startCol": 4,
+      "count": 4,
+      "loop": false,
+      "durationMs": 320,
+      "pivot": [
+        32,
+        50
+      ],
+      "frames": [
+        {
+          "col": 4,
+          "row": 0,
+          "x": 256,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 80,
+          "bbox": {
+            "x0": 26,
+            "y0": 39,
+            "x1": 44,
+            "y1": 52
+          }
+        },
+        {
+          "col": 5,
+          "row": 0,
+          "x": 320,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 80,
+          "bbox": {
+            "x0": 28,
+            "y0": 37,
+            "x1": 47,
+            "y1": 51
+          }
+        },
+        {
+          "col": 6,
+          "row": 0,
+          "x": 384,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 80,
+          "bbox": {
+            "x0": 31,
+            "y0": 35,
+            "x1": 51,
+            "y1": 49
+          }
+        },
+        {
+          "col": 7,
+          "row": 0,
+          "x": 448,
+          "y": 0,
+          "w": 64,
+          "h": 64,
+          "durationMs": 80,
+          "bbox": {
+            "x0": 33,
+            "y0": 33,
+            "x1": 54,
+            "y1": 49
+          }
+        }
+      ]
+    },
+    "fang_ward_spark": {
+      "row": 1,
+      "startCol": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 240,
+      "pivot": [
+        32,
+        32
+      ],
+      "frames": [
+        {
+          "col": 0,
+          "row": 1,
+          "x": 0,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 24,
+            "y0": 24,
+            "x1": 39,
+            "y1": 40
+          }
+        },
+        {
+          "col": 1,
+          "row": 1,
+          "x": 64,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 26,
+            "y0": 22,
+            "x1": 43,
+            "y1": 42
+          }
+        },
+        {
+          "col": 2,
+          "row": 1,
+          "x": 128,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 28,
+            "y0": 19,
+            "x1": 46,
+            "y1": 45
+          }
+        },
+        {
+          "col": 3,
+          "row": 1,
+          "x": 192,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 38,
+            "y0": 16,
+            "x1": 50,
+            "y1": 48
+          }
+        }
+      ]
+    },
+    "gap_blast_wave": {
+      "row": 1,
+      "startCol": 4,
+      "count": 4,
+      "loop": false,
+      "durationMs": 280,
+      "pivot": [
+        32,
+        32
+      ],
+      "frames": [
+        {
+          "col": 4,
+          "row": 1,
+          "x": 256,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 70,
+          "bbox": {
+            "x0": 18,
+            "y0": 19,
+            "x1": 33,
+            "y1": 45
+          }
+        },
+        {
+          "col": 5,
+          "row": 1,
+          "x": 320,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 70,
+          "bbox": {
+            "x0": 21,
+            "y0": 17,
+            "x1": 39,
+            "y1": 47
+          }
+        },
+        {
+          "col": 6,
+          "row": 1,
+          "x": 384,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 70,
+          "bbox": {
+            "x0": 24,
+            "y0": 15,
+            "x1": 44,
+            "y1": 49
+          }
+        },
+        {
+          "col": 7,
+          "row": 1,
+          "x": 448,
+          "y": 64,
+          "w": 64,
+          "h": 64,
+          "durationMs": 70,
+          "bbox": {
+            "x0": 27,
+            "y0": 12,
+            "x1": 50,
+            "y1": 52
+          }
+        }
+      ]
+    },
+    "urgent_step_dust": {
+      "row": 2,
+      "startCol": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 240,
+      "pivot": [
+        32,
+        52
+      ],
+      "frames": [
+        {
+          "col": 0,
+          "row": 2,
+          "x": 0,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 25,
+            "y0": 47,
+            "x1": 38,
+            "y1": 54
+          }
+        },
+        {
+          "col": 1,
+          "row": 2,
+          "x": 64,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 24,
+            "y0": 47,
+            "x1": 39,
+            "y1": 52
+          }
+        },
+        {
+          "col": 2,
+          "row": 2,
+          "x": 128,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 22,
+            "y0": 46,
+            "x1": 41,
+            "y1": 51
+          }
+        },
+        {
+          "col": 3,
+          "row": 2,
+          "x": 192,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 60,
+          "bbox": {
+            "x0": 20,
+            "y0": 46,
+            "x1": 42,
+            "y1": 50
+          }
+        }
+      ]
+    },
+    "regroup_stance_ring": {
+      "row": 2,
+      "startCol": 4,
+      "count": 4,
+      "loop": false,
+      "durationMs": 360,
+      "pivot": [
+        32,
+        52
+      ],
+      "frames": [
+        {
+          "col": 4,
+          "row": 2,
+          "x": 256,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 90,
+          "bbox": {
+            "x0": 20,
+            "y0": 47,
+            "x1": 44,
+            "y1": 57
+          }
+        },
+        {
+          "col": 5,
+          "row": 2,
+          "x": 320,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 90,
+          "bbox": {
+            "x0": 18,
+            "y0": 46,
+            "x1": 46,
+            "y1": 58
+          }
+        },
+        {
+          "col": 6,
+          "row": 2,
+          "x": 384,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 90,
+          "bbox": {
+            "x0": 16,
+            "y0": 45,
+            "x1": 48,
+            "y1": 59
+          }
+        },
+        {
+          "col": 7,
+          "row": 2,
+          "x": 448,
+          "y": 128,
+          "w": 64,
+          "h": 64,
+          "durationMs": 90,
+          "bbox": {
+            "x0": 13,
+            "y0": 44,
+            "x1": 51,
+            "y1": 60
+          }
+        }
+      ]
+    }
+  }
+}

@@ -161,10 +161,24 @@
   z-index: 3;
 }
 
-/* Relief Guard Walk & Cast Motion Atlas (Cổ Sư Tiếp Viện Di Chuyển) */
-.ivory-guard.relief-guard .guard-art {
-  transform: translateX(-50%) scaleX(var(--relief-face, -1));
+/* Guard Walk & Cast Motion Atlases (Bạch Bào, Hồng Nâu Bào, Lam Xám Võ Phục) */
+.ivory-guard.relief-guard .guard-art,
+.ivory-guard.rear-unit .guard-art,
+.ivory-guard.ambush-unit .guard-art {
+  transform: translateX(-50%) scaleX(var(--relief-face, var(--rear-facing, -1)));
   background: url("assets/rampart/guard-ivory-motion.png") 0 0 / 400% 200% no-repeat;
+}
+
+.russet-guard.rear-unit .guard-art,
+.russet-guard.ambush-unit .guard-art {
+  transform: translateX(-50%) scaleX(var(--rear-facing, -1));
+  background: url("assets/rampart/guard-russet-motion.png") 0 0 / 400% 200% no-repeat;
+}
+
+.slate-guard.rear-unit .guard-art,
+.slate-guard.ambush-unit .guard-art {
+  transform: translateX(-50%) scaleX(var(--rear-facing, -1));
+  background: url("assets/rampart/guard-slate-motion.png") 0 0 / 400% 200% no-repeat;
 }
 
 @keyframes relief-guard-walk {
@@ -175,6 +189,25 @@
   100% { background-position: 100% 100%; }
 }
 
-.ivory-guard.relief-guard.relief-moving .guard-art {
+.ivory-guard.relief-guard.relief-moving .guard-art,
+.rear-unit.rear-moving .guard-art,
+.ambush-unit.ambush-moving .guard-art {
   animation: relief-guard-walk 600ms steps(1, end) infinite;
+}
+
+/* Forest Ambush FX Overlay (Hiệu Ứng Cảnh Rừng Phá Vây & Điện Lang Tách Đàn) */
+.forest-ambush-fx {
+  position: absolute;
+  width: calc(var(--tile) * 0.96);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.forest-ambush-fx i {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background: url("assets/rampart/forest-ambush-fx.png") 0 0 / 800% 300% no-repeat;
 }

@@ -15,6 +15,14 @@ import {
   buildStoneAbsorptionSchedule,
   buildTremorKeyframes,
 } from '../dist/rampart-fx.mjs';
+import {
+  FOREST_AMBUSH_ROLES,
+  FOREST_AMBUSH_SEGMENTS,
+  guardSocketToPoint,
+  sampleForestAmbushSegment,
+  spawnForestAmbushFx,
+  wolfSocketToPoint,
+} from '../dist/forest-ambush-motion.mjs';
 
 const rampartDir = path.resolve('dist/assets/rampart');
 
@@ -308,4 +316,104 @@ test('guard-ivory-motion preserves original cast row, enforces 2x2 pixel grid on
   assert.equal(keyframes[2].backgroundPosition, '66.66666666666667% 100%');
   assert.equal(keyframes[4].backgroundPosition, '100% 100%');
   assert.equal(keyframes[4].offset, 1);
+});
+
+test('guard-russet-motion and guard-slate-motion preserve cast rows, enforce 2x2 grid, and plant walk frames on baseline', () => {
+  for (const [metaFile, expectedBaseline] of [['guard-russet.json', 121], ['guard-slate.json', 119]]) {
+    const meta = JSON.parse(fs.readFileSync(path.join(rampartDir, metaFile), 'utf8'));
+    const staticPng = decodePng(path.join(rampartDir, meta.staticSheet));
+    const motionPng = decodePng(path.join(rampartDir, meta.motionAtlas));
+
+    assert.equal(motionPng.width, 512);
+    assert.equal(motionPng.height, 256);
+    assert.deepEqual(meta.cellSize, [128, 128]);
+    assert.deepEqual(meta.grid, [4, 2]);
+    assert.equal(meta.anchorBaselineY, expectedBaseline);
+
+    const row0Bytes = 512 * 128 * 4;
+    assert.equal(Buffer.compare(staticPng.data.subarray(0, row0Bytes), motionPng.data.subarray(0, row0Bytes)), 0);
+
+    let mixels = 0;
+    for (let y = 0; y < motionPng.height; y += 2) {
+      for (let x = 0; x < motionPng.width; x += 2) {
+        const i00 = (y * motionPng.width + x) * 4;
+        const a = motionPng.data[i00 + 3];
+        assert.ok(a === 0 || a === 255);
+        for (const [dx, dy] of [[1, 0], [0, 1], [1, 1]]) {
+          const idx = ((y + dy) * motionPng.width + (x + dx)) * 4;
+          if (
+            motionPng.data[idx] !== motionPng.data[i00] ||
+            motionPng.data[idx + 1] !== motionPng.data[i00 + 1] ||
+            motionPng.data[idx + 2] !== motionPng.data[i00 + 2] ||
+            motionPng.data[idx + 3] !== motionPng.data[i00 + 3]
+          ) {
+            mixels++;
+          }
+        }
+      }
+    }
+    assert.equal(mixels, 0, `${metaFile} must have 0 1x1 mixels`);
+
+    const walkHashes = new Set();
+    for (let c = 0; c < 4; c++) {
+      const bbox = measureCellBBox(motionPng, c * 128, 128, 128, 128);
+      assert.ok(bbox);
+      assert.equal(bbox.y1, expectedBaseline);
+      const cellBuf = Buffer.alloc(128 * 128 * 4);
+      for (let y = 0; y < 128; y++) {
+        const srcStart = ((128 + y) * 512 + c * 128) * 4;
+        motionPng.data.copy(cellBuf, y * 128 * 4, srcStart, srcStart + 128 * 4);
+      }
+      walkHashes.add(cellBuf.toString('base64'));
+    }
+    assert.equal(walkHashes.size, 4);
+  }
+});
+
+test('forest-ambush-fx atlas and 3-segment choreography match approved docs/forest-ambush/layout.json coordinates', () => {
+  assertAtlasIntegrity('forest-ambush-fx.json', 512, 192, [64, 64], [8, 3], {
+    detection_glint: 4,
+    pounce_coil_dust: 4,
+    fang_ward_spark: 4,
+    gap_blast_wave: 4,
+    urgent_step_dust: 4,
+    regroup_stance_ring: 4,
+  });
+
+  const layout = JSON.parse(fs.readFileSync(path.resolve('docs/forest-ambush/layout.json'), 'utf8'));
+  const choreo = JSON.parse(fs.readFileSync(path.resolve('docs/forest-ambush/choreography.json'), 'utf8'));
+  assert.equal(choreo.segments.length, 3);
+
+  // Verify Segment 1 start positions match layout.rescuers and layout.pack
+  const s1Start = sampleForestAmbushSegment('segment1_breakout', 0);
+  const cover0 = s1Start.actors.find(a => a.role === 'cover');
+  const opens0 = s1Start.actors.find(a => a.role === 'opens-gap');
+  const rear0 = s1Start.actors.find(a => a.role === 'rear-guard');
+  assert.deepEqual([cover0.col, cover0.row], layout.rescuers[0].cell);
+  assert.deepEqual([opens0.col, opens0.row], layout.rescuers[1].cell);
+  assert.deepEqual([rear0.col, rear0.row], layout.rescuers[2].cell);
+
+  // Verify Segment 2 moves scout wolf from layout.scoutApproach (34, 9) to layout.scoutBattle (32, 10)
+  const s2Start = sampleForestAmbushSegment('segment2_scout_alert', 0);
+  const s2End = sampleForestAmbushSegment('segment2_scout_alert', FOREST_AMBUSH_SEGMENTS.segment2_scout_alert.durationMs);
+  assert.deepEqual([s2Start.actors[0].col, s2Start.actors[0].row], layout.scoutApproach);
+  assert.deepEqual([s2End.actors[0].col, s2End.actors[0].row], layout.scoutBattle);
+  assert.equal(s2End.actors[0].frame, 8); // Coiled pounce pose
+  assert.deepEqual(FOREST_AMBUSH_SEGMENTS.segment2_scout_alert.dodgeCell, layout.dodge);
+
+  // Verify Segment 3 regroups captain at layout.regroupLead (37, 11) facing talkFrom (36, 11)
+  const s3End = sampleForestAmbushSegment('segment3_regroup', FOREST_AMBUSH_SEGMENTS.segment3_regroup.durationMs);
+  const captainEnd = s3End.actors.find(a => a.role === 'cover');
+  assert.deepEqual([captainEnd.col, captainEnd.row], layout.regroupLead);
+  assert.equal(captainEnd.facing, -1);
+
+  const palmEast = guardSocketToPoint({ col: 35, row: 10 }, FOREST_AMBUSH_ROLES['opens-gap'].sockets128.releasePalm, 1);
+  const palmWest = guardSocketToPoint({ col: 35, row: 10 }, FOREST_AMBUSH_ROLES['opens-gap'].sockets128.releasePalm, -1);
+  assert.ok(palmEast.col > 35.5 && palmWest.col < 35.5);
+
+  const eyeWest = wolfSocketToPoint({ col: 34, row: 9 }, FOREST_AMBUSH_ROLES['scout-wolf'].sockets128.eyeAlert, -1);
+  assert.ok(eyeWest.col < 34.5 && eyeWest.row < 9.0);
+
+  const fx = spawnForestAmbushFx(null, { matches: true }, { kind: 'detection_glint', point: eyeWest });
+  assert.equal(fx.keyframes.length, 4);
 });

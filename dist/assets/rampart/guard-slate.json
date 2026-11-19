@@ -1,0 +1,82 @@
+{
+  "name": "Đội Trưởng Viện Trợ (Lam Xám Võ Phục)",
+  "id": "guard-slate",
+  "staticSheet": "guard-slate.png",
+  "motionAtlas": "guard-slate-motion.png",
+  "width": 512,
+  "height": 256,
+  "cellSize": [
+    128,
+    128
+  ],
+  "grid": [
+    4,
+    2
+  ],
+  "backgroundSize": "400% 200%",
+  "facing": "right",
+  "anchorBaselineY": 119,
+  "sockets": {
+    "chargePalm128": [
+      88,
+      56
+    ],
+    "releasePalm128": [
+      108,
+      65
+    ]
+  },
+  "clips": {
+    "cast": {
+      "row": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 690,
+      "releaseTimeMs": 330,
+      "timesMs": [
+        0,
+        110,
+        330,
+        475
+      ]
+    },
+    "walk": {
+      "row": 1,
+      "count": 4,
+      "loop": true,
+      "durationMs": 600,
+      "timesMs": [
+        0,
+        160,
+        300,
+        460
+      ],
+      "bboxes128": [
+        {
+          "x0": 38,
+          "y0": 38,
+          "x1": 81,
+          "y1": 119
+        },
+        {
+          "x0": 44,
+          "y0": 36,
+          "x1": 79,
+          "y1": 119
+        },
+        {
+          "x0": 38,
+          "y0": 38,
+          "x1": 83,
+          "y1": 119
+        },
+        {
+          "x0": 44,
+          "y0": 36,
+          "x1": 81,
+          "y1": 119
+        }
+      ]
+    }
+  }
+}
