@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111716">
+  <meta name="description" content="Demo chiến thuật theo lượt tại Thềm Hứng Mây của game Cổ Chân Nhân.">
+  <title>Cổ Chân Nhân · Thềm Hứng Mây</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="game.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#actions">Tới các hành động</a>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="identity">
+        <span class="seal" aria-hidden="true"><i></i></span>
+        <span class="brand">Cổ Chân Nhân</span>
+      </div>
+      <div class="utilities">
+        <a class="subtle nav-link" href="./">Khám phá</a>
+        <button type="button" id="help-button" class="subtle">Luật chơi</button>
+        <button type="button" id="reset-button" class="subtle reset">Chơi lại</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="match-heading">
+      <div>
+        <p class="region">Trung Châu <span aria-hidden="true">/</span> Thiên Thê Sơn</p>
+        <h1>Thềm Hứng Mây</h1>
+      </div>
+      <output class="turn" id="turn" aria-label="Lượt hiện tại">Lượt 01</output>
+    </div>
+
+    <div class="combat-layout">
+      <section class="arena" aria-label="Sàn đấu và sinh lực">
+        <div class="combatants">
+          <article class="combatant player">
+            <div class="portrait"><span class="sprite" aria-hidden="true"></span></div>
+            <div class="vitals">
+              <div class="fighter-heading"><h2>Phương Nguyên</h2><span>Người chơi</span></div>
+              <div class="vital-note"><span>Sinh lực</span><b id="player-hp"></b></div>
+              <progress id="player-meter" aria-label="Sinh lực Phương Nguyên"></progress>
+              <div class="vital-note"><span>Chân nguyên</span><b id="player-qi"></b></div>
+              <div class="qi-pips" id="qi-pips" aria-hidden="true"></div>
+            </div>
+          </article>
+          <article class="combatant rival">
+            <div class="portrait"><span class="rival-sprite" aria-hidden="true"></span></div>
+            <div class="vitals">
+              <div class="fighter-heading"><h2>Cổ sư Trung Châu</h2><span>Đối thủ</span></div>
+              <div class="vital-note"><span>Sinh lực</span><b id="rival-hp"></b></div>
+              <progress id="rival-meter" aria-label="Sinh lực Cổ sư Trung Châu"></progress>
+            </div>
+          </article>
+        </div>
+
+        <div class="stage">
+          <div class="grid-region">
+            <div class="coordinates columns" id="column-labels" aria-hidden="true"></div>
+            <div class="coordinates rows" id="row-labels" aria-hidden="true"></div>
+            <div class="board" id="board" role="group" aria-label="Sàn đấu 8 cột, 5 hàng" aria-describedby="board-help"></div>
+            <div class="actors" id="actors" aria-hidden="true">
+              <div class="actor player" id="player-actor"><span class="actor-ring"></span><span class="sprite"></span></div>
+              <div class="actor rival" id="rival-actor"><span class="actor-ring"></span><span class="rival-sprite"></span></div>
+            </div>
+            <div class="effects" id="effects" aria-hidden="true"></div>
+          </div>
+          <div class="result" id="result" hidden>
+            <div class="result-panel">
+              <h2 id="result-title"></h2>
+              <p id="result-description"></p>
+              <button type="button" id="replay-button" class="primary">Chơi lại</button>
+            </div>
+          </div>
+        </div>
+        <div class="field-footer">
+          <span><i class="legend player" aria-hidden="true"></i> Ô có thể đến</span>
+          <span><i class="legend rival" aria-hidden="true"></i> Vùng địch đánh dấu</span>
+          <span><i class="legend rock" aria-hidden="true"></i> Đá chắn</span>
+          <span id="board-help" class="sr-only">Dùng phím mũi tên để chọn ô, Enter để chọn điểm đến.</span>
+        </div>
+      </section>
+
+      <section class="intent-card" aria-label="Ý định của đối thủ">
+        <div class="panel-label"><i class="marker" aria-hidden="true"></i> Ý định đối thủ</div>
+        <h2 id="intent-name"></h2>
+        <p id="intent-description"></p>
+      </section>
+
+      <section class="actions" id="actions" tabindex="-1" aria-labelledby="actions-title">
+        <div class="actions-heading">
+          <h2 id="actions-title">Chọn hành động</h2>
+          <span>Mỗi hành động kết thúc lượt</span>
+        </div>
+        <div class="action-grid" id="action-grid"></div>
+        <p class="action-hint" id="action-hint"></p>
+      </section>
+
+      <section class="combat-log" aria-labelledby="log-title">
+        <div class="log-heading"><h2 id="log-title">Diễn biến</h2></div>
+        <ol id="log"></ol>
+      </section>
+    </div>
+    <div class="sr-only" id="announcement" role="status"></div>
+  </main>
+
+  <dialog id="help" aria-labelledby="help-title">
+    <div class="dialog-header">
+      <h2 id="help-title">Luật chơi</h2>
+      <form method="dialog"><button class="subtle" type="submit">Đóng</button></form>
+    </div>
+    <p>Hạ sinh lực đối thủ về 0 để thắng trận. Sau mỗi hành động của bạn, đối thủ thực hiện ý định đang hiển thị.</p>
+    <ul>
+      <li><b>Vùng đỏ</b> là các ô đối thủ sắp đánh. Di chuyển đến ô sáng ngoài vùng đỏ để né.</li>
+      <li><b>Tay không</b> đánh ở ô liền kề. Nguyệt Quang Cổ đánh xa đến bốn ô.</li>
+      <li><b>Bạch Ngọc Cổ</b> giảm sát thương trong lượt. Tay không và phòng thủ đều hồi chân nguyên.</li>
+      <li><b>Sinh Cơ Diệp</b> dùng chân nguyên để hồi sinh lực.</li>
+    </ul>
+    <p>Phím <kbd>1</kbd> đến <kbd>5</kbd> chọn hành động. Dùng phím mũi tên và <kbd>Enter</kbd> để chọn ô.</p>
+  </dialog>
+</body>
+</html>
