@@ -1,6 +1,12 @@
 import { coordinate } from './combat.mjs';
+import { awakeningStorageKey } from './awakening-rules.mjs';
+import { REAR_POST, createBeastKingRaid, raidProgress } from './beast-king-raid.mjs';
 import { createHeroMotion, MOONLIGHT_RELEASE_MS, releasePalm } from './hero-motion.mjs';
 import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
+import {
+  ABSORB_MS, RELIEF_START, SUPPLY_POST, advanceAbsorption, createLesson, settleTrainingShot, startAbsorption,
+} from './rampart-lesson.mjs';
+import { lessonCheckpointKey, readVillageArrival } from './village-arrival.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
@@ -20,22 +26,48 @@ const hero = byId('hero-unit');
 const heroSprite = hero.querySelector('.sprite');
 const beast = byId('wolf-unit');
 const castButton = byId('cast-moon');
+const absorbButton = byId('absorb-stone');
+const absorbProgress = byId('absorption-progress');
 const guide = byId('guide');
+const introDialog = byId('raid-intro');
 const mentorDialog = byId('mentor-dialog');
 const mentorNext = byId('mentor-next');
 const mentorLines = [
-  'Con vừa khai khiếu, đúng lúc Điện Lang kéo tới lũy tây. Lên cầu thang đi, ta chỉ con cách dùng Nguyệt Quang.',
-  'Tới ô đánh dấu, bấm F hoặc chạm nút Nguyệt Quang. Con Điện Lang ở giữa là mục tiêu của con. Chờ cổ hồi rồi bắn thêm một phát.',
+  'Nhóc con! Ngươi muốn chết hay sao mà đứng ngây ra đó, hãy lên phụ giúp đi.',
+  'Lên lũy theo cầu thang. Tới ô đánh dấu, dùng Nguyệt Quang đánh con Điện Lang ở giữa. Mỗi lần phóng tốn hai điểm chân nguyên.',
 ];
+const refillLine = 'Nếu hết chân nguyên hãy xuống hấp thụ nguyên thạch để hồi phục chân nguyên.';
 let mentorLine = 0;
+let introTimer;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
 const runToggle = byId('run-toggle');
 const runPreference = 'cochannhan.explore.run';
-const wearsAoReu = new URLSearchParams(location.search).get('hero') === 'ao-reu';
+let savedAwakening = null;
+try {
+  savedAwakening = sessionStorage.getItem(awakeningStorageKey);
+} catch {
+  // The ceremony passes the result in the URL if browser storage is unavailable.
+}
+const arrival = readVillageArrival(location.search, savedAwakening);
+const checkpointId = `${arrival.hero}:${arrival.outcome?.depth ?? 'direct'}`;
+let raidStage = 'lesson';
+try {
+  raidStage = raidProgress(sessionStorage.getItem(lessonCheckpointKey), checkpointId);
+} catch {
+  // The tutorial can run without browser storage.
+}
+let lesson = createLesson(raidStage !== 'lesson');
+const wearsAoReu = arrival.hero === 'ao-reu';
 if (wearsAoReu) {
   document.body.classList.add('hero-ao-reu');
   byId('hero-name').textContent = 'Cổ sư Áo rêu';
+}
+if (arrival.outcome) {
+  const { grade, seaPct } = arrival.outcome;
+  const summary = byId('awakening-summary');
+  summary.textContent = `${grade} · Nguyên Hải ${seaPct}%`;
+  summary.hidden = false;
 }
 const heroMotion = createHeroMotion(heroSprite, motion, wearsAoReu);
 const wolfMotion = createWolfMotion(beast, motion);
@@ -47,9 +79,17 @@ const keys = {
   arrowright: 1, d: 1,
   arrowdown: MAP.columns, s: MAP.columns,
 };
-const newTrip = () => createWorld({ seed: (Math.random() * 2 ** 32) >>> 0 });
+function newTrip() {
+  const trip = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0 });
+  if (lesson.phase === 'complete') {
+    trip.player = { ...trip.player, cell: raidStage === 'rear' ? REAR_POST : SUPPLY_POST, qi: trip.player.maxQi };
+  }
+  return trip;
+}
 let world = newTrip();
-let trainingComplete = false;
+let reliefCell = lesson.phase === 'complete' ? TRAINING_POST : RELIEF_START;
+let reliefRoute;
+let nextReliefAt = 0;
 let castReadyAt = 0;
 let regenAt = Infinity;
 let castEpoch = 0;
@@ -68,6 +108,7 @@ let markedThreats = [];
 const tiles = [];
 const rampartSurfaces = [];
 const rampartWolves = [];
+const raidPackWolves = [];
 const forestEdges = [
   [-1, 0, { frame: 'bamboo-edge-east' }],
   [1, 0, { frame: 'bamboo-edge-east', flip: true }],
@@ -223,23 +264,21 @@ function createMap() {
   surfaceTexture();
 }
 
-function createRampartWolves() {
-  for (const { col, row } of RAMPART_WOLVES) {
-    const unit = beast.cloneNode(true);
-    unit.removeAttribute('id');
-    unit.classList.add('rampart-wolf');
-    unit.hidden = true;
-    unit.style.left = `calc(var(--tile) * ${col})`;
-    unit.style.top = `calc(var(--tile) * ${row})`;
-    const impact = document.createElement('i');
-    impact.className = 'wall-impact';
-    unit.append(impact);
-    plane.append(unit);
-    rampartWolves.push({ unit, motion: createWolfMotion(unit, motion, impact) });
-  }
+function addRampartWolf(col, row) {
+  const unit = beast.cloneNode(true);
+  unit.removeAttribute('id');
+  unit.classList.add('rampart-wolf');
+  unit.hidden = true;
+  unit.style.left = `calc(var(--tile) * ${col})`;
+  unit.style.top = `calc(var(--tile) * ${row})`;
+  const impact = document.createElement('i');
+  impact.className = 'wall-impact';
+  unit.append(impact);
+  plane.append(unit);
+  return { unit, motion: createWolfMotion(unit, motion, impact) };
 }
 
-function animateRampartWolves() {
+function animateRampartWolves(guardVolley = true) {
   rampartWolves.forEach(({ unit, motion: wolf }, index) => {
     const { col, row, startCol, startRow } = RAMPART_WOLVES[index];
     unit.hidden = false;
@@ -247,25 +286,53 @@ function animateRampartWolves() {
       duration: 1500, delay: 280 + index * 290, after: wolf.attackWall,
     });
   });
-  rampartDefense.begin();
+  rampartDefense.begin(guardVolley);
+}
+
+function rushRaidPack() {
+  animateRampartWolves(false);
+  raidPackWolves.forEach(({ unit, motion: wolf }, index) => {
+    unit.hidden = false;
+    wolf.run(-4.1, index % 2 ? -.5 : .5, { duration: 1080 + index * 170, delay: 80 + index * 120 });
+  });
 }
 
 function showMentorLine() {
-  byId('mentor-line').textContent = mentorLines[mentorLine];
-  mentorNext.textContent = mentorLine === mentorLines.length - 1 ? 'Tới vị trí bắn' : 'Tiếp tục';
+  const refilling = lesson.phase === 'refill';
+  byId('mentor-line').textContent = refilling ? refillLine : mentorLines[mentorLine];
+  mentorNext.textContent = refilling ? 'Tới chỗ tiếp tế' : mentorLine === mentorLines.length - 1 ? 'Tới vị trí bắn' : 'Tiếp tục';
 }
 
-function beginArrival() {
-  rampartDefense.stop();
-  for (const wolf of rampartWolves) {
-    wolf.motion.stop();
-    wolf.unit.hidden = true;
-  }
+function showMentor() {
   mentorLine = 0;
   mentorDialog.returnValue = '';
   showMentorLine();
   mentorDialog.showModal();
   aimCamera();
+}
+
+function beginArrival() {
+  rampartDefense.stop();
+  for (const wolf of [...rampartWolves, ...raidPackWolves]) {
+    wolf.motion.stop();
+    wolf.unit.hidden = true;
+  }
+  if (lesson.phase === 'complete') {
+    if (raidStage === 'scene') startRaid();
+    else {
+      moveReliefOffPost();
+      rushRaidPack();
+      raid.aftermath();
+      aimCamera();
+    }
+    return;
+  }
+  if (!arrival.outcome) {
+    showMentor();
+    return;
+  }
+  introDialog.showModal();
+  if (!motion.matches) introTimer = setTimeout(() => introDialog.close(), 4500);
 }
 
 function place(node, cell, size) {
@@ -284,14 +351,18 @@ function aimCamera() {
     Math.min(Math.max(0, length * size - screen), Math.max(min, (point + 0.5) * size - screen / 2));
   const lookWest = mentorDialog.open ? 0 : 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
   const westEdge = nearRampart ? -RAMPART_FOREST_WIDTH * size : 0;
-  const x = offset(col - lookWest, field.clientWidth, MAP.columns, westEdge);
-  const y = offset(row, field.clientHeight, MAP.rows);
+  const [focusCol, focusRow] = raid.camera ?? [col - lookWest, row];
+  const x = offset(focusCol, field.clientWidth, MAP.columns, westEdge);
+  const y = offset(focusRow, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
-  place(byId('mentor-unit'), toCell(RAMPART_MENTOR.col, RAMPART_MENTOR.row), size);
+  if (raidStage === 'lesson') place(byId('mentor-unit'), toCell(RAMPART_MENTOR.col, RAMPART_MENTOR.row), size);
   place(byId('gate-marker'), GATE, size);
   place(byId('end-marker'), CONTINUE, size);
   place(byId('training-marker'), TRAINING_POST, size);
+  place(byId('supply-marker'), SUPPLY_POST, size);
+  place(byId('rear-marker'), REAR_POST, size);
+  place(rampartDefense.reliefUnit, reliefCell, size);
   if (!beast.hidden) place(beast, world.battle.rival.cell, size);
 }
 
@@ -304,7 +375,8 @@ function meter(name, current, max) {
 
 function renderObjective() {
   const atPost = world.player.cell === TRAINING_POST;
-  const pastGate = toPoint(world.player.cell).col >= 14;
+  const atSupply = world.player.cell === SUPPLY_POST;
+  const pastGate = toPoint(world.player.cell).col >= RAMPART_EDGE;
   let title = 'Ra cổng đông';
   let detail = 'Qua cổng đông để vào đường rừng.';
   let button = 'Đi tới cổng';
@@ -321,40 +393,67 @@ function renderObjective() {
     title = 'Đi tiếp về phía đông';
     detail = 'Điện Lang đã gục. Bạn có thể tự do đi lại qua bãi săn.';
     button = 'Đi tới lối mòn';
+  } else if (raidStage === 'scene') {
+    title = 'Thú vương xông tới';
+    detail = 'Tĩnh Nghi đang giữ lũy tây.';
+  } else if (raidStage === 'aid') {
+    title = 'Đi gọi viện binh';
+    detail = 'Về hậu trại theo lối đá phía sau lũy.';
+    button = 'Tới hậu trại';
+  } else if (raidStage === 'rear' && world.player.cell === REAR_POST) {
+    title = 'Đã đến hậu trại';
+    detail = 'Tĩnh Nghi đang cầm chân thú vương ở lũy tây.';
+    button = 'Đi tới cổng';
   } else if (pastGate) {
     title = 'Tới bãi săn';
     detail = 'Theo lối đất giữa rừng tới nơi Điện Lang phục kích.';
     button = 'Theo đường rừng';
-  } else if (!trainingComplete) {
+  } else if (lesson.phase === 'training') {
     title = atPost ? 'Tập phóng Nguyệt Quang' : 'Lên sàn lũy tây';
-    detail = atPost ? 'Bấm F hoặc chạm Nguyệt Quang hai lần để hạ con Điện Lang trước mặt.'
+    detail = atPost ? 'Bấm F hoặc chạm Nguyệt Quang để bắn. Theo dõi chân nguyên mỗi lần phóng.'
       : 'Theo cầu thang lên vị trí bắn. Quan sát các cổ sư phòng thủ.';
     button = 'Tới vị trí bắn';
+  } else if (lesson.phase === 'refill') {
+    title = atSupply ? 'Hồi chân nguyên' : 'Xuống lũy đổi ca';
+    detail = atSupply ? 'Dùng một viên nguyên thạch. Đứng yên cho tới khi hấp thụ xong.'
+      : 'Xuống theo cầu thang tới chỗ tiếp tế. Một cổ sư sẽ lên thay.';
+    button = 'Tới chỗ tiếp tế';
   }
   byId('objective-title').textContent = title;
   byId('objective-detail').textContent = detail;
   guide.textContent = button;
-  guide.hidden = world.mode !== 'explore' || world.reached || (atPost && !trainingComplete);
+  guide.hidden = world.mode !== 'explore' || world.reached || raidStage === 'scene' ||
+    (lesson.phase === 'training' && atPost) || (lesson.phase === 'refill' && atSupply);
 }
 
 function render() {
   const now = performance.now();
   const fighting = world.mode === 'battle';
   const defeated = world.mode === 'defeat';
-  const inTraining = world.player.cell === TRAINING_POST && !trainingComplete && now >= nextStepAt;
-  runToggle.hidden = defeated;
+  const inTraining = world.player.cell === TRAINING_POST && lesson.phase === 'training' && now >= nextStepAt;
+  const atSupply = world.player.cell === SUPPLY_POST;
+  const absorbing = lesson.absorbUntil !== null;
+  runToggle.hidden = defeated || raidStage === 'scene' || (lesson.phase === 'refill' && atSupply);
   castButton.hidden = !fighting && !inTraining;
   castButton.setAttribute('aria-disabled', String(world.player.qi < MOONLIGHT.cost || now < castReadyAt));
+  absorbButton.hidden = lesson.phase !== 'refill' || !atSupply || now < nextStepAt;
+  absorbButton.setAttribute('aria-disabled', String(absorbing));
+  absorbProgress.hidden = !absorbing;
+  byId('stone-status').hidden = lesson.phase === 'training';
+  byId('stone-count').textContent = lesson.phase === 'refill' ? '1' : '0';
   byId('location').textContent = locationOf(world.player.cell);
   const terrain = TERRAIN[world.player.cell].rampart;
   const level = terrain?.stair ? ' · Cầu thang' : terrain?.elevation ? ' · Sàn lũy' : '';
   byId('coordinates').textContent = `Ô ${coordinate(world.player.cell, MAP.columns)}${level}`;
-  byId('mode').textContent = fighting ? 'Giao chiến' : defeated ? 'Thất bại' : trainingComplete ? 'Khám phá' : 'Tập phòng thủ';
+  byId('mode').textContent = fighting ? 'Giao chiến' : defeated ? 'Thất bại' :
+    raidStage === 'scene' ? 'Thú triều' : raidStage === 'aid' ? 'Gọi viện binh' : raidStage === 'rear' ? 'Khám phá' : 'Tập phòng thủ';
   meter('world-hp', world.player.hp, world.player.maxHp);
   meter('world-qi', world.player.qi, world.player.maxQi);
-  byId('training-marker').hidden = trainingComplete || world.player.cell === TRAINING_POST;
+  byId('training-marker').hidden = lesson.phase !== 'training' || world.player.cell === TRAINING_POST;
+  byId('supply-marker').hidden = lesson.phase !== 'refill' || atSupply;
+  byId('rear-marker').hidden = raidStage !== 'aid';
   byId('end-marker').hidden = !world.cleared;
-  byId('gate-marker').hidden = !trainingComplete || toPoint(world.player.cell).col >= 22;
+  byId('gate-marker').hidden = raidStage !== 'rear' || toPoint(world.player.cell).col >= 22;
   byId('wolf-status').hidden = !fighting;
   byId('wolf-intent').hidden = !fighting;
   byId('defeat').hidden = !defeated;
@@ -383,12 +482,21 @@ function stopWalk() {
 
 function step(target) {
   const previous = world;
-  if (!trainingComplete && toPoint(target).col >= RAMPART_EDGE) {
-    setHint('Tập phóng Nguyệt Quang trên lũy tây trước khi rời trại.', true);
+  if (raidStage === 'scene') return false;
+  if (raidStage !== 'rear' && toPoint(target).col >= RAMPART_EDGE) {
+    setHint(raidStage === 'aid' ? 'Tới hậu trại để gọi viện binh.' : 'Hoàn thành bài tập phòng thủ trước khi rời trại.', true);
+    return false;
+  }
+  if (target === reliefCell) {
+    setHint('Ô này có cổ sư tiếp viện.', true);
     return false;
   }
   world = walk(world, target, performance.now());
   if (world === previous) return false;
+  if (lesson.absorbUntil !== null) {
+    lesson = advanceAbsorption(lesson, world.player.cell, performance.now());
+    setHint('Đã dừng hấp thụ. Viên nguyên thạch vẫn còn.', true);
+  }
   const delta = toPoint(world.player.cell).col - toPoint(previous.player.cell).col;
   if (delta && !pendingCast) hero.style.setProperty('--face', Math.sign(delta));
   const onStairs = Boolean(TERRAIN[target].rampart?.stair || TERRAIN[previous.player.cell].rampart?.stair);
@@ -398,6 +506,10 @@ function step(target) {
   nextStepAt = performance.now() + duration;
   heroMotion.travel(gait, duration);
   field.classList.add('walking');
+  if (raidStage === 'aid' && world.player.cell === REAR_POST) {
+    saveRaid('rear');
+    setHint('Đã đến hậu trại.', true);
+  }
   render();
   if (world.mode === 'battle' && previous.mode !== 'battle') {
     wolfMotion.idle();
@@ -426,7 +538,7 @@ function followRoute() {
 function go(target) {
   stopWalk();
   if (target === world.player.cell) return;
-  route = findPath(world, target);
+  route = findPath(world, target, reliefCell);
   if (route.length) {
     if (world.mode !== 'battle') setHint(walkHint);
     afterCurrentStep(followRoute);
@@ -443,7 +555,7 @@ function direction(from, to) {
 
 function castMoon() {
   const now = performance.now();
-  const training = !trainingComplete && world.player.cell === TRAINING_POST;
+  const training = lesson.phase === 'training' && world.player.cell === TRAINING_POST;
   const inHunt = world.mode === 'battle';
   if ((!training && !inHunt) || (training && (now < nextStepAt || !rampartDefense.targetHp()))) return;
   if (now < castReadyAt) return setHint('Nguyệt Quang đang hồi.');
@@ -460,7 +572,7 @@ function castMoon() {
     training, aim, destination, facing, animation: heroMotion.cast(), releaseAt: now + MOONLIGHT_RELEASE_MS,
   };
   castReadyAt = now + MOONLIGHT.cooldown;
-  regenAt = now + 1050;
+  if (inHunt) regenAt = now + 1050;
   world = { ...world, player: { ...world.player, qi: world.player.qi - MOONLIGHT.cost } };
   render();
 }
@@ -474,7 +586,7 @@ function releaseMoon({ training, aim, destination, facing }) {
     col: (sprite.left - left + sprite.width * (facing > 0 ? handX : 1 - handX)) / tile,
     row: (sprite.top - top + sprite.height * handY) / tile,
   };
-  if (training) rampartDefense.playerShot(from);
+  if (training) rampartDefense.playerShot(from, finishTrainingShot);
   else if (world.mode === 'battle') {
     if (cellDistance(world.player.cell, aim) > MOONLIGHT.range || !clearShot(world.player.cell, aim)) {
       setHint('Đường bắn bị chắn hoặc Điện Lang đã ngoài tầm.');
@@ -498,6 +610,96 @@ function releaseMoon({ training, aim, destination, facing }) {
   }
 }
 
+function finishTrainingShot() {
+  const next = settleTrainingShot(lesson, world.player.qi);
+  if (next === lesson) return;
+  lesson = next;
+  stopWalk();
+  setHint('Chân nguyên đã cạn. Xuống lũy để hồi phục.', true);
+  render();
+  showMentor();
+}
+
+function tickRelief(now) {
+  if (raidStage !== 'lesson' || lesson.phase === 'training' || mentorDialog.open || now < nextReliefAt || reliefCell === TRAINING_POST) return;
+  if (!reliefRoute) {
+    const { cell } = world.player;
+    const terrain = TERRAIN[cell].rampart;
+    if (toPoint(cell).col < 9 || terrain?.stair || terrain?.elevation || now < nextStepAt) return;
+    const from = { ...world, player: { ...world.player, cell: reliefCell } };
+    reliefRoute = findPath(from, TRAINING_POST, cell);
+  }
+  const next = reliefRoute[0];
+  if (next === undefined || next === world.player.cell) return;
+  const climbing = TERRAIN[reliefCell].rampart?.stair || TERRAIN[next].rampart?.stair;
+  const duration = climbing ? 440 : 230;
+  reliefCell = reliefRoute.shift();
+  nextReliefAt = now + duration;
+  const unit = rampartDefense.reliefUnit;
+  unit.style.setProperty('--relief-step', duration + 'ms');
+  unit.classList.add('relief-moving');
+  place(unit, reliefCell, hero.offsetWidth);
+  if (reliefCell === TRAINING_POST) {
+    rampartDefense.coverTrainingPost();
+    renderObjective();
+  }
+}
+
+function absorbStone() {
+  if (performance.now() < nextStepAt || mentorDialog.open) return;
+  const next = startAbsorption(lesson, world.player.cell, performance.now());
+  if (next === lesson) return;
+  lesson = next;
+  stopWalk();
+  absorbProgress.value = 0;
+  setHint('Đang hấp thụ nguyên thạch…', true);
+  render();
+}
+
+function tickAbsorption(now) {
+  if (lesson.absorbUntil === null) return;
+  absorbProgress.value = Math.max(0, 1 - (lesson.absorbUntil - now) / ABSORB_MS);
+  const next = advanceAbsorption(lesson, world.player.cell, now);
+  if (next === lesson) return;
+  lesson = next;
+  world = { ...world, player: { ...world.player, qi: world.player.maxQi } };
+  startRaid();
+}
+
+function saveRaid(stage) {
+  raidStage = stage;
+  try {
+    sessionStorage.setItem(lessonCheckpointKey, checkpointId + '|' + stage);
+  } catch {
+    // The completed lesson remains playable in memory.
+  }
+}
+
+function moveReliefOffPost() {
+  reliefCell = toCell(5, 13);
+  rampartDefense.reliefUnit.classList.add('relief-moving');
+  place(rampartDefense.reliefUnit, reliefCell, hero.offsetWidth);
+}
+
+function startRaid() {
+  stopWalk();
+  pendingShiftTap = false;
+  saveRaid('scene');
+  reliefCell = TRAINING_POST;
+  raid.start(performance.now());
+  rushRaidPack();
+  setHint('Chân nguyên đã đầy. Ngoài lũy, đàn sói đang tràn lên.', true);
+  render();
+}
+
+function finishRaid() {
+  moveReliefOffPost();
+  saveRaid('aid');
+  setHint('Đi về hậu trại để gọi viện binh.', true);
+  render();
+  field.focus({ preventScroll: true });
+}
+
 function tick(now) {
   const castAnimation = pendingCast?.animation;
   const atRelease = castAnimation && castAnimation.playState !== 'idle'
@@ -507,7 +709,16 @@ function tick(now) {
     pendingCast = undefined;
     releaseMoon(cast);
   }
-  if (world.player.cell === TRAINING_POST && !trainingComplete && castButton.hidden && now >= nextStepAt) render();
+  if (now >= nextStepAt && (
+    (lesson.phase === 'training' && world.player.cell === TRAINING_POST && castButton.hidden) ||
+    (lesson.phase === 'refill' && world.player.cell === SUPPLY_POST && absorbButton.hidden)
+  )) render();
+  tickRelief(now);
+  tickAbsorption(now);
+  if (raidStage === 'scene') {
+    raid.advance(now);
+    aimCamera();
+  }
   if (now >= regenAt && world.mode !== 'defeat') {
     const qi = Math.min(world.player.maxQi, world.player.qi + 1);
     world = { ...world, player: { ...world.player, qi } };
@@ -546,7 +757,18 @@ function tick(now) {
 function reset() {
   stopWalk();
   wolfMotion.stop();
-  trainingComplete = false;
+  raid.clear();
+  raidStage = 'lesson';
+  lesson = createLesson();
+  try {
+    sessionStorage.removeItem(lessonCheckpointKey);
+  } catch {
+    // The in-memory lesson was reset above.
+  }
+  reliefCell = RELIEF_START;
+  reliefRoute = undefined;
+  nextReliefAt = 0;
+  rampartDefense.reliefUnit.classList.remove('relief-moving');
   castReadyAt = 0;
   regenAt = Infinity;
   castEpoch++;
@@ -567,27 +789,41 @@ byId('field-hint').textContent = walkHint;
 renderRunToggle();
 runToggle.addEventListener('click', toggleRun);
 createMap();
-createRampartWolves();
+for (const { col, row } of RAMPART_WOLVES) rampartWolves.push(addRampartWolf(col, row));
+for (const [col, row] of [[.7, 7.9], [-.55, 10.1], [1.25, 14.75]]) {
+  const wolf = addRampartWolf(col, row);
+  wolf.unit.classList.add('raid-pack-wolf');
+  wolf.unit.querySelector('.wolf-health').hidden = true;
+  raidPackWolves.push(wolf);
+}
 const rampartDefense = createRampartDefense(plane, rampartWolves, motion, (index, hp) => {
-  if (index !== 1) return;
+  if (index !== 1 || lesson.phase !== 'training') return;
   if (hp) {
     setHint(`Trúng đòn. Điện Lang còn ${hp} sinh lực.`, true);
     return;
   }
-  trainingComplete = true;
-  setHint('Đã hạ Điện Lang. Qua cổng đông để tới bãi săn.', true);
-  render();
+  setHint('Đã hạ Điện Lang.', true);
+});
+const raid = createBeastKingRaid({
+  field, plane, mentor: byId('mentor-unit'), dialogue: byId('raid-dialogue'), skipButton: byId('raid-skip'),
+  motion, defense: rampartDefense, onYield: moveReliefOffPost, onFinish: finishRaid,
 });
 castButton.addEventListener('click', castMoon);
+absorbButton.addEventListener('click', absorbStone);
+introDialog.addEventListener('close', () => {
+  clearTimeout(introTimer);
+  showMentor();
+});
 mentorNext.addEventListener('click', () => {
-  if (++mentorLine === mentorLines.length) mentorDialog.close('guide');
+  if (lesson.phase === 'refill' || ++mentorLine === mentorLines.length) mentorDialog.close('guide');
   else showMentorLine();
 });
 mentorDialog.addEventListener('close', () => {
   field.focus({ preventScroll: true });
   aimCamera();
-  animateRampartWolves();
-  if (mentorDialog.returnValue === 'guide') go(TRAINING_POST);
+  const refilling = lesson.phase === 'refill';
+  if (!refilling) animateRampartWolves();
+  if (mentorDialog.returnValue === 'guide') go(refilling ? SUPPLY_POST : TRAINING_POST);
 });
 render();
 field.classList.add('ready');
@@ -597,13 +833,20 @@ beginArrival();
 
 map.addEventListener('click', (event) => {
   const tile = event.target.closest('button[data-cell]');
-  if (!tile || world.mode === 'defeat') return;
+  if (!tile || world.mode === 'defeat' || raidStage === 'scene') return;
   field.focus({ preventScroll: true });
   go(Number(tile.dataset.cell));
 });
 
 document.addEventListener('keydown', event => {
-  if (mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+  if (introDialog.open || mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+  if (raidStage === 'scene') {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      raid.finish();
+    }
+    return;
+  }
   const key = event.key.toLowerCase();
   if (key === 'shift') {
     if (!event.repeat) pendingShiftTap = true;
@@ -617,6 +860,9 @@ document.addEventListener('keydown', event => {
     if (key === 'f' && !event.repeat) {
       event.preventDefault();
       castMoon();
+    } else if (key === 'e' && !event.repeat) {
+      event.preventDefault();
+      absorbStone();
     }
   }
 });
@@ -630,7 +876,11 @@ window.addEventListener('blur', () => { pendingShiftTap = false; });
 
 guide.addEventListener('click', () => {
   field.focus({ preventScroll: true });
-  go(world.cleared ? CONTINUE : !trainingComplete ? TRAINING_POST : toPoint(world.player.cell).col < RAMPART_EDGE ? GATE : TRAIL_ENTRY);
+  if (raidStage === 'scene') return;
+  if (raidStage === 'aid') go(REAR_POST);
+  else if (lesson.phase === 'training') go(TRAINING_POST);
+  else if (lesson.phase === 'refill') go(SUPPLY_POST);
+  else go(world.cleared ? CONTINUE : toPoint(world.player.cell).col < RAMPART_EDGE ? GATE : TRAIL_ENTRY);
 });
 byId('reset-trip').addEventListener('click', reset);
 byId('retry-encounter').addEventListener('click', () => {

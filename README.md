@@ -1,10 +1,10 @@
 # Cổ Chân Nhân · Demo web
 
-Sau **Đại điển Khai Khiếu**, lên lũy tây **Cổ Nguyệt Sơn Trại** để tập dùng Nguyệt Quang. Qua cổng đông để tới **bãi săn Thanh Mao**, nơi Điện Lang áp sát và vồ trong thời gian thực. Hạ sói để tiếp tục đi theo lối mòn phía đông.
+Sau **Đại điển Khai Khiếu**, lên lũy tây **Cổ Nguyệt Sơn Trại** để tập dùng Nguyệt Quang. Khi bạn hồi đầy chân nguyên, **Cuồng Điện Lang** xuất hiện. Tĩnh Nghi ở lại phòng thủ và giao nhiệm vụ chạy về hậu trại gọi viện binh.
 
-Khi trở về Sơn Trại, giáo tập **Cổ Nguyệt Tĩnh Nghi** đón người chơi ở chân cầu thang. Chân dung và lời thoại hiện ở đáy màn hình. Chọn **Tới vị trí bắn** để đi theo lộ trình hướng dẫn, hoặc bấm **Esc** để tự đi.
+Sau khi xác nhận ở Đại điển, màn hình hiện **Vài năm sau đại điển** và **Thú triều tập kích sơn trại**. Chọn **Tiếp tục** để qua ngay. Giáo tập **Cổ Nguyệt Tĩnh Nghi**, Tam chuyển đỉnh phong, đón người chơi ở chân cầu thang. Chân dung và lời thoại hiện ở đáy màn hình. Chọn **Tới vị trí bắn** để đi theo lộ trình hướng dẫn, hoặc bấm **Esc** để tự đi.
 
-Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Điện Lang** chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây. Chúng thay nhau vồ vào cọc gỗ, làm bật dăm rồi lùi lấy đà. Con gặp ở bãi săn dùng cùng tạo hình và có động tác đứng, chạy áp sát, cắn, vồ và giật mình khi trúng đòn.
+Sơn Trại kéo dài theo trục bắc–nam. Khi mở bản đồ, bầy **Điện Lang** chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây. Chúng thay nhau vồ vào cọc gỗ, làm bật dăm rồi lùi lấy đà. Con gặp ở bãi săn dùng cùng tạo hình và có động tác đứng, chạy áp sát, cắn, vồ và giật mình khi trúng đòn. Sprite Điện Lang hiển thị lớn hơn 35% ở cả hai cảnh. Thanh sinh lực bám theo tư thế khi sói chạy hoặc vồ.
 
 Trên lũy có nữ cổ sư áo nâu dùng **Nguyệt Quang**, nam cổ sư áo xanh đá dùng **Nguyệt Toàn**, và nữ cổ sư áo chàm phóng **Tùng Châm**. Họ đánh hai mục tiêu bên sườn. Người chơi tập trên con Điện Lang ở giữa. Thanh sinh lực nằm trên đầu sói, còn máu bắn từ vị trí trúng đòn. Các atlas bay, va chạm và máu lấy từ bộ asset Antigravity. Trong truyện, Thanh Thư dùng nguyệt nhận xanh lục bay cong và phóng lá thông từ tóc. [Chương 22](https://truyenhoan.com/co-chan-nhan/chuong-22.html) · [Chương 104](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-104.html) · [Chương 141](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-141)
 
@@ -14,7 +14,7 @@ Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 
-Khi mở demo, chọn **Huyền bào** hoặc **Áo rêu** để vào Đại điển Khai Khiếu. Vượt sông ngầm, đọc chuyện Nhân Tổ và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. Nhân vật đã chọn theo bạn khi trở về Sơn Trại. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
+Khi mở demo, chọn **Huyền bào** hoặc **Áo rêu** để vào Đại điển Khai Khiếu. Vượt sông ngầm, đọc chuyện Nhân Tổ và đi sâu vào vườn Nguyệt Lan tới khi Hy Vọng Cổ hội tụ. Sơn Trại tiếp nhận skin và độ sâu, rồi dùng cùng quy tắc với Đại điển để hiển thị tư chất và dung lượng Nguyên Hải trên HUD. Có thể mở trực tiếp `village.html` để thử lũy tây khi chưa chơi qua Đại điển. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
 
 ![Cuộc chạm trán với sói trên cùng bản đồ vừa khám phá](docs/forest-encounter.png)
 
@@ -30,7 +30,11 @@ Mở [bản demo local](http://127.0.0.1:4173). Bản đồ có **42 × 26 ô**.
 
 Bấm **Shift** một lần để bật chạy khi khám phá, bấm lần nữa để về đi bộ. Nút **Chạy** dưới bản đồ cũng đổi chế độ và trình duyệt ghi nhớ lựa chọn. Huyền bào dùng dáng chạy riêng trên nền phẳng. Trên cầu thang, nhân vật đi từng bước ở lối giữa rộng một ô và trở lại nhịp đã chọn sau khi ra khỏi thang. Mỗi lượt **Chơi lại** chọn biến thể nền theo mã riêng và giữ vị trí các tuyến đường, cọc và bậc thang.
 
-Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 chân nguyên và có thời gian hồi. Chân nguyên phục hồi dần khi ngừng bắn. Ở bãi săn, dùng WASD, phím mũi tên hoặc chạm ô để thoát vùng màu đỏ trước lúc Điện Lang vồ. Nếu gục, chọn **Thử lại trận** để về lúc sói xuất hiện. Nút **Chơi lại** đặt lại cả tutorial.
+Bấm **F** hoặc chạm **Nguyệt Quang** để bắn. Mỗi phát tốn 2 chân nguyên. Khi cạn chân nguyên, nghe Tĩnh Nghi rồi xuống chỗ tiếp tế để một cổ sư khác lên thay. Bấm **E** hoặc chạm **Hấp thụ nguyên thạch** và đứng yên khoảng 1,5 giây. Rời ô trước khi xong sẽ giữ lại viên đá. Hoàn tất lưu điểm tiếp tế cho lần tải lại trong cùng phiên. Nút **Chơi lại** đặt lại cả tutorial.
+
+Ngay khi dùng xong nguyên thạch, camera theo đợt sói mới và Cuồng Điện Lang tới lũy tây. Tĩnh Nghi chỉ đường về hậu trại rồi lên lũy dùng Huyết Nguyệt và Kim Chung Tráo. Có thể bấm **Esc** hoặc **Bỏ qua cảnh** để chuyển tới nhiệm vụ gọi viện binh. Tải lại trước khi xem xong sẽ phát lại từ đầu cảnh và giữ kết quả hấp thụ. Tải lại sau khi xem xong sẽ đưa bạn về mốc đang làm.
+
+Sau khi đến hậu trại, cổng đông vẫn dẫn tới bãi săn của bản thử. Ở đó chân nguyên hồi dần khi ngừng bắn. Né vùng màu đỏ trước lúc Điện Lang vồ và dùng **Thử lại trận** nếu gục.
 
 Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
 
@@ -44,7 +48,8 @@ Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với 
 
 - `dist/combat.mjs` giữ quy tắc của bản Đấu nhanh theo lượt.
 - `dist/world.mjs` định nghĩa địa hình, tìm đường, nhịp tấn công theo thời gian thực và sát thương ở bãi săn. `dist/rampart-defense.mjs` điều khiển cảnh phòng thủ, đạn và hiệu ứng trúng đòn.
-- `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/game.mjs` điều khiển trận Đấu nhanh.
+- `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/rampart-lesson.mjs` giữ các mốc bài tập và quy tắc hấp thụ. `dist/game.mjs` điều khiển trận Đấu nhanh.
+- `dist/beast-king-raid.mjs` điều phối cảnh xuất hiện của Cuồng Điện Lang và các mốc nối lại. [Hồ sơ atlas và VFX](docs/thu-trieu-assets.md)
 - `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 

@@ -51,11 +51,24 @@
 .field-unit, .field-marker { position: absolute; left: 0; top: 0; width: var(--tile); height: var(--tile); pointer-events: none; }
 .field-unit { z-index: 3; }
 .field-unit .sprite { position: absolute; left: 50%; bottom: 13%; width: 118%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); filter: drop-shadow(0 0 1px #b6ffdd) drop-shadow(1px 2px 1px #171f19); }
-.field-unit .wolf-art { position: absolute; left: 50%; bottom: 0; width: 133%; aspect-ratio: 1; transform: translateX(-50%) scaleX(var(--face, 1)); background: url("assets/world/dien-lang.png") 0 0 / 400% 400% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #dbccad) drop-shadow(1px 2px 1px #17141d); }
+.beast { --wolf-art-scale: 1.35; --wolf-center-shift: 0px; }
+.field-unit .wolf-art {
+  position: absolute; left: calc(50% + var(--wolf-center-shift)); bottom: 0; width: 133%; aspect-ratio: 1;
+  /* The idle frame's paws end at 107 px in the 128 px atlas cell. */
+  transform-origin: 50% 84%;
+  transform: translateX(-50%) scaleX(var(--face, 1)) scale(var(--wolf-art-scale));
+  background: url("assets/world/dien-lang.png") 0 0 / 400% 400% no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px #dbccad) drop-shadow(1px 2px 1px #17141d);
+}
 .unit-shadow { position: absolute; bottom: 11%; left: 18%; width: 64%; height: 20%; border: 1px solid #94e9c0; border-radius: 50%; background: #0c13179e; }
-.beast .unit-shadow { border-color: #ffad85; }
+.beast .unit-shadow { left: calc(8% + var(--wolf-center-shift)); width: 84%; border-color: #ffad85; }
+.rampart-wolf {
+  /* Pull back the wider lunge so the front paw still reaches the original wall contact. */
+  --wolf-center-shift: calc(var(--tile) * (1 - var(--wolf-art-scale)) * .55);
+}
 .rampart-wolf .unit-shadow { border-color: transparent; }
-.rampart-wolf .wolf-art { transform-origin: 50% 84%; filter: drop-shadow(1px 2px 1px #141914c9); }
+.rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
+.raid-pack-wolf { z-index: 2; }
 .rampart-wolf.wolf-down .wolf-art {
   scale: 1 .58; translate: -15% 8%; filter: brightness(.72) drop-shadow(1px 2px 1px #141914c9);
 }
@@ -74,7 +87,8 @@
   filter: drop-shadow(1px 2px 1px #101913);
 }
 .wolf-health {
-  appearance: none; position: absolute; left: 19%; top: 19%; width: 62%; height: 4px;
+  appearance: none; position: absolute; left: 27.5%; top: calc(var(--wolf-head-top, 42.96875%) - 5px);
+  width: 45%; height: 3px; transform: scaleX(var(--face, 1));
   border: 1px solid #21181b; background: #462b35; accent-color: #d76b68;
 }
 .wolf-health::-webkit-progress-bar { background: #462b35; }
@@ -90,6 +104,7 @@
 .indigo-guard .guard-art { background: url("assets/rampart/guard-indigo.png") 0 0 / 100% 100% no-repeat; }
 .russet-guard .guard-art { background-image: url("assets/rampart/guard-russet.png"); }
 .ivory-guard .guard-art { background-image: url("assets/rampart/guard-ivory.png"); }
+.relief-moving { transition: transform var(--relief-step, 230ms) linear; }
 .rampart-defense-effects { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .rampart-moon {
   position: absolute; width: calc(var(--tile) * .70); aspect-ratio: 1;
@@ -101,6 +116,10 @@
 }
 .rampart-moon.whirl { width: calc(var(--tile) * 1.35); }
 .rampart-moon.whirl i { background-image: url("assets/rampart/nguyet-toan.png"); }
+.rampart-moon.huyet-nguyet { width: calc(var(--tile) * 1.48); }
+.rampart-moon.huyet-nguyet i {
+  background: url("assets/rampart/huyet-nguyet.png") 0 0 / 800% 500% no-repeat;
+}
 .rampart-moon.needles { width: calc(var(--tile) * 1.25); }
 .rampart-moon.needles i { background-image: url("assets/rampart/tung-cham.png"); }
 .rampart-moon.blood { width: calc(var(--tile) * .95); }
@@ -110,6 +129,55 @@
 #cast-moon { margin-left: auto; white-space: nowrap; }
 #cast-moon small { margin-left: 5px; color: #bcb99e; }
 #cast-moon[aria-disabled=true] { opacity: .58; }
+#absorb-stone { margin-left: auto; }
+#absorb-stone[aria-disabled=true] { opacity: .58; }
+#absorption-progress {
+  appearance: none; width: min(200px, 70vw); height: 7px;
+  border: 0; background: #3c4a40; accent-color: #adc798;
+}
+#absorption-progress::-webkit-progress-bar { background: #3c4a40; }
+#absorption-progress::-webkit-progress-value { background: #adc798; }
+.raid-playing .field-status,
+.raid-playing .field-caption { visibility: hidden; }
+.raid-playing .field-world { transition: none; }
+.raid-skip { position: absolute; right: 11px; top: 11px; z-index: 8; background-color: #15211a; }
+.raid-dialogue {
+  position: absolute; z-index: 7; bottom: 9px; left: 50%; transform: translateX(-50%); pointer-events: none;
+  display: flex; width: min(510px, calc(100% - 22px)); gap: 10px; align-items: center;
+  padding: 9px 12px; border: 1px solid #8f754a; color: #eee4ca; background: #17231ef5;
+}
+.raid-dialogue img { image-rendering: pixelated; flex: 0 0 48px; background: #26352b; border: 1px solid #816e50; }
+.raid-dialogue strong { display: block; color: #f4dca9; font: 600 1rem var(--display); }
+.raid-dialogue p { font-size: .9rem; margin-top: 3px; }
+.raid-boss {
+  --king-width: calc(var(--tile) * 5.95);
+  position: absolute; z-index: 3; pointer-events: none;
+  width: var(--king-width); aspect-ratio: 160 / 112; transform: translate(-50%, -89.3%);
+}
+.raid-boss-art {
+  position: absolute; inset: 0; image-rendering: pixelated;
+  background: url("assets/rampart/cuong-dien-lang-motion.png") 0 100% / 400% 500% no-repeat;
+  filter: drop-shadow(1px 2px 1px #16191a);
+}
+.raid-boss-shadow {
+  position: absolute; left: 15%; width: 71%; top: 83%; height: 11%;
+  border-radius: 50%; background: #0b110e9e;
+}
+.raid-mentor .mentor-art {
+  transform: translateX(-50%) scaleX(-1);
+  background: url("assets/rampart/tinh-nghi-motion.png") 0 0 / 800% 500% no-repeat;
+}
+.raid-effects { position: absolute; z-index: 4; inset: 0; pointer-events: none; }
+.raid-effects .raid-wall-dust { width: calc(var(--tile) * 2.1); }
+.raid-intro {
+  position: fixed; inset: 0; width: min(740px, calc(100% - 30px)); max-width: none; margin: auto;
+  padding: clamp(20px, 6vw, 48px) 16px; border: 0; color: #dbc49b; background: transparent; text-align: center;
+}
+.raid-intro::backdrop { background: #0c1411; }
+.raid-intro h2 {
+  margin: .28em 0 .72em; color: #f4d9a3; font: 600 clamp(1.8rem, 5vw, 3.2rem) / 1.12 var(--display);
+  text-wrap: balance;
+}
 .mentor-dialog {
   position: fixed; inset: auto 0 0; width: min(760px, calc(100% - 24px));
   max-width: none; max-height: calc(100dvh - 30px); margin: 0 auto clamp(12px, 4vh, 36px);
@@ -128,12 +196,14 @@
   background: radial-gradient(ellipse at 50% 38%, #33493b, #233129 72%);
 }
 .mentor-copy h2 { color: #f4dca9; font: 600 1.25rem var(--display); margin-bottom: 6px; }
+.mentor-rank { display: inline-block; margin-inline-start: .36rem; color: #d7c7a1; font: 500 .78rem system-ui, sans-serif; }
 .mentor-copy p { font-size: .96rem; line-height: 1.52; }
 #mentor-next { align-self: end; }
 @media (max-width: 540px) {
   .mentor-dialog-content { grid-template-columns: 72px minmax(0, 1fr); gap: 9px 11px; }
   .mentor-portrait { width: 72px; height: 72px; align-self: start; }
   .mentor-copy h2 { font-size: 1.05rem; }
+  .mentor-rank { margin-inline-start: 0; }
   .mentor-copy p { font-size: .89rem; }
   #mentor-next { grid-column: 2; }
 }
@@ -141,8 +211,10 @@
 .field-marker { z-index: 2; display: grid; align-items: start; justify-items: center; }
 .field-marker span { white-space: nowrap; padding: 3px 7px; transform: translateY(-42%); background: #182820f0; border: 1px solid #ac9863; border-radius: 3px; color: #ffe6a3; font-size: .75rem; font-weight: 650; }
 .field-marker.passage span { border-color: #7cba90; color: #cff0b2; }
+.field-marker.supply span { border-color: #83b5a8; color: #d5f4df; }
 .field-marker::after { content: ""; position: absolute; left: 42%; bottom: 24%; width: 16%; aspect-ratio: 1; background: #ffd07c; outline: 2px solid #352b1a; transform: rotate(45deg); }
 .field-marker.passage::after { background: #a5ec9b; }
+.field-marker.supply::after { background: #a4decb; }
 .field-shade { position: absolute; inset: 0; pointer-events: none; z-index: 4; box-shadow: inset 0 0 30px 1px #152319b0; }
 .field-caption { position: absolute; inset: auto 8px 8px; color: #e1ead5; font-size: .8rem; z-index: 5; display: flex; justify-content: space-between; pointer-events: none; }
 .field-caption span { background: #142018ef; border: 1px solid #69735a; border-radius: 3px; padding: 4px 7px; }
@@ -194,6 +266,7 @@
   gap: 4px; width: 189px; padding: 8px 11px 8px 48px; background: linear-gradient(100deg,#101c18f7,#14221ee8);
   border-left: 2px solid #b39c64; box-shadow: 0 2px 6px #08130b70; }
 .hero-heading h2 { font: 600 1rem var(--display); color:#f2deb1; }
+.awakening-summary { color: #c2d9c6; font-size: .76rem; line-height: 1.25; text-wrap: balance; }
 .hero-heading .hero-portrait { left: 4px; top: 8px; width: 40px; height: 48px; }
 .hero-ao-reu .hero-heading .hero-portrait { background-image: url("assets/ao-reu-selection.png"); }
 .field-vital .vital-note { display:flex; justify-content:space-between; font-size:.77rem; }

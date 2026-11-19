@@ -8,6 +8,7 @@
   <title>Cổ Chân Nhân · Đường tới bãi săn</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="world.css">
+  <link rel="stylesheet" href="rampart-fx.css">
   <link rel="preload" as="image" href="assets/world/dien-lang.png">
   <link rel="preload" as="image" href="assets/rampart/son-trai-nu-nguyet-quang.png">
   <link rel="preload" as="image" href="assets/rampart/nguyet-quang.png">
@@ -19,6 +20,10 @@
   <link rel="preload" as="image" href="assets/huyen-bao-combat.png">
   <link rel="preload" as="image" href="assets/ao-reu-combat.png">
   <link rel="preload" as="image" href="assets/rampart/tinh-nghi-portrait.png">
+  <link rel="preload" as="image" href="assets/rampart/cuong-dien-lang-motion.png">
+  <link rel="preload" as="image" href="assets/rampart/tinh-nghi-motion.png">
+  <link rel="preload" as="image" href="assets/rampart/huyet-nguyet.png">
+  <link rel="preload" as="image" href="assets/rampart/kim-chung-trao.png">
   <script type="module" src="expedition.mjs"></script>
 </head>
 <body class="journey">
@@ -51,13 +56,16 @@
             <div class="map-ornaments" id="map-ornaments" aria-hidden="true"></div>
             <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
             <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
+            <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
+            <div class="field-marker passage" id="rear-marker" aria-hidden="true" hidden><span>Hậu trại</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
-            <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i><progress class="wolf-health"></progress></div>
+            <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"><progress class="wolf-health"></progress></i></div>
           </div>
           <section class="trail-card field-status" aria-label="Trạng thái chiến đấu">
             <div class="hero-heading"><span class="hero-portrait" aria-hidden="true"></span><h2 id="hero-name">Phương Nguyên</h2></div>
+            <p class="awakening-summary" id="awakening-summary" hidden></p>
             <div class="field-vital">
               <div class="vital-note"><span>Sinh lực</span><b id="world-hp"></b></div>
               <progress id="world-hp-meter" aria-label="Sinh lực người chơi"></progress>
@@ -66,12 +74,20 @@
               <div class="vital-note"><span>Chân nguyên</span><b id="world-qi"></b></div>
               <progress class="qi-meter" id="world-qi-meter" aria-label="Chân nguyên người chơi"></progress>
             </div>
+            <div class="field-vital" id="stone-status" hidden>
+              <div class="vital-note"><span>Nguyên thạch</span><b id="stone-count"></b></div>
+            </div>
             <div class="field-vital" id="wolf-status" hidden>
               <div class="vital-note"><span>Điện Lang</span><b id="wolf-hp"></b></div>
               <progress class="rival-meter" id="wolf-hp-meter" aria-label="Sinh lực sói"></progress>
             </div>
           </section>
           <div class="field-shade" aria-hidden="true"></div>
+          <button class="subtle raid-skip" id="raid-skip" type="button" aria-keyshortcuts="Escape" hidden>Bỏ qua cảnh</button>
+          <div id="raid-dialogue" class="raid-dialogue" role="status" hidden>
+            <img src="assets/rampart/tinh-nghi-portrait.png" alt="" width="48" height="48">
+            <div><strong>Cổ Nguyệt Tĩnh Nghi <span class="mentor-rank">Tam chuyển đỉnh phong</span></strong><p></p></div>
+          </div>
           <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
             <div class="result-panel">
@@ -84,6 +100,7 @@
         <div class="field-footer">
           <span id="field-hint">Bấm ô để đi, hoặc dùng WASD và phím mũi tên.</span>
           <button class="run-toggle" id="cast-moon" type="button" aria-keyshortcuts="F" hidden><kbd>F</kbd> Nguyệt Quang <small>−2 chân nguyên</small></button>
+          <button class="run-toggle" id="absorb-stone" type="button" aria-keyshortcuts="E" hidden><kbd>E</kbd> Hấp thụ nguyên thạch</button>
           <button class="run-toggle" id="run-toggle" type="button" aria-label="Chế độ chạy" aria-pressed="false" aria-keyshortcuts="Shift">Chạy · Tắt</button>
         </div>
       </section>
@@ -93,6 +110,7 @@
           <span class="quest-mark" aria-label="Mục tiêu">◆</span>
           <h2 id="objective-title"></h2>
           <p id="objective-detail"></p>
+          <progress id="absorption-progress" value="0" max="1" aria-label="Tiến độ hấp thụ nguyên thạch" hidden></progress>
           <button type="button" class="trail-guide" id="guide"></button>
         </section>
 
@@ -106,11 +124,16 @@
     </div>
     <div class="sr-only" role="status" id="world-announcement"></div>
   </main>
+  <dialog class="raid-intro" id="raid-intro" aria-labelledby="raid-intro-title" aria-describedby="raid-intro-time">
+    <p id="raid-intro-time">Vài năm sau đại điển</p>
+    <h2 id="raid-intro-title">Thú triều tập kích sơn trại</h2>
+    <form method="dialog"><button class="subtle" autofocus>Tiếp tục</button></form>
+  </dialog>
   <dialog class="mentor-dialog" id="mentor-dialog" aria-labelledby="mentor-name" aria-describedby="mentor-line">
     <div class="mentor-dialog-content">
       <img class="mentor-portrait" src="assets/rampart/tinh-nghi-portrait.png" width="128" height="128" alt="">
       <div class="mentor-copy">
-        <h2 id="mentor-name">Cổ Nguyệt Tĩnh Nghi</h2>
+        <h2 id="mentor-name">Cổ Nguyệt Tĩnh Nghi <span class="mentor-rank">Tam chuyển đỉnh phong</span></h2>
         <p id="mentor-line" aria-live="polite"></p>
       </div>
       <button type="button" class="trail-guide" id="mentor-next" autofocus>Tiếp tục</button>

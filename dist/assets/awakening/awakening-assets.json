@@ -1,25 +1,16 @@
 {
-  "version": 2,
-  "baseCommit": "4b8d07b",
+  "version": 3,
+  "baseCommit": "9af3187",
   "novelSources": [
-    "Cổ Chân Nhân - Chương 4: Cổ Nguyệt Phương Nguyên (biển Nguyệt Lan bên kia sông ngầm: cánh hoa như trăng non thanh nhã lam nhạt, cành như ngọc, nhụy lóng lánh như viên ngọc)",
-    "Cổ Chân Nhân - Chương 5: Nhân Tổ tam cổ, Hi Vọng khai khiếu (Hy Vọng Cổ như đom đóm bay lên từ biển hoa và hội tụ khai khiếu)"
+    "Cổ Chân Nhân - Chương 4: Cổ Nguyệt Phương Nguyên (biển Nguyệt Lan bên kia sông ngầm trong hang đá vôi, cành như ngọc, cánh hoa lam nhạt cong dáng trăng non, nhụy như viên ngọc, Linh Tuyền cuối hang)",
+    "Cổ Chân Nhân - Chương 5: Nhân Tổ tam cổ, Hi Vọng khai khiếu (Hy Vọng Cổ như đom đóm bay lên rồi hội tụ)"
   ],
   "assets": {
     "nguyet-lan-tiles.png": {
-      "dimensions": [
-        128,
-        32
-      ],
-      "frameSize": [
-        32,
-        32
-      ],
+      "dimensions": [128, 32],
+      "frameSize": [32, 32],
       "variants": 4,
-      "anchor": [
-        16,
-        31
-      ],
+      "anchor": [16, 31],
       "variantNames": [
         "Song Hoa Nguyệt Ảnh (upright arched rosette with twin crescent blossoms)",
         "Thảm Lan Bờ Suối (low horizontal carpet clump with dual staggered stalks)",
@@ -28,21 +19,27 @@
       ]
     },
     "hy-vong-gu.png": {
-      "dimensions": [
-        64,
-        16
-      ],
-      "frameSize": [
-        16,
-        16
-      ],
+      "dimensions": [64, 16],
+      "frameSize": [16, 16],
       "frames": 4,
-      "anchor": [
-        8,
-        8
-      ],
-      "loopDelayMs": 210,
-      "concept": "Pea-sized spirit lantern firefly with tapered gossamer wing beat & warm pearl abdomen core"
+      "anchor": [8, 8],
+      "loopDelayMs": 135,
+      "concept": "Pea-sized spirit lantern firefly with tapered cream-gold gossamer wing beat & warm pearl abdomen core"
+    },
+    "cave-tiles.png": {
+      "dimensions": [256, 128],
+      "tileSize": [32, 32],
+      "grid": [8, 4],
+      "layout": {
+        "row0": ["rock_0", "rock_1", "rock_2", "ceiling_overhang_0", "ceiling_overhang_1", "ceiling_overhang_2", "cliff_rim_0", "cliff_rim_1"],
+        "row1": ["bank_slate_0", "bank_slate_1", "bank_slate_2", "water_0", "water_1", "ford_stone_0", "ford_stone_1", "ford_stone_2"],
+        "row2": ["moss_soil_0", "moss_soil_1", "moss_soil_2", "moss_soil_3", "trail_soil_0", "trail_soil_1", "shore_left_overhang", "shore_right_overhang"],
+        "row3": ["stone_lantern", "cave_rock_outcrop", "hope_moss_plinth", "trail_pebbles_0", "trail_pebbles_1"]
+      }
+    },
+    "cave-spring.png": {
+      "dimensions": [64, 160],
+      "placement": "Columns 55..56, rows 2..6 (Linh Tuyền subterranean spirit spring basin)"
     }
   }
 }

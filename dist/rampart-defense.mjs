@@ -2,7 +2,7 @@ import {
   RAMPART_GUARD, RAMPART_INSTRUCTOR, RAMPART_MOONWHIRL_GUARD, RAMPART_WOLVES,
   RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
 } from './rampart.mjs';
-import { MOONLIGHT } from './world.mjs';
+import { MOONLIGHT, TRAINING_POST, toPoint } from './world.mjs';
 
 const wolfMaxHp = 52;
 const castDuration = 690;
@@ -55,6 +55,7 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
   const needleGuard = addGuard(plane, RAMPART_INSTRUCTOR, 'indigo-guard');
   const northGuard = addGuard(plane, RAMPART_NORTH_REINFORCEMENT, 'russet-guard');
   const southGuard = addGuard(plane, RAMPART_SOUTH_REINFORCEMENT, 'ivory-guard');
+  const relief = addGuard(plane, { col: 0, row: 0 }, 'ivory-guard relief-guard');
   const effects = document.createElement('div');
   effects.className = 'rampart-defense-effects';
   effects.setAttribute('aria-hidden', 'true');
@@ -86,7 +87,8 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     if (reducedMotion.matches) return;
     const impact = effect(`${kind} impact`, target, angle);
     const frames = kind === 'moonlight' ? [2, 3, 4, 5, 6, 7] : [0, 1, 2, 3];
-    animate(impact.art, frames.map(index => cel(index, 7, 100)), 165);
+    const row = kind === 'huyet-nguyet' ? 25 : 100;
+    animate(impact.art, frames.map(index => cel(index, 7, row)), 165);
     animate(impact.node, [{ opacity: .96 }, { opacity: 0 }], 165, () => impact.node.remove());
 
     const blood = effect('blood', target);
@@ -96,11 +98,11 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       235, () => blood.node.remove());
   }
 
-  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime, chargeFrom = from }, contact) {
+  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime, chargeFrom = from, travelMs }, contact) {
     const dx = target.col - from.col;
     const dy = target.row - from.row;
     const whirl = kind === 'whirl';
-    const duration = Math.round(145 + Math.hypot(dx, dy) * 40 + (whirl ? 90 : 0));
+    const duration = travelMs ?? Math.round(145 + Math.hypot(dx, dy) * 40 + (whirl ? 90 : 0));
     const release = delay + windup;
     const left = dx < 0;
     const angle = Math.atan2(-dy, -dx);
@@ -155,10 +157,11 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     effects.replaceChildren();
   }
 
-  function begin() {
+  function begin(guardVolley = true) {
     stop();
     health = RAMPART_WOLVES.map(() => wolfMaxHp);
     wolves.forEach(({ unit }, index) => updateWolfHealth(unit, health[index], wolfMaxHp));
+    if (!guardVolley) return;
     shoot({ from: { col: RAMPART_GUARD.col + .03, row: RAMPART_GUARD.row + .23 },
       sprite: guard, target: targets[0], delay: 2780 }, () => damage(0));
     shoot({ from: { col: RAMPART_INSTRUCTOR.col + .47, row: RAMPART_INSTRUCTOR.row + .05 },
@@ -173,10 +176,46 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       sprite: southGuard, target: targets[2], delay: 4250, kind: 'whirl' }, () => damage(2));
   }
 
+  function coverTrainingPost() {
+    if (!health[midpoint]) {
+      const { col, row, startCol, startRow } = RAMPART_WOLVES[midpoint];
+      const { unit, motion } = wolves[midpoint];
+      health[midpoint] = wolfMaxHp;
+      updateWolfHealth(unit, wolfMaxHp, wolfMaxHp);
+      motion.run(startCol - col, startRow - row, { duration: 1400, after: motion.attackWall });
+    }
+    const post = toPoint(TRAINING_POST);
+    const from = guardPalm(post, 94, 64.5);
+    const chargeFrom = guardPalm(post, 67, 68);
+    for (const delay of [1300, 3000]) {
+      shoot({ from, chargeFrom, sprite: relief, target: targets[midpoint], delay }, () => damage(midpoint));
+    }
+  }
+
+  function recoilAtWall() {
+    if (reducedMotion.matches) return;
+    for (const [index, actor] of [guard, whirlGuard, needleGuard, northGuard, southGuard].entries()) {
+      animate(actor.parentElement, [
+        { translate: '0 0', offset: 0 },
+        { translate: '12% 4%', offset: .27 },
+        { translate: '7% 2%', offset: .58 },
+        { translate: '0 0', offset: 1 },
+      ], { duration: 510, delay: 40 + index * 28, easing: 'ease-out' });
+      animate(actor, [
+        { rotate: '0deg', offset: 0 }, { rotate: '8deg', offset: .24 }, { rotate: '0deg', offset: 1 },
+      ], { duration: 510, delay: 40 + index * 28 });
+    }
+  }
+
   return {
-    begin, stop, shoot,
+    begin, stop, shoot, coverTrainingPost, recoilAtWall,
+    reliefUnit: relief.parentElement,
     trainingTarget: targets[midpoint],
     targetHp: () => health[midpoint],
-    playerShot: from => shoot({ from, target: targets[midpoint], windup: 0 }, () => damage(midpoint)),
+    playerShot: (from, settled) => shoot({ from, target: targets[midpoint], windup: 0 }, () => {
+      const hit = damage(midpoint);
+      settled();
+      return hit;
+    }),
   };
 }
