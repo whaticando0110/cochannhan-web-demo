@@ -18,6 +18,7 @@
   <link rel="preload" as="image" href="assets/rampart/guard-ivory.png">
   <link rel="preload" as="image" href="assets/huyen-bao-combat.png">
   <link rel="preload" as="image" href="assets/ao-reu-combat.png">
+  <link rel="preload" as="image" href="assets/rampart/tinh-nghi-portrait.png">
   <script type="module" src="expedition.mjs"></script>
 </head>
 <body class="journey">
@@ -52,6 +53,7 @@
             <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
+            <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
             <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i><progress class="wolf-health"></progress></div>
           </div>
           <section class="trail-card field-status" aria-label="Trạng thái chiến đấu">
@@ -104,5 +106,15 @@
     </div>
     <div class="sr-only" role="status" id="world-announcement"></div>
   </main>
+  <dialog class="mentor-dialog" id="mentor-dialog" aria-labelledby="mentor-name" aria-describedby="mentor-line">
+    <div class="mentor-dialog-content">
+      <img class="mentor-portrait" src="assets/rampart/tinh-nghi-portrait.png" width="128" height="128" alt="">
+      <div class="mentor-copy">
+        <h2 id="mentor-name">Cổ Nguyệt Tĩnh Nghi</h2>
+        <p id="mentor-line" aria-live="polite"></p>
+      </div>
+      <button type="button" class="trail-guide" id="mentor-next" autofocus>Tiếp tục</button>
+    </div>
+  </dialog>
 </body>
 </html>

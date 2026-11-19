@@ -22,9 +22,10 @@ export const RAMPART_MOONWHIRL_GUARD = Object.freeze({ col: fenceCol + 1, row: 1
 export const RAMPART_INSTRUCTOR = Object.freeze({ col: fenceCol + 1, row: 8 });
 export const RAMPART_NORTH_REINFORCEMENT = Object.freeze({ col: fenceCol + 1, row: 6 });
 export const RAMPART_SOUTH_REINFORCEMENT = Object.freeze({ col: fenceCol + 1, row: 15 });
+export const RAMPART_MENTOR = Object.freeze({ col: 8, row: 11 });
 const guardPosts = [
   RAMPART_GUARD, RAMPART_MOONWHIRL_GUARD, RAMPART_INSTRUCTOR,
-  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
+  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT, RAMPART_MENTOR,
 ];
 export const RAMPART_WOLVES = Object.freeze([
   { col: fenceCol - 1, row: 7, startCol: -2.6, startRow: 6.1 },

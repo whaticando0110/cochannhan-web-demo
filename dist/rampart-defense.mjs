@@ -146,13 +146,17 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     return true;
   }
 
-  function begin() {
+  function stop() {
     for (const animation of animations) {
       animation.onfinish = null;
       animation.cancel();
     }
     animations.clear();
     effects.replaceChildren();
+  }
+
+  function begin() {
+    stop();
     health = RAMPART_WOLVES.map(() => wolfMaxHp);
     wolves.forEach(({ unit }, index) => updateWolfHealth(unit, health[index], wolfMaxHp));
     shoot({ from: { col: RAMPART_GUARD.col + .03, row: RAMPART_GUARD.row + .23 },
@@ -170,7 +174,7 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
   }
 
   return {
-    begin, shoot,
+    begin, stop, shoot,
     trainingTarget: targets[midpoint],
     targetHp: () => health[midpoint],
     playerShot: from => shoot({ from, target: targets[midpoint], windup: 0 }, () => damage(midpoint)),

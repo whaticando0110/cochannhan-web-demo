@@ -4,7 +4,7 @@ import { neighbors } from '../dist/combat.mjs';
 import atlas from '../dist/assets/rampart/atlas.mjs';
 import {
   chooseRampartFrame, EAST_CORNER, RAMPART_EDGE, RAMPART_GUARD, RAMPART_WOLVES, STAIRS,
-  RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
+  RAMPART_MENTOR, RAMPART_NORTH_REINFORCEMENT, RAMPART_SOUTH_REINFORCEMENT,
 } from '../dist/rampart.mjs';
 import {
   CONTINUE, GATE, MAP, SPAWN, TERRAIN, TRAIL_ENTRY, WOLF,
@@ -158,7 +158,12 @@ test('seeded texture variation is reproducible and runtime frames cover the comp
 
 test('the training post is on the upper deck and is reachable from the village spawn', () => {
   assert.equal(TERRAIN[TRAINING_POST].rampart.elevation, 1);
-  assert.equal(findPath(createWorld(), TRAINING_POST).at(-1), TRAINING_POST);
+  const mentor = toCell(RAMPART_MENTOR.col, RAMPART_MENTOR.row);
+  assert.equal(TERRAIN[mentor].rampart.elevation, 0);
+  assert.equal(isWalkable(mentor), false);
+  const path = findPath(createWorld(), TRAINING_POST);
+  assert.equal(path.at(-1), TRAINING_POST);
+  assert.ok(!path.includes(mentor));
 });
 
 test('the hunt advances on its own clock while the player is free to walk out of a pounce', () => {

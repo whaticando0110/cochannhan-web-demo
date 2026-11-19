@@ -4,11 +4,11 @@ import { createRampartDefense, updateWolfHealth } from './rampart-defense.mjs';
 import { createWolfMotion } from './wolf-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import {
-  chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_WOLVES, westForestFamily,
+  chooseRampartFrame, RAMPART_EDGE, RAMPART_FOREST_WIDTH, RAMPART_MENTOR, RAMPART_WOLVES, westForestFamily,
 } from './rampart.mjs';
 import {
   CONTINUE, GATE, MAP, MOONLIGHT, TERRAIN, TRAIL_ENTRY, TRAINING_POST,
-  advanceHunt, cellDistance, clearShot, createWorld, findPath, hitHunt, insideHunt, locationOf, retryEncounter, toPoint, walk,
+  advanceHunt, cellDistance, clearShot, createWorld, findPath, hitHunt, insideHunt, locationOf, retryEncounter, toCell, toPoint, walk,
 } from './world.mjs';
 
 const byId = (id) => document.getElementById(id);
@@ -21,6 +21,13 @@ const heroSprite = hero.querySelector('.sprite');
 const beast = byId('wolf-unit');
 const castButton = byId('cast-moon');
 const guide = byId('guide');
+const mentorDialog = byId('mentor-dialog');
+const mentorNext = byId('mentor-next');
+const mentorLines = [
+  'Con vừa khai khiếu, đúng lúc Điện Lang kéo tới lũy tây. Lên cầu thang đi, ta chỉ con cách dùng Nguyệt Quang.',
+  'Tới ô đánh dấu, bấm F hoặc chạm nút Nguyệt Quang. Con Điện Lang ở giữa là mục tiêu của con. Chờ cổ hồi rồi bắn thêm một phát.',
+];
+let mentorLine = 0;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
 const runToggle = byId('run-toggle');
@@ -221,7 +228,7 @@ function createRampartWolves() {
     const unit = beast.cloneNode(true);
     unit.removeAttribute('id');
     unit.classList.add('rampart-wolf');
-    unit.hidden = false;
+    unit.hidden = true;
     unit.style.left = `calc(var(--tile) * ${col})`;
     unit.style.top = `calc(var(--tile) * ${row})`;
     const impact = document.createElement('i');
@@ -233,13 +240,32 @@ function createRampartWolves() {
 }
 
 function animateRampartWolves() {
-  rampartWolves.forEach(({ motion: wolf }, index) => {
+  rampartWolves.forEach(({ unit, motion: wolf }, index) => {
     const { col, row, startCol, startRow } = RAMPART_WOLVES[index];
+    unit.hidden = false;
     wolf.run(startCol - col, startRow - row, {
       duration: 1500, delay: 280 + index * 290, after: wolf.attackWall,
     });
   });
   rampartDefense.begin();
+}
+
+function showMentorLine() {
+  byId('mentor-line').textContent = mentorLines[mentorLine];
+  mentorNext.textContent = mentorLine === mentorLines.length - 1 ? 'Tới vị trí bắn' : 'Tiếp tục';
+}
+
+function beginArrival() {
+  rampartDefense.stop();
+  for (const wolf of rampartWolves) {
+    wolf.motion.stop();
+    wolf.unit.hidden = true;
+  }
+  mentorLine = 0;
+  mentorDialog.returnValue = '';
+  showMentorLine();
+  mentorDialog.showModal();
+  aimCamera();
 }
 
 function place(node, cell, size) {
@@ -256,12 +282,13 @@ function aimCamera() {
   if (!size || !field.clientWidth) return;
   const offset = (point, screen, length, min = 0) =>
     Math.min(Math.max(0, length * size - screen), Math.max(min, (point + 0.5) * size - screen / 2));
-  const lookWest = 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
+  const lookWest = mentorDialog.open ? 0 : 4.7 * Math.min(1, Math.max(0, (RAMPART_EDGE - col) / 5));
   const westEdge = nearRampart ? -RAMPART_FOREST_WIDTH * size : 0;
   const x = offset(col - lookWest, field.clientWidth, MAP.columns, westEdge);
   const y = offset(row, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
+  place(byId('mentor-unit'), toCell(RAMPART_MENTOR.col, RAMPART_MENTOR.row), size);
   place(byId('gate-marker'), GATE, size);
   place(byId('end-marker'), CONTINUE, size);
   place(byId('training-marker'), TRAINING_POST, size);
@@ -532,10 +559,8 @@ function reset() {
   hero.style.removeProperty('--face');
   heroMotion.stand();
   render();
-  animateRampartWolves();
   byId('field-hint').textContent = walkHint;
-  field.focus({ preventScroll: true });
-  announce('Bạn đang ở Cổ Nguyệt Sơn Trại.');
+  beginArrival();
 }
 
 byId('field-hint').textContent = walkHint;
@@ -554,11 +579,21 @@ const rampartDefense = createRampartDefense(plane, rampartWolves, motion, (index
   render();
 });
 castButton.addEventListener('click', castMoon);
+mentorNext.addEventListener('click', () => {
+  if (++mentorLine === mentorLines.length) mentorDialog.close('guide');
+  else showMentorLine();
+});
+mentorDialog.addEventListener('close', () => {
+  field.focus({ preventScroll: true });
+  aimCamera();
+  animateRampartWolves();
+  if (mentorDialog.returnValue === 'guide') go(TRAINING_POST);
+});
 render();
-animateRampartWolves();
 field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
 requestAnimationFrame(tick);
+beginArrival();
 
 map.addEventListener('click', (event) => {
   const tile = event.target.closest('button[data-cell]');
@@ -568,7 +603,7 @@ map.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', event => {
-  if (event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
+  if (mentorDialog.open || event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
   if (key === 'shift') {
     if (!event.repeat) pendingShiftTap = true;
