@@ -1,6 +1,6 @@
 # Cổ Chân Nhân · Demo web
 
-Đi tự do từ **Cổ Nguyệt Sơn Trại** qua đường rừng đến **bãi săn Thanh Mao**. Khi chạm trán sói, bản đồ giữ nguyên vị trí và chuyển sang chiến đấu theo lượt. Hạ sói để tiếp tục đi theo lối mòn phía đông.
+Đi tự do từ **Cổ Nguyệt Sơn Trại** qua đường rừng đến **bãi săn Thanh Mao**. Tại khoảng rừng thưa, nhìn bầy sói áp sát từ phía đông trước khi giao chiến theo lượt với con đi đầu. Hạ nó để tiếp tục đi theo lối mòn phía đông.
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 

@@ -3,7 +3,7 @@ import { createHeroMotion } from './hero-motion.mjs';
 import atlas from './assets/rampart/atlas.mjs';
 import { chooseRampartFrame } from './rampart.mjs';
 import {
-  CONTINUE, FIELD_ACTIONS, GATE, MAP, TERRAIN, TRAIL_ENTRY,
+  CONTINUE, FIELD_ACTIONS, GATE, MAP, TERRAIN, TRAIL_ENTRY, WOLF_APPROACH,
   createWorld, fight, findPath, insideHunt, locationOf, retryEncounter, toPoint, walk,
 } from './world.mjs';
 
@@ -14,6 +14,7 @@ const map = byId('map');
 const artwork = byId('map-ornaments');
 const hero = byId('hero-unit');
 const beast = byId('wolf-unit');
+const pack = [beast, ...document.querySelectorAll('.pack-wolf')];
 const cursor = byId('target-cursor');
 const guide = byId('guide');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -22,6 +23,7 @@ const runToggle = byId('run-toggle');
 const runPreference = 'cochannhan.explore.run';
 const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
 const stepDurations = { walk: 485, run: 280, climb: 630 };
+const approachDuration = 1400;
 
 const keys = {
   arrowup: -MAP.columns, w: -MAP.columns,
@@ -47,6 +49,7 @@ let world = newTrip();
 let selecting = false;
 let selectedCell = world.player.cell;
 let stepTimer;
+let approachTimer;
 let nextStepAt = 0;
 let runEnabled = false;
 let pendingShiftTap = false;
@@ -201,18 +204,30 @@ function aimCamera() {
   const { cell } = world.player;
   const { col, row } = toPoint(cell);
   const offset = (point, screen, length) => Math.min(Math.max(0, length * size - screen), Math.max(0, (point + 0.5) * size - screen / 2));
-  const x = offset(col, field.clientWidth, MAP.columns);
+  const wolf = world.battle && toPoint(world.battle.rival.cell);
+  const approaching = approachTimer !== undefined;
+  const focusCol = approaching ? (col + wolf.col) / 2 + 1.35 : col;
+  const x = offset(focusCol, field.clientWidth, MAP.columns);
   const lookTowardRampart = 1.65 * Math.min(1, Math.max(0, (19 - col) / 6));
-  const y = offset(row - lookTowardRampart, field.clientHeight, MAP.rows);
+  const focusRow = approaching ? wolf.row : row - lookTowardRampart;
+  const y = offset(focusRow, field.clientHeight, MAP.rows);
   plane.style.transform = `translate3d(${-x}px,${-y}px,0)`;
   place(hero, cell, size);
   place(byId('gate-marker'), GATE, size);
   place(byId('end-marker'), CONTINUE, size);
-  if (!beast.hidden) {
+  if (approaching) {
+    pack.forEach((unit, index) => {
+      const { from, to } = WOLF_APPROACH[index];
+      unit.style.setProperty('--approach-offset', (toPoint(from).col - toPoint(to).col) * size + 'px');
+      unit.style.setProperty('--face', 1);
+      place(unit, to, size);
+    });
+    hero.style.setProperty('--face', wolf.col >= col ? 1 : -1);
+  } else if (!beast.hidden) {
     place(beast, world.battle.rival.cell, size);
     const face = toPoint(world.battle.rival.cell).col >= col ? 1 : -1;
     hero.style.setProperty('--face', face);
-    beast.style.setProperty('--face', -face);
+    beast.style.setProperty('--face', face);
   }
   if (selecting) place(cursor, selectedCell, size);
 }
@@ -233,6 +248,9 @@ function renderObjective() {
   if (world.mode === 'defeat') {
     title = 'Thử lại cuộc săn';
     detail = world.notice;
+  } else if (approachTimer !== undefined) {
+    title = 'Bầy sói đang áp sát';
+    detail = 'Chúng lao ra từ mép rừng phía đông.';
   } else if (inBattle) {
     title = 'Hạ sói rừng';
     detail = 'Chọn đường tránh vùng đỏ hoặc dùng Thủ thế. Đánh tay không để hồi chân nguyên.';
@@ -245,7 +263,7 @@ function renderObjective() {
     button = 'Đi tới lối mòn';
   } else if (pastGate) {
     title = 'Tới bãi săn';
-    detail = 'Theo lối đất giữa rừng. Chạm trán thú sẽ bắt đầu lượt ngay trên bản đồ.';
+    detail = 'Theo lối đất tới khoảng rừng thưa phía đông.';
     button = 'Theo đường rừng';
   }
   byId('objective-title').textContent = title;
@@ -255,7 +273,8 @@ function renderObjective() {
 }
 
 function renderBattle() {
-  const inBattle = world.mode === 'battle';
+  const approaching = approachTimer !== undefined;
+  const inBattle = world.mode === 'battle' && !approaching;
   const defeat = world.mode === 'defeat';
   const { battle } = world;
   const intent = battle?.intent;
@@ -263,8 +282,10 @@ function renderBattle() {
   byId('wolf-intent').hidden = !inBattle;
   byId('field-actions').hidden = !inBattle;
   byId('defeat').hidden = !defeat;
-  byId('encounter-log').hidden = !battle;
-  beast.hidden = !inBattle && !defeat;
+  byId('encounter-log').hidden = !battle || approaching;
+  beast.hidden = !approaching && !inBattle && !defeat;
+  for (const unit of pack.slice(1)) unit.hidden = !approaching;
+  field.classList.toggle('pack-approach', approaching);
 
   if (inBattle) {
     meter('wolf-hp', battle.rival.hp, battle.rival.maxHp);
@@ -303,7 +324,7 @@ function render() {
   const terrain = TERRAIN[world.player.cell].rampart;
   const level = terrain?.stair ? ' · Cầu thang' : terrain?.elevation ? ' · Sàn lũy' : '';
   byId('coordinates').textContent = `Ô ${coordinate(world.player.cell, MAP.columns)}${level}`;
-  byId('mode').textContent = world.mode === 'battle'
+  byId('mode').textContent = approachTimer !== undefined ? 'Bầy sói áp sát' : world.mode === 'battle'
     ? `Giao chiến · Lượt ${world.battle.turn}` : world.mode === 'defeat' ? 'Thất bại' : 'Khám phá';
   meter('world-hp', world.player.hp, world.player.maxHp);
   meter('world-qi', world.player.qi, world.player.maxQi);
@@ -320,6 +341,20 @@ function stopWalk() {
   route = [];
 }
 
+function beginApproach() {
+  stopWalk();
+  field.style.setProperty('--approach-duration', approachDuration + 'ms');
+  approachTimer = setTimeout(() => {
+    approachTimer = undefined;
+    byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh. Chọn Di chuyển để xem các ô có thể đến.';
+    render();
+    setHint('Con sói đi đầu đã áp sát. Né vùng đỏ hoặc chọn một hành động.', true);
+  }, motion.matches ? 650 : approachDuration);
+  byId('field-hint').textContent = 'Bầy sói đã ra khỏi lùm cây.';
+  announce('Bầy sói đang lao tới từ phía đông.');
+  if (document.activeElement === guide) field.focus({ preventScroll: true });
+}
+
 function step(target) {
   const previous = world;
   world = walk(world, target);
@@ -333,17 +368,14 @@ function step(target) {
   nextStepAt = performance.now() + duration;
   heroMotion.travel(gait, duration);
   field.classList.add('walking');
-  render();
   if (world.mode === 'battle') {
-    stopWalk();
-    byId('field-hint').textContent = 'Ô đỏ báo vùng sói sẽ đánh. Chọn Di chuyển để xem các ô có thể đến.';
-    setHint('Sói xuất hiện. Né vùng đỏ hoặc chọn một hành động.', true);
-    if (document.activeElement === guide) field.focus({ preventScroll: true });
+    beginApproach();
   } else if (world.reached && !previous.reached) {
     announce(world.notice);
   } else if (locationOf(previous.player.cell) !== locationOf(world.player.cell)) {
     announce(`Đã đến ${locationOf(world.player.cell)}.`);
   }
+  render();
   return true;
 }
 
@@ -395,6 +427,7 @@ function resolve(action, cell) {
 }
 
 function chooseAction(action) {
+  if (approachTimer !== undefined) return;
   const error = actionBlock(world.battle, action);
   if (error) return setHint(error, true);
   if (action !== 'move') return resolve(action);
@@ -410,6 +443,8 @@ function chooseAction(action) {
 
 function reset() {
   stopWalk();
+  clearTimeout(approachTimer);
+  approachTimer = undefined;
   world = newTrip();
   nextStepAt = 0;
   field.style.removeProperty('--step-time');
@@ -434,6 +469,7 @@ field.classList.add('ready');
 new ResizeObserver(aimCamera).observe(field);
 
 map.addEventListener('click', (event) => {
+  if (approachTimer !== undefined) return;
   const tile = event.target.closest('button[data-cell]');
   if (!tile) return;
   const cell = Number(tile.dataset.cell);
@@ -451,6 +487,10 @@ document.addEventListener('keydown', (event) => {
   }
   if (event.ctrlKey || event.metaKey || event.altKey || world.mode === 'defeat') return;
   const key = event.key.toLowerCase();
+  if (approachTimer !== undefined) {
+    if (Object.hasOwn(keys, key)) event.preventDefault();
+    return;
+  }
   if (Object.hasOwn(keys, key)) {
     if (world.mode === 'battle' && !selecting) return;
     event.preventDefault();
