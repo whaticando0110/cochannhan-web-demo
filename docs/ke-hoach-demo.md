@@ -1,12 +1,12 @@
 # Kế hoạch demo web Cổ Chân Nhân
 
-Bản hiện tại chơi được từ Cổ Nguyệt Sơn Trại qua đường rừng đến cuộc chạm trán một con sói. Bản đồ 42 × 26 ô đã có tìm đường, đi bộ, chạy, lối giữa cầu thang và chuyển sang đánh theo lượt ngay trên bản đồ. Trận Đấu nhanh ở Thềm Hứng Mây dùng để thử bộ chiến đấu riêng.
+Bản hiện tại chơi được từ Đại điển Khai Khiếu qua cảnh Cuồng Điện Lang đánh lũy, báo tin ở hậu trại và theo đội trưởng qua đường rừng đến cuộc chạm trán một con sói. Bản đồ 42 × 26 ô đã có tìm đường, đi bộ, chạy, lối giữa cầu thang và giao chiến thời gian thực. Trận Đấu nhanh ở Thềm Hứng Mây giữ chế độ đánh theo lượt.
 
 ## Mạch của bản demo
 
 Chọn giới tính và Cổ nhất chuyển → Khai Khiếu, hiện tư chất → Sơn Trại trong thú triều → theo đồng đội qua lối hông → cùng NPC đánh đợt sói đầu → Sói Vương áp sát → rút lui, đồng đội đỡ đòn → rơi xuống vách núi → thử một tương tác truyền thừa → cảnh kết.
 
-Kịch bản mở đầu nối lễ Khai Khiếu sang thú triều bằng một đoạn chuyển thời gian ngắn. Người chơi tự đi trong Sơn Trại và trên đường rừng. Khi tới nhóm Cổ sư ở bãi săn, game mới chuyển sang đánh theo lượt. [Brief Sơn Trại trong thú triều](brief-co-nguyet-son-trai.md).
+Kịch bản mở đầu nối lễ Khai Khiếu sang thú triều bằng một đoạn chuyển thời gian ngắn. Tĩnh Nghi đưa người chơi qua bài học phòng thủ, rồi sai đi gọi viện binh khi Cuồng Điện Lang xuất hiện. Đội trưởng phái hai cổ sư lên lũy và dẫn người chơi qua cổng đông bên hông tới điểm tập kết. Mốc tiếp theo mở rộng trận thời gian thực ở bãi săn thành một đợt sói có đội tuần rừng tham chiến. [Brief Sơn Trại trong thú triều](brief-co-nguyet-son-trai.md)
 
 ## Thứ tự làm
 

@@ -105,6 +105,16 @@
 .russet-guard .guard-art { background-image: url("assets/rampart/guard-russet.png"); }
 .ivory-guard .guard-art { background-image: url("assets/rampart/guard-ivory.png"); }
 .relief-moving { transition: transform var(--relief-step, 230ms) linear; }
+.rear-moving { transition: transform var(--rear-step, 305ms) linear; }
+.rear-unit .guard-art { transform: translateX(-50%) scaleX(var(--rear-facing, 1)); }
+.rear-dialog-content {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end; gap: 12px; padding: 16px;
+}
+@media (max-width: 540px) {
+  .rear-dialog-content { grid-template-columns: 1fr; }
+}
+#guide:disabled { opacity: .65; cursor: default; }
 .rampart-defense-effects { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .rampart-moon {
   position: absolute; width: calc(var(--tile) * .70); aspect-ratio: 1;

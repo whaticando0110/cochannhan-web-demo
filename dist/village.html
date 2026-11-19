@@ -58,6 +58,7 @@
             <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
             <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
             <div class="field-marker passage" id="rear-marker" aria-hidden="true" hidden><span>Hậu trại</span></div>
+            <div class="field-marker passage" id="forest-marker" aria-hidden="true" hidden><span>Điểm tập kết</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
@@ -137,6 +138,15 @@
         <p id="mentor-line" aria-live="polite"></p>
       </div>
       <button type="button" class="trail-guide" id="mentor-next" autofocus>Tiếp tục</button>
+    </div>
+  </dialog>
+  <dialog class="mentor-dialog rear-dialog" id="rear-dialog" aria-labelledby="rear-speaker" aria-describedby="rear-line">
+    <div class="rear-dialog-content">
+      <div class="mentor-copy">
+        <h2 id="rear-speaker"></h2>
+        <p id="rear-line" aria-live="polite"></p>
+      </div>
+      <button type="button" class="trail-guide" id="rear-next" autofocus>Tiếp tục</button>
     </div>
   </dialog>
 </body>
