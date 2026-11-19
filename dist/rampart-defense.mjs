@@ -87,7 +87,8 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     if (reducedMotion.matches) return;
     const impact = effect(`${kind} impact`, target, angle);
     const frames = kind === 'moonlight' ? [2, 3, 4, 5, 6, 7] : [0, 1, 2, 3];
-    animate(impact.art, frames.map(index => cel(index, 7, 100)), 165);
+    const row = kind === 'huyet-nguyet' ? 25 : 100;
+    animate(impact.art, frames.map(index => cel(index, 7, row)), 165);
     animate(impact.node, [{ opacity: .96 }, { opacity: 0 }], 165, () => impact.node.remove());
 
     const blood = effect('blood', target);
@@ -97,11 +98,11 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
       235, () => blood.node.remove());
   }
 
-  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime, chargeFrom = from }, contact) {
+  function shoot({ from, target, sprite, delay = 0, kind = 'moonlight', windup = releaseTime, chargeFrom = from, travelMs }, contact) {
     const dx = target.col - from.col;
     const dy = target.row - from.row;
     const whirl = kind === 'whirl';
-    const duration = Math.round(145 + Math.hypot(dx, dy) * 40 + (whirl ? 90 : 0));
+    const duration = travelMs ?? Math.round(145 + Math.hypot(dx, dy) * 40 + (whirl ? 90 : 0));
     const release = delay + windup;
     const left = dx < 0;
     const angle = Math.atan2(-dy, -dx);
@@ -156,10 +157,11 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     effects.replaceChildren();
   }
 
-  function begin() {
+  function begin(guardVolley = true) {
     stop();
     health = RAMPART_WOLVES.map(() => wolfMaxHp);
     wolves.forEach(({ unit }, index) => updateWolfHealth(unit, health[index], wolfMaxHp));
+    if (!guardVolley) return;
     shoot({ from: { col: RAMPART_GUARD.col + .03, row: RAMPART_GUARD.row + .23 },
       sprite: guard, target: targets[0], delay: 2780 }, () => damage(0));
     shoot({ from: { col: RAMPART_INSTRUCTOR.col + .47, row: RAMPART_INSTRUCTOR.row + .05 },
@@ -190,8 +192,23 @@ export function createRampartDefense(plane, wolves, reducedMotion, onHit) {
     }
   }
 
+  function recoilAtWall() {
+    if (reducedMotion.matches) return;
+    for (const [index, actor] of [guard, whirlGuard, needleGuard, northGuard, southGuard].entries()) {
+      animate(actor.parentElement, [
+        { translate: '0 0', offset: 0 },
+        { translate: '12% 4%', offset: .27 },
+        { translate: '7% 2%', offset: .58 },
+        { translate: '0 0', offset: 1 },
+      ], { duration: 510, delay: 40 + index * 28, easing: 'ease-out' });
+      animate(actor, [
+        { rotate: '0deg', offset: 0 }, { rotate: '8deg', offset: .24 }, { rotate: '0deg', offset: 1 },
+      ], { duration: 510, delay: 40 + index * 28 });
+    }
+  }
+
   return {
-    begin, stop, shoot, coverTrainingPost,
+    begin, stop, shoot, coverTrainingPost, recoilAtWall,
     reliefUnit: relief.parentElement,
     trainingTarget: targets[midpoint],
     targetHp: () => health[midpoint],

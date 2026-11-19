@@ -8,6 +8,7 @@
   <title>Cổ Chân Nhân · Đường tới bãi săn</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="world.css">
+  <link rel="stylesheet" href="rampart-fx.css">
   <link rel="preload" as="image" href="assets/world/dien-lang.png">
   <link rel="preload" as="image" href="assets/rampart/son-trai-nu-nguyet-quang.png">
   <link rel="preload" as="image" href="assets/rampart/nguyet-quang.png">
@@ -19,6 +20,10 @@
   <link rel="preload" as="image" href="assets/huyen-bao-combat.png">
   <link rel="preload" as="image" href="assets/ao-reu-combat.png">
   <link rel="preload" as="image" href="assets/rampart/tinh-nghi-portrait.png">
+  <link rel="preload" as="image" href="assets/rampart/cuong-dien-lang-motion.png">
+  <link rel="preload" as="image" href="assets/rampart/tinh-nghi-motion.png">
+  <link rel="preload" as="image" href="assets/rampart/huyet-nguyet.png">
+  <link rel="preload" as="image" href="assets/rampart/kim-chung-trao.png">
   <script type="module" src="expedition.mjs"></script>
 </head>
 <body class="journey">
@@ -52,6 +57,7 @@
             <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
             <div class="field-marker training" id="training-marker" aria-hidden="true"><span>Vị trí bắn</span></div>
             <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
+            <div class="field-marker passage" id="rear-marker" aria-hidden="true" hidden><span>Hậu trại</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
@@ -77,6 +83,11 @@
             </div>
           </section>
           <div class="field-shade" aria-hidden="true"></div>
+          <button class="subtle raid-skip" id="raid-skip" type="button" aria-keyshortcuts="Escape" hidden>Bỏ qua cảnh</button>
+          <div id="raid-dialogue" class="raid-dialogue" role="status" hidden>
+            <img src="assets/rampart/tinh-nghi-portrait.png" alt="" width="48" height="48">
+            <div><strong>Cổ Nguyệt Tĩnh Nghi <span class="mentor-rank">Tam chuyển đỉnh phong</span></strong><p></p></div>
+          </div>
           <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
             <div class="result-panel">

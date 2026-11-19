@@ -68,6 +68,7 @@
 }
 .rampart-wolf .unit-shadow { border-color: transparent; }
 .rampart-wolf .wolf-art { filter: drop-shadow(1px 2px 1px #141914c9); }
+.raid-pack-wolf { z-index: 2; }
 .rampart-wolf.wolf-down .wolf-art {
   scale: 1 .58; translate: -15% 8%; filter: brightness(.72) drop-shadow(1px 2px 1px #141914c9);
 }
@@ -115,6 +116,10 @@
 }
 .rampart-moon.whirl { width: calc(var(--tile) * 1.35); }
 .rampart-moon.whirl i { background-image: url("assets/rampart/nguyet-toan.png"); }
+.rampart-moon.huyet-nguyet { width: calc(var(--tile) * 1.48); }
+.rampart-moon.huyet-nguyet i {
+  background: url("assets/rampart/huyet-nguyet.png") 0 0 / 800% 500% no-repeat;
+}
 .rampart-moon.needles { width: calc(var(--tile) * 1.25); }
 .rampart-moon.needles i { background-image: url("assets/rampart/tung-cham.png"); }
 .rampart-moon.blood { width: calc(var(--tile) * .95); }
@@ -132,6 +137,38 @@
 }
 #absorption-progress::-webkit-progress-bar { background: #3c4a40; }
 #absorption-progress::-webkit-progress-value { background: #adc798; }
+.raid-playing .field-status,
+.raid-playing .field-caption { visibility: hidden; }
+.raid-playing .field-world { transition: none; }
+.raid-skip { position: absolute; right: 11px; top: 11px; z-index: 8; background-color: #15211a; }
+.raid-dialogue {
+  position: absolute; z-index: 7; bottom: 9px; left: 50%; transform: translateX(-50%); pointer-events: none;
+  display: flex; width: min(510px, calc(100% - 22px)); gap: 10px; align-items: center;
+  padding: 9px 12px; border: 1px solid #8f754a; color: #eee4ca; background: #17231ef5;
+}
+.raid-dialogue img { image-rendering: pixelated; flex: 0 0 48px; background: #26352b; border: 1px solid #816e50; }
+.raid-dialogue strong { display: block; color: #f4dca9; font: 600 1rem var(--display); }
+.raid-dialogue p { font-size: .9rem; margin-top: 3px; }
+.raid-boss {
+  --king-width: calc(var(--tile) * 5.95);
+  position: absolute; z-index: 3; pointer-events: none;
+  width: var(--king-width); aspect-ratio: 160 / 112; transform: translate(-50%, -89.3%);
+}
+.raid-boss-art {
+  position: absolute; inset: 0; image-rendering: pixelated;
+  background: url("assets/rampart/cuong-dien-lang-motion.png") 0 100% / 400% 500% no-repeat;
+  filter: drop-shadow(1px 2px 1px #16191a);
+}
+.raid-boss-shadow {
+  position: absolute; left: 15%; width: 71%; top: 83%; height: 11%;
+  border-radius: 50%; background: #0b110e9e;
+}
+.raid-mentor .mentor-art {
+  transform: translateX(-50%) scaleX(-1);
+  background: url("assets/rampart/tinh-nghi-motion.png") 0 0 / 800% 500% no-repeat;
+}
+.raid-effects { position: absolute; z-index: 4; inset: 0; pointer-events: none; }
+.raid-effects .raid-wall-dust { width: calc(var(--tile) * 2.1); }
 .raid-intro {
   position: fixed; inset: 0; width: min(740px, calc(100% - 30px)); max-width: none; margin: auto;
   padding: clamp(20px, 6vw, 48px) 16px; border: 0; color: #dbc49b; background: transparent; text-align: center;
