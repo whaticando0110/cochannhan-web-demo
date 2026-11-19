@@ -4,7 +4,7 @@
 
 Sơn Trại kéo dài theo trục bắc–nam. Khi mở map, bầy sói chạy từ rặng trúc bên trái qua khoảng đất trống tới chân lũy tây.
 
-Hàng cọc gỗ thứ hai ngăn hành lang ngay sau lũy tây với sân trong. Lối qua nằm gần sàn lũy bắc và thẳng với chân cầu thang tây.
+Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước cổng đông, nối lũy bắc với đoạn tường sát cổng.
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 

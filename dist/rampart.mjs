@@ -1,6 +1,7 @@
 import atlas from './assets/rampart/atlas.mjs';
 
 export const RAMPART_EDGE = 14;
+export const EAST_CORNER = RAMPART_EDGE + 1;
 export const STAIRS = Object.freeze([
   {
     frame: 'stairs-up-north', col: 9, row: 7, width: 3, height: 2, uphill: 'north',
@@ -15,11 +16,6 @@ const fenceRow = 4;
 const deckBottom = 6;
 const deckRight = 5;
 
-export const INNER_RAMPART = Object.freeze({
-  col: 8,
-  passages: Object.freeze([STAIRS[0].row + STAIRS[0].height, STAIRS[1].row + 1]),
-});
-
 export const RAMPART_FOREST_WIDTH = 5;
 export const RAMPART_WOLVES = Object.freeze([
   { col: fenceCol - 1, row: 7, startCol: -2.6, startRow: 6.1 },
@@ -33,6 +29,10 @@ export function westForestFamily(col, row) {
   return col < fringe ? 'bamboo' : 'mud';
 }
 
+export function isRampartTile(col, row, gateRow) {
+  return col <= RAMPART_EDGE || (col === EAST_CORNER && row >= fenceRow && row < gateRow - 1);
+}
+
 function stairAt(col, row) {
   return STAIRS.find(stair =>
     col >= stair.col && col < stair.col + stair.width && row >= stair.row && row < stair.row + stair.height
@@ -41,6 +41,8 @@ function stairAt(col, row) {
 
 export function rampartTile(col, row, mapRows, gateRow) {
   const entrance = Math.abs(row - gateRow) <= 1;
+  const eastReturn = gateRow - 2;
+  const eastWall = row >= fenceRow && row <= eastReturn ? EAST_CORNER : RAMPART_EDGE;
   const boundary = row === 0 || row === mapRows - 1 || col === 0;
   const southWall = mapRows - 3;
   const westFace = col < fenceCol && row > fenceRow && row < southWall;
@@ -54,35 +56,33 @@ export function rampartTile(col, row, mapRows, gateRow) {
   let blocked = boundary || canopy || wolfAtRest;
   const ornaments = [];
 
-  if ((row === fenceRow || row === southWall) && col >= fenceCol) {
-    const corner = col === fenceCol || col === RAMPART_EDGE;
+  if (row === eastReturn && col >= RAMPART_EDGE) {
+    const outerCorner = col === eastWall;
+    ornaments.push({
+      frame: outerCorner ? 'palisade-corner-nw' : 'palisade-north',
+      flip: outerCorner, flipY: true,
+    });
+    blocked = true;
+  } else if ((row === fenceRow || row === southWall) && col >= fenceCol) {
+    const corner = col === fenceCol || col === eastWall;
     ornaments.push({
       frame: corner ? 'palisade-corner-nw' : 'palisade-north',
-      flip: col === RAMPART_EDGE, flipY: row === southWall,
+      flip: col === eastWall, flipY: row === southWall,
     });
     blocked = true;
   } else if (col === fenceCol && row > fenceRow && row < southWall) {
     ornaments.push({ frame: 'palisade-west' });
     blocked = true;
-  } else if (col === RAMPART_EDGE && row > fenceRow && row < southWall && !entrance) {
+  } else if (col === eastWall && row > fenceRow && row < southWall && !entrance) {
     ornaments.push({ frame: 'palisade-west', flip: true });
     blocked = true;
-  } else if (inside && !boundary && col < RAMPART_EDGE) {
+  } else if (inside && !boundary && col < eastWall) {
     if (row <= deckBottom || col <= deckRight) {
       family = row <= deckBottom ? 'deck-east' : 'deck-south';
       elevation = 1;
     } else if (!stair || rail) {
       if (row === deckBottom + 1) ornaments.push({ frame: 'platform-edge-south' });
       if (col === deckRight + 1) ornaments.push({ frame: 'platform-edge-east' });
-    }
-  }
-
-  if (inside && col === INNER_RAMPART.col && row > deckBottom) {
-    if (INNER_RAMPART.passages.includes(row)) {
-      ornaments.push({ frame: 'deck-east-1', style: 'inner-threshold', width: .68 });
-    } else {
-      ornaments.push({ frame: 'palisade-west', style: 'inner-palisade', width: .68, flip: true });
-      blocked = true;
     }
   }
 

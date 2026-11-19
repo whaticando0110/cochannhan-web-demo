@@ -1,5 +1,5 @@
 import { ACTIONS, createBattle, neighbors, playTurn } from './combat.mjs';
-import { RAMPART_EDGE, rampartTile, stairConnects } from './rampart.mjs';
+import { RAMPART_EDGE, isRampartTile, rampartTile, stairConnects } from './rampart.mjs';
 
 export const MAP = Object.freeze({ columns: 42, rows: 26 });
 export const toCell = (col, row) => row * MAP.columns + col;
@@ -16,7 +16,7 @@ const clearingRocks = new Set([toCell(30, 8), toCell(33, 12), toCell(36, 9), toC
 
 function terrainAt(cell) {
   const { col, row } = toPoint(cell);
-  if (col <= RAMPART_EDGE) return { rampart: rampartTile(col, row, MAP.rows, gateRow) };
+  if (isRampartTile(col, row, gateRow)) return { rampart: rampartTile(col, row, MAP.rows, gateRow) };
   const boundary = col === 0 || row === 0 || col === MAP.columns - 1 || row === MAP.rows - 1;
   const variant = (Math.imul(col + 13, 31) ^ Math.imul(row + 3, 17)) >>> 0;
   if (boundary) return { ground: 'mulch', prop: 'thicket', variant };
