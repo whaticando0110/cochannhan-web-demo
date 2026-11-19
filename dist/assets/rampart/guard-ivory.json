@@ -1,0 +1,82 @@
+{
+  "name": "Cổ Sư Tiếp Viện (Bạch Bào)",
+  "id": "guard-ivory",
+  "staticSheet": "guard-ivory.png",
+  "motionAtlas": "guard-ivory-motion.png",
+  "width": 512,
+  "height": 256,
+  "cellSize": [
+    128,
+    128
+  ],
+  "grid": [
+    4,
+    2
+  ],
+  "backgroundSize": "400% 200%",
+  "facing": "right",
+  "anchorBaselineY": 121,
+  "sockets": {
+    "chargePalm128": [
+      67,
+      68
+    ],
+    "releasePalm128": [
+      94,
+      64.5
+    ]
+  },
+  "clips": {
+    "cast": {
+      "row": 0,
+      "count": 4,
+      "loop": false,
+      "durationMs": 690,
+      "releaseTimeMs": 330,
+      "timesMs": [
+        0,
+        110,
+        330,
+        475
+      ]
+    },
+    "walk": {
+      "row": 1,
+      "count": 4,
+      "loop": true,
+      "durationMs": 600,
+      "timesMs": [
+        0,
+        160,
+        300,
+        460
+      ],
+      "bboxes128": [
+        {
+          "x0": 46,
+          "y0": 46,
+          "x1": 89,
+          "y1": 121
+        },
+        {
+          "x0": 48,
+          "y0": 44,
+          "x1": 81,
+          "y1": 121
+        },
+        {
+          "x0": 48,
+          "y0": 46,
+          "x1": 91,
+          "y1": 121
+        },
+        {
+          "x0": 50,
+          "y0": 44,
+          "x1": 79,
+          "y1": 121
+        }
+      ]
+    }
+  }
+}

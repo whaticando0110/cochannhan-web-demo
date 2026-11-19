@@ -160,3 +160,21 @@
 .stone-absorb-over {
   z-index: 3;
 }
+
+/* Relief Guard Walk & Cast Motion Atlas (Cổ Sư Tiếp Viện Di Chuyển) */
+.ivory-guard.relief-guard .guard-art {
+  transform: translateX(-50%) scaleX(var(--relief-face, -1));
+  background: url("assets/rampart/guard-ivory-motion.png") 0 0 / 400% 200% no-repeat;
+}
+
+@keyframes relief-guard-walk {
+  0% { background-position: 0% 100%; }
+  26.6667% { background-position: 33.333333% 100%; }
+  50% { background-position: 66.666667% 100%; }
+  76.6667% { background-position: 100% 100%; }
+  100% { background-position: 100% 100%; }
+}
+
+.ivory-guard.relief-guard.relief-moving .guard-art {
+  animation: relief-guard-walk 600ms steps(1, end) infinite;
+}

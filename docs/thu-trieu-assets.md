@@ -61,3 +61,11 @@ Tài liệu kỹ thuật trên nhánh `antigravity/gu-vfx-thu-trieu` phục vụ
   - Hàng 0 (`qi_spiral_over`, lớp `over-actor`): Khung `0..1` = viên nguyên thạch trước ngực/đan điền bừng sáng vân ngọc; Khung `2..4` = hai dải thiên địa nguyên khí xanh ngọc xoắn kép vào Không Khiếu; Khung `5` = Không Khiếu lóe sáng vòng Thanh Đồng Nguyên Hải đầy ắp, vỏ nguyên thạch nứt đôi; Khung `6..7` = viên đá vỡ vụn thành thác bột phấn xám trắng rơi lả tả xuống đất.
   - Hàng 1 (`ground_ring_under`, lớp `under-actor`): Vòng cộng hưởng nguyên khí dưới chân (`0..5`) chuyển sang vòng bụi bột đá xám lắng xuống nền đá (`6..7`).
 - **Hàm điều khiển**: `buildStoneAbsorptionSchedule()`, `createSupplyStationFx()` trong `dist/rampart-fx.mjs` (hỗ trợ `cancelAbsorption()` khi người chơi bước đi giữa chừng mà chưa làm vỡ viên nguyên thạch).
+
+## 7. Chuyển Động Di Chuyển Cổ Sư Tiếp Viện (`dist/assets/rampart/guard-ivory-motion.png` + `guard-ivory.json`)
+
+- **Kích thước & lưới**: `512 × 256` (`4 cột × 2 hàng`, ô `128 × 128`, `backgroundSize: "400% 200%"`, `facing: "right"`, `anchorBaselineY: 121`, lưới pixel gộp `2 × 2` chuẩn `1x1-detail = 0`, alpha nhị phân `0 | 255`).
+- **Bố cục hàng**:
+  - Hàng 0 (`cast`, `4` khung, `durationMs: 690`, `timesMs: [0, 110, 330, 475]`): Giữ nguyên bit-for-bit 4 khung xuất chưởng Nguyệt Quang của `guard-ivory.png` cùng tọa độ bàn tay `chargePalm128: [67, 68]`, `releasePalm128: [94, 64.5]`.
+  - Hàng 1 (`walk`, `4` khung, `durationMs: 600`, `timesMs: [0, 160, 300, 460]`): Chu kỳ bước đi 4 nhịp học theo chuẩn `tinh-nghi-motion.png` của Codex — khung `0, 2` bước chân chạm đất mũi hài hơi nhấc và gót sau đẩy, khung `1, 3` chân trụ nâng thân nhấp nhô `2px` (`y0: 46 -> 44`), tà bạch bào và đai lam xám tách nhịp lộ quần trong, tay áo vung tự nhiên, giữ nguyên 100% đầu/búi tóc/khuôn mặt/cổ áo của `guard-ivory[0]`.
+- **Hàm điều khiển & CSS**: `RELIEF_WALK_TIMES_MS`, `RELIEF_WALK_DURATION_MS`, `buildReliefWalkKeyframes()`, `createReliefGuardMotion(unit, reducedMotion)` trong `dist/rampart-fx.mjs` và `.ivory-guard.relief-guard.relief-moving .guard-art` trong `dist/rampart-fx.css`.

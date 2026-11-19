@@ -617,3 +617,89 @@ export function createSupplyStationFx(plane, reducedMotion) {
 
   return { mountCrate, setDepleted, startAbsorption, cancelAbsorption, destroy };
 }
+
+// ============================================================================
+// 5. RELIEF GUARD WALK & STANCE MOTION (CỔ SƯ TIẾP VIỆN DI CHUYỂN LÊN LŨY)
+// ============================================================================
+
+export const RELIEF_WALK_TIMES_MS = Object.freeze([0, 160, 300, 460]);
+export const RELIEF_WALK_DURATION_MS = 600;
+
+/**
+ * Builds the 4-frame Web Animations API keyframe track for Row 1 (`walk[0..3]`)
+ * of `guard-ivory-motion.png` (512x256, 4 cols x 2 rows @ 128x128).
+ */
+export function buildReliefWalkKeyframes() {
+  const stops = [
+    [RELIEF_WALK_TIMES_MS[0], 0],
+    [RELIEF_WALK_TIMES_MS[1], 1],
+    [RELIEF_WALK_TIMES_MS[2], 2],
+    [RELIEF_WALK_TIMES_MS[3], 3],
+    [RELIEF_WALK_DURATION_MS, 3],
+  ];
+  return stops.map(([timeMs, col]) => ({
+    ...cel(col, 3, 1, 1),
+    offset: Number((timeMs / RELIEF_WALK_DURATION_MS).toFixed(4)),
+  }));
+}
+
+/**
+ * Controller for `.ivory-guard.relief-guard` that switches `.guard-art` to
+ * `guard-ivory-motion.png` (400% x 200%), loops Row 1 (`walk[0..3]`) while
+ * advancing along the relief route, and settles back to Row 0 (`cast[0]`) on arrival.
+ */
+export function createReliefGuardMotion(unit, reducedMotion) {
+  const art = unit?.querySelector?.('.guard-art') ?? unit;
+  let walkAnim;
+  let settleTimer;
+
+  function clearSettleTimer() {
+    if (settleTimer) {
+      clearTimeout(settleTimer);
+      settleTimer = undefined;
+    }
+  }
+
+  function face(from, to) {
+    if (!unit || !from || !to) return;
+    const dx = to.col - from.col;
+    if (dx > 0.01) unit.style.setProperty('--relief-face', '1');
+    else if (dx < -0.01) unit.style.setProperty('--relief-face', '-1');
+  }
+
+  function walk({ from, to } = {}) {
+    clearSettleTimer();
+    face(from, to);
+    unit?.classList?.add('relief-moving');
+    if (!art || reducedMotion?.matches) return;
+    if (!walkAnim) {
+      walkAnim = art.animate(buildReliefWalkKeyframes(), {
+        duration: RELIEF_WALK_DURATION_MS,
+        iterations: Infinity,
+      });
+    }
+  }
+
+  function stand() {
+    clearSettleTimer();
+    if (walkAnim) {
+      walkAnim.cancel();
+      walkAnim = undefined;
+    }
+    unit?.classList?.remove('relief-moving');
+    unit?.style?.setProperty('--relief-face', '-1');
+    if (art?.style) {
+      Object.assign(art.style, cel(0, 3, 0, 1));
+    }
+  }
+
+  function step(from, to, durationMs = 230, { arrived = false } = {}) {
+    unit?.style?.setProperty('--relief-step', `${durationMs}ms`);
+    walk({ from, to });
+    if (arrived) {
+      settleTimer = setTimeout(stand, durationMs);
+    }
+  }
+
+  return { face, walk, stand, step };
+}

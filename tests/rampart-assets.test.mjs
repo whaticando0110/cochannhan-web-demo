@@ -5,10 +5,13 @@ import test from 'node:test';
 import zlib from 'node:zlib';
 import {
   BEAST_KING_TREMOR_STEPS,
+  RELIEF_WALK_DURATION_MS,
+  RELIEF_WALK_TIMES_MS,
   SUPPLY_CRATE_POST,
   SUPPLY_STAND_POST,
   buildAnimeImpactSchedule,
   buildGuWakeSchedule,
+  buildReliefWalkKeyframes,
   buildStoneAbsorptionSchedule,
   buildTremorKeyframes,
 } from '../dist/rampart-fx.mjs';
@@ -64,6 +67,21 @@ function decodePng(filePath) {
     rgba[i * 4 + 3] = channels === 4 ? raw[i * channels + 3] : 255;
   }
   return { width, height, data: rgba };
+}
+
+function measureCellBBox(img, ox, oy, cw, ch) {
+  let x0 = cw, y0 = ch, x1 = -1, y1 = -1;
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      if (img.data[((oy + y) * img.width + (ox + x)) * 4 + 3] > 0) {
+        if (x < x0) x0 = x;
+        if (y < y0) y0 = y;
+        if (x > x1) x1 = x;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  return x1 >= 0 ? { x0, y0, x1, y1 } : null;
 }
 
 function assertAtlasIntegrity(metaFile, expectedW, expectedH, expectedCell, expectedGrid, expectedCounts) {
@@ -208,4 +226,68 @@ test('primeval-stone and stone-absorb-fx atlases match 1500ms absorption schedul
   assert.equal(schedule.frames[5].phase, 'aperture-full');
   assert.equal(schedule.frames[6].phase, 'crumble-powder');
   assert.equal(schedule.powderStartMs, 1130);
+});
+
+test('guard-ivory-motion preserves original cast row, enforces 2x2 pixel grid on walk row, and matches relief walk schedule', () => {
+  const meta = JSON.parse(fs.readFileSync(path.join(rampartDir, 'guard-ivory.json'), 'utf8'));
+  const staticPng = decodePng(path.join(rampartDir, meta.staticSheet));
+  const motionPng = decodePng(path.join(rampartDir, meta.motionAtlas));
+
+  assert.equal(motionPng.width, 512);
+  assert.equal(motionPng.height, 256);
+  assert.deepEqual(meta.cellSize, [128, 128]);
+  assert.deepEqual(meta.grid, [4, 2]);
+
+  // Row 0 of guard-ivory-motion.png must be bit-identical to guard-ivory.png
+  const row0Bytes = 512 * 128 * 4;
+  assert.equal(Buffer.compare(staticPng.data.subarray(0, row0Bytes), motionPng.data.subarray(0, row0Bytes)), 0);
+
+  // Every pixel in guard-ivory-motion.png must have binary alpha (0 | 255) and strict 2x2 macro-pixel blocks
+  let mixels = 0;
+  for (let y = 0; y < motionPng.height; y += 2) {
+    for (let x = 0; x < motionPng.width; x += 2) {
+      const i00 = (y * motionPng.width + x) * 4;
+      const a = motionPng.data[i00 + 3];
+      assert.ok(a === 0 || a === 255, `Non-binary alpha ${a} at (${x},${y})`);
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1]]) {
+        const idx = ((y + dy) * motionPng.width + (x + dx)) * 4;
+        if (
+          motionPng.data[idx] !== motionPng.data[i00] ||
+          motionPng.data[idx + 1] !== motionPng.data[i00 + 1] ||
+          motionPng.data[idx + 2] !== motionPng.data[i00 + 2] ||
+          motionPng.data[idx + 3] !== motionPng.data[i00 + 3]
+        ) {
+          mixels++;
+        }
+      }
+    }
+  }
+  assert.equal(mixels, 0, 'Expected strict 2x2 macro-pixel grid with 0 1x1 mixels');
+
+  // Row 1 walk frames must all have distinct pixels and plant on the y1 = 121 baseline
+  const walkHashes = new Set();
+  for (let c = 0; c < 4; c++) {
+    const bbox = measureCellBBox(motionPng, c * 128, 128, 128, 128);
+    assert.ok(bbox, `Walk frame ${c} is empty`);
+    assert.equal(bbox.y1, 121, `Walk frame ${c} baseline y1 must be 121`);
+    // Passing frames (1, 3) bob 2px higher than contact frames (0, 2)
+    assert.equal(bbox.y0, c % 2 === 1 ? 44 : 46);
+
+    const cellBuf = Buffer.alloc(128 * 128 * 4);
+    for (let y = 0; y < 128; y++) {
+      const srcStart = ((128 + y) * 512 + c * 128) * 4;
+      motionPng.data.copy(cellBuf, y * 128 * 4, srcStart, srcStart + 128 * 4);
+    }
+    walkHashes.add(cellBuf.toString('base64'));
+  }
+  assert.equal(walkHashes.size, 4, 'All 4 walk frames must be distinct');
+
+  const keyframes = buildReliefWalkKeyframes();
+  assert.equal(RELIEF_WALK_DURATION_MS, 600);
+  assert.deepEqual(RELIEF_WALK_TIMES_MS, [0, 160, 300, 460]);
+  assert.equal(keyframes.length, 5);
+  assert.equal(keyframes[0].backgroundPosition, '0% 100%');
+  assert.equal(keyframes[2].backgroundPosition, '66.66666666666667% 100%');
+  assert.equal(keyframes[4].backgroundPosition, '100% 100%');
+  assert.equal(keyframes[4].offset, 1);
 });
