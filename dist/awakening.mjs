@@ -1,7 +1,11 @@
 import { aptitude, cellId, createCeremony, finalDepth, flowerBank, height,
-  hopeCells, hopeGain, move, routeTo, terrain, width } from './awakening-rules.mjs';
+  hopeCells, move, routeTo, terrain, width } from './awakening-rules.mjs';
 
 const byId = id => document.getElementById(id);
+const selection = byId('character-select');
+const stage = byId('ceremony-stage');
+const changeHero = byId('change-hero');
+const storyContinue = byId('story-continue');
 const canvas = byId('garden');
 const screen = canvas.getContext('2d');
 const tile = 24;
@@ -11,7 +15,15 @@ map.height = height * tile;
 const ink = map.getContext('2d');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const sprite = new Image();
-sprite.src = 'assets/huyen-bao-travel.png';
+const orchids = new Image();
+orchids.src = 'assets/awakening/nguyet-lan-tiles.png';
+const hopeGu = new Image();
+hopeGu.src = 'assets/awakening/hy-vong-gu.png';
+const story = [
+  'Thuở hoang sơ, loài người đầu tiên là Nhân Tổ. Bầy thú mang tên Khốn Cảnh săn đuổi ông khắp nơi.',
+  'Nhân Tổ đổi tuổi trẻ lấy Sức Mạnh, rồi đổi tuổi trung niên lấy Trí Tuệ. Khi ông già đi, hai con Cổ ấy đều bỏ ông mà đi.',
+  'Khi Khốn Cảnh vây kín, con Cổ cuối cùng chỉ xin ông trao trái tim. Nhân Tổ bằng lòng. Ánh sáng của Hy Vọng Cổ bừng lên, khiến bầy thú tháo chạy.',
+];
 const pace = 148;
 const keys = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1],
   a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] };
@@ -26,19 +38,12 @@ let flash;
 let cameraX = 0;
 let cameraY = 0;
 let frame;
+let storyIndex = 0;
+let storyPaused = false;
 
 function box(ctx, color, x, y, w, h) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.floor(x), Math.floor(y), w, h);
-}
-
-function flower(x, y, shape) {
-  box(ink, '#21464a', x + 1, y + 2, 1, 5);
-  box(ink, '#487775', x - 1, y + 4, 2, 1);
-  box(ink, '#527d99', x - 1, y, 4, 2);
-  box(ink, '#91bacd', x - 1, y - 1 - shape, 1, 2 + shape);
-  box(ink, '#a9d4dd', x, y + 1, 2, 1);
-  box(ink, '#dcf1d4', x + 1, y, 1, 1);
 }
 
 function caveRim(pick) {
@@ -58,6 +63,8 @@ function caveRim(pick) {
 }
 
 function paintMap() {
+  ink.imageSmoothingEnabled = false;
+  const plants = [];
   let seed = 197;
   const pick = max => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -92,8 +99,16 @@ function paintMap() {
       box(ink, light, left + 4, top + 5, 11, 1);
     }
     if (kind === 'garden') {
-      const flowers = y === 4 ? 3 : 6;
-      for (let i = 0; i < flowers; i++) flower(left + 2 + pick(19), top + 4 + pick(14), pick(2));
+      plants.push({ x: left + 3 + pick(9), y: top + 6 + pick(7), variant: pick(4), size: 18 + pick(7) });
+      if (y !== 4 && pick(4) > 0) {
+        plants.push({ x: left + 15 + pick(6), y: top + 16 + pick(7), variant: pick(4), size: 14 + pick(6) });
+      }
+    }
+  }
+  if (orchids.complete && orchids.naturalWidth === 128) {
+    plants.sort((a, b) => a.y - b.y);
+    for (const { x, y, variant, size } of plants) {
+      ink.drawImage(orchids, variant * 32, 0, 32, 32, x - Math.floor(size / 2), y - size + 1, size, size);
     }
   }
   caveRim(pick);
@@ -136,7 +151,15 @@ function renderStatus() {
   byId('depth').textContent = state.depth;
   byId('grade').textContent = aptitude(state.depth);
   byId('resolve').value = state.resolve;
-  byId('finish').disabled = state.x < flowerBank || state.finished;
+  byId('finish').disabled = state.x < flowerBank || state.finished || storyPaused;
+}
+
+function showStory(index, pause = false) {
+  storyIndex = index;
+  storyPaused = pause;
+  byId('story-line').textContent = story[index];
+  storyContinue.hidden = !pause;
+  if (pause) storyContinue.focus({ preventScroll: true });
 }
 
 function step(x, y, now) {
@@ -148,17 +171,20 @@ function step(x, y, now) {
   steppedAt = now;
   if (state.gathered !== from.gathered) {
     flash = { x, y, at: now };
-    updateHint('Hy Vọng Cổ hội tụ · +' + hopeGain + ' sức chống áp lực');
+    const restored = state.resolve - (from.resolve - 1);
+    updateHint('Hy Vọng Cổ hội tụ · +' + restored + ' sức chống áp lực');
   } else if (x === flowerBank && from.x < flowerBank) {
-    updateHint('Cụm Hy Vọng Cổ màu vàng giúp bạn đi sâu hơn vào biển hoa.');
+    updateHint('Đi qua cụm Hy Vọng Cổ màu vàng để hồi sức và tiến sâu hơn.');
   }
+  const chapter = x >= flowerBank + 2 ? 2 : x >= 4 ? 1 : 0;
+  if (chapter > storyIndex && !state.finished) showStory(chapter, true);
   renderStatus();
   if (state.finished) showResult();
   return true;
 }
 
 function controls(now) {
-  if (state.finished || now - steppedAt < pace) return;
+  if (storyPaused || state.finished || now - steppedAt < pace) return;
   const key = queuedKey ?? heldKey;
   queuedKey = undefined;
   if (key) {
@@ -170,6 +196,13 @@ function controls(now) {
   }
 }
 
+function drawGu(x, y, now, seed, size) {
+  if (!hopeGu.complete || hopeGu.naturalWidth !== 64) return;
+  const cel = reduced.matches ? 0 : (Math.floor(now / 85) + seed) % 4;
+  screen.drawImage(hopeGu, cel * 16, 0, 16, 16,
+    Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+}
+
 function drawLights(now, heroX, heroY) {
   const lights = reduced.matches ? 0 : now / 800;
   for (let i = 0; i < 17; i++) {
@@ -178,14 +211,13 @@ function drawLights(now, heroX, heroY) {
     if (Math.floor(streamY / tile) === 4) continue;
     box(screen, i % 4 ? '#3b7682' : '#72a5a8', x, streamY - cameraY, 2 + i % 6, 1);
   }
-  for (let i = 0; i < 128; i++) {
+  for (let i = 0; i < 87; i++) {
     const x = (flowerBank + 1) * tile + (i * 211 % (tile * 48)) - cameraX;
     const y = 56 + i * 61 % 98 - cameraY;
     if (x < -6 || x > canvas.width + 6) continue;
     const glowX = x + Math.sin(lights + i) * 5;
     const glowY = y + Math.cos(lights * .7 + i) * 8;
-    box(screen, '#8fb18b', glowX - 1, glowY, 3, 1);
-    box(screen, '#e0edb2', glowX, glowY, 1, 1);
+    drawGu(glowX, glowY, now, i, 7);
   }
   for (const id of hopeCells) {
     if (state.gathered.includes(id)) continue;
@@ -195,16 +227,15 @@ function drawLights(now, heroX, heroY) {
       const a = i * 1.26 + lights;
       const px = x + Math.sin(a) * 8;
       const py = y + Math.cos(a) * 5 - 3;
-      box(screen, '#a98a56', px - 1, py - 1, 4, 4);
-      box(screen, '#fff0ad', px, py, 2, 2);
+      drawGu(px, py, now, i, 13);
     }
   }
   if (flash && !reduced.matches && now - flash.at < 780) {
     const t = (now - flash.at) / 780;
     for (let i = 0; i < 8; i++) {
       const angle = i * Math.PI / 4 + t;
-      box(screen, '#fff4ae', heroX + Math.cos(angle) * 25 * (1 - t),
-        heroY - 12 + Math.sin(angle) * 19 * (1 - t), 2, 2);
+      drawGu(heroX + Math.cos(angle) * 25 * (1 - t),
+        heroY - 12 + Math.sin(angle) * 19 * (1 - t), now, i, 9);
     }
   }
 }
@@ -243,6 +274,7 @@ function draw(now) {
 }
 
 function tick(now) {
+  if (stage.hidden) return;
   controls(now);
   draw(now);
   frame = requestAnimationFrame(tick);
@@ -265,7 +297,7 @@ canvas.addEventListener('blur', () => {
   queuedKey = undefined;
 });
 canvas.addEventListener('click', event => {
-  if (state.finished) return;
+  if (state.finished || storyPaused) return;
   const rect = canvas.getBoundingClientRect();
   const x = Math.floor(((event.clientX - rect.left) * canvas.width / rect.width + cameraX) / tile);
   const y = Math.floor(((event.clientY - rect.top) * canvas.height / rect.height + cameraY) / tile);
@@ -273,12 +305,18 @@ canvas.addEventListener('click', event => {
   queuedKey = undefined;
   path = routeTo(state, x, y);
 });
+storyContinue.addEventListener('click', () => {
+  storyPaused = false;
+  storyContinue.hidden = true;
+  renderStatus();
+  canvas.focus({ preventScroll: true });
+});
 byId('finish').addEventListener('click', () => {
   state = { ...state, finished: true };
   renderStatus();
   showResult();
 });
-byId('retry').addEventListener('click', () => {
+function resetCeremony() {
   state = createCeremony();
   from = state;
   steppedAt = -Infinity;
@@ -288,17 +326,39 @@ byId('retry').addEventListener('click', () => {
   facing = 1;
   flash = undefined;
   byId('ceremony-result').hidden = true;
+  showStory(0);
   updateHint('Qua sông ở đoạn nước nông. Dùng WASD, phím mũi tên hoặc chạm một ô.');
   renderStatus();
-  canvas.focus();
+  canvas.focus({ preventScroll: true });
+}
+
+byId('retry').addEventListener('click', resetCeremony);
+selection.addEventListener('submit', event => {
+  event.preventDefault();
+  const selected = new FormData(selection).get('hero');
+  const hero = selected === 'ao-reu' ? 'ao-reu' : 'huyen-bao';
+  sprite.src = 'assets/' + hero + '-travel.png';
+  byId('enter-village').href = 'village.html?hero=' + hero;
+  selection.hidden = true;
+  stage.hidden = false;
+  changeHero.hidden = false;
+  resetCeremony();
+  resize();
+  cancelAnimationFrame(frame);
+  frame = requestAnimationFrame(tick);
+});
+changeHero.addEventListener('click', () => {
+  cancelAnimationFrame(frame);
+  stage.hidden = true;
+  changeHero.hidden = true;
+  selection.hidden = false;
+  selection.querySelector('input:checked').focus();
 });
 
+orchids.addEventListener('load', paintMap);
 paintMap();
-resize();
 new ResizeObserver(resize).observe(canvas);
-renderStatus();
-frame = requestAnimationFrame(tick);
 window.addEventListener('pagehide', () => cancelAnimationFrame(frame));
 window.addEventListener('pageshow', event => {
-  if (event.persisted) frame = requestAnimationFrame(tick);
+  if (event.persisted && !stage.hidden) frame = requestAnimationFrame(tick);
 });

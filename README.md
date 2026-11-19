@@ -8,7 +8,7 @@ Tường ngoài nhô thêm một ô ở góc đông bắc và bẻ vào trước
 
 [Kế hoạch hoàn thiện demo](docs/ke-hoach-demo.md)
 
-Chọn **Khai Khiếu** để thử vượt sông ngầm và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
+Khi mở demo, chọn **Huyền bào** hoặc **Áo rêu** để vào Đại điển Khai Khiếu. Vượt sông ngầm, đọc chuyện Nhân Tổ và đi sâu vào vườn Nguyệt Lan. Kết quả dựa vào độ sâu lớn nhất. Các cụm Hy Vọng Cổ màu vàng hồi sức đi tiếp. Nhân vật đã chọn theo bạn khi trở về Sơn Trại. [Luật và nguồn truyện](docs/dai-dien-khai-khieu.md)
 
 ![Cuộc chạm trán với sói trên cùng bản đồ vừa khám phá](docs/forest-encounter.png)
 

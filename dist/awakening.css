@@ -3,6 +3,20 @@ body.ceremony { background: #101619; }
 .ceremony-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
 .ceremony-head h1 { font-size: clamp(1.55rem, 4vw, 2.9rem); }
 .ceremony-head .nav-link { flex-shrink: 0; }
+.character-select { max-width: 650px; margin: clamp(18px, 7svh, 84px) auto 0; text-align: center; }
+.character-select fieldset { margin: 0 0 18px; padding: 0; border: 0; }
+.character-select legend { margin: 0 auto 16px; color: #e6dbc3; font: 1.4rem var(--display); }
+.character-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.character-options label {
+  display: grid; place-items: center; padding: 15px 8px; border: 1px solid #465953; border-radius: 5px;
+  background: radial-gradient(ellipse at 50% 40%, #2c4a44, #182727 72%); color: #e7ddc3; cursor: pointer;
+}
+.character-options label:has(:checked) { border-color: #e3ce9b; box-shadow: inset 0 0 0 1px #e3ce9b; }
+.character-options label:has(:focus-visible) { outline: 2px solid #cce6a5; outline-offset: 3px; }
+.character-options input { accent-color: #d8c48d; margin: 0; }
+.character-options img { width: min(128px, 100%); height: auto; image-rendering: pixelated; }
+.character-options strong { font: 1.3rem var(--display); }
+.character-options span { color: #c3cebd; margin-top: 4px; font-size: .87rem; }
 .garden-frame { position: relative; border: 1px solid #536d69; background: #121f24; border-radius: 7px; overflow: hidden; }
 .ceremony-hud { display: grid; grid-template-columns: minmax(76px, .7fr) minmax(110px, 1fr) 1.3fr; gap: 13px; padding: 11px 16px; border-bottom: 1px solid #506862; }
 .ceremony-hud strong { display: block; color: #e2f0dc; font-size: 1rem; line-height: 1.2; }
@@ -12,6 +26,12 @@ body.ceremony { background: #101619; }
 .ceremony-hud progress::-webkit-progress-value { background: #c4dfa0; }
 #garden { display: block; width: 100%; height: clamp(290px, 65svh, 645px); image-rendering: pixelated; background: #101f2a; touch-action: manipulation; cursor: crosshair; }
 #garden:focus-visible { outline: 2px solid #cce6a5; outline-offset: -2px; }
+.narration {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px; background: #211f18; border-top: 1px solid #77674c; color: #f0dfb2;
+}
+.narration p { font: 1rem/1.45 var(--display); }
+.narration button { flex-shrink: 0; min-height: 40px; color: #f0dfb2; }
 .garden-foot { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 16px; border-top: 1px solid #506862; background: #18282b; }
 .garden-foot p { color: #c8ddd2; font-size: .9rem; line-height: 1.4; }
 .garden-foot button { flex-shrink: 0; }
@@ -23,6 +43,7 @@ body.ceremony { background: #101619; }
   .ceremony-hud { gap: 6px; padding: 9px 7px; }
   .ceremony-hud strong { font-size: .87rem; }
   #garden { height: clamp(288px, 58svh, 560px); }
+  .narration { padding: 8px; gap: 7px; }
   .garden-foot { padding: 7px; gap: 6px; }
   .garden-foot p { font-size: .79rem; }
 }

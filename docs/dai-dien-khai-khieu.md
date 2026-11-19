@@ -14,4 +14,6 @@ Bản dịch chương 5 mô tả các khoảng liên tiếp. Game xếp bước 
 
 Demo dùng mỗi ô sâu hơn theo trục hướng vào linh tuyền làm một bước tư chất. Chỉ xét độ sâu lớn nhất, nên bước ngang hoặc quay lại giữ nguyên kết quả. Lúc vào hoa hải có 27 sức chống áp lực, mỗi lần di chuyển trong hoa hải tốn một điểm, mỗi cụm Hy Vọng Cổ hoàn lại tối đa năm điểm một lần. Hết sức hoặc chạm cuối đường sẽ chốt kết quả. Người chơi cũng có thể tự chốt từ bờ hoa. Thanh sức và các cụm hồi là cách chuyển áp lực nguyên khí thành điều khiển trong demo.
 
-Codex phụ trách màn chơi và luật. Antigravity phụ trách tileset Nguyệt Lan và sprite Hy Vọng Cổ trên nhánh `antigravity/khai-khieu-assets`. Đồ họa của bản kiểm thử được vẽ bằng Canvas. Kết quả lễ hiện trong màn riêng để phục vụ thử map.
+Mở demo để chọn Huyền bào hoặc Áo rêu rồi vào hang. Lời kể hiện khi vào hang, đến giữa sông và gặp cụm Hy Vọng Cổ đầu tiên. Hai đoạn sau dừng bước để người chơi đọc, rồi tiếp tục đường đã chọn. Lời kể được diễn ý từ chương 5. Nhân vật đã chọn đi tiếp tới Sơn Trại, còn kết quả tư chất hiển thị khi kết thúc buổi lễ. [Chương 5](https://vnthuquan.org/TacPham/co-chan-nhan-25730/chuong-5)
+
+Màn chơi dùng atlas Nguyệt Lan và Hy Vọng Cổ do Antigravity bàn giao ở mốc `a522fb9`. Áo rêu dùng lại các khung đứng, đi bộ và thế thủ của bộ nữ Cổ sư trong dự án game. Bản demo tái dùng nhịp đi bộ của Áo rêu ở tốc độ chạy và khi lên thang.

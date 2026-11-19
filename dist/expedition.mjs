@@ -22,7 +22,12 @@ const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const walkHint = matchMedia('(pointer: coarse)').matches ? 'Chạm một ô để đi tới.' : 'WASD · Phím mũi tên · Shift bật/tắt chạy · Bấm ô để đi';
 const runToggle = byId('run-toggle');
 const runPreference = 'cochannhan.explore.run';
-const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion);
+const wearsAoReu = new URLSearchParams(location.search).get('hero') === 'ao-reu';
+if (wearsAoReu) {
+  document.body.classList.add('hero-ao-reu');
+  byId('hero-name').textContent = 'Cổ sư Áo rêu';
+}
+const heroMotion = createHeroMotion(hero.querySelector('.sprite'), motion, wearsAoReu);
 const stepDurations = { walk: 485, run: 280, climb: 630 };
 
 const keys = {

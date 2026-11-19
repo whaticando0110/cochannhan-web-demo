@@ -25,13 +25,13 @@ const guard = keyframes([
 ], guardDuration);
 const ready = keyframes([[0, 13]], 470);
 
-export function createHeroMotion(sprite, reducedMotion) {
+export function createHeroMotion(sprite, reducedMotion, useAoReu = false) {
   let current;
   let restTimer;
 
   function stop() {
     clearTimeout(restTimer);
-    sprite.classList.remove('at-rest', 'striding', 'climbing', 'running');
+    sprite.classList.remove('at-rest', 'striding', 'climbing', 'running', 'guarding');
     if (!current) return;
     current.onfinish = null;
     current.cancel();
@@ -60,6 +60,15 @@ export function createHeroMotion(sprite, reducedMotion) {
   function playBattle(event, facing, columns, moveDuration) {
     stop();
     if (reducedMotion.matches) return;
+    if (useAoReu) {
+      if (event.type === 'move') {
+        travel('walk', moveDuration);
+      } else {
+        sprite.classList.add('guarding');
+        restTimer = setTimeout(stand, event.type === 'guard' ? guardDuration : 470);
+      }
+      return;
+    }
 
     let frames = ready;
     let duration = 470;

@@ -3,109 +3,63 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111716">
-  <meta name="description" content="Khám phá Cổ Nguyệt Sơn Trại và giao chiến với sói ở bãi săn Thanh Mao.">
-  <title>Cổ Chân Nhân · Đường tới bãi săn</title>
+  <meta name="theme-color" content="#101a20">
+  <meta name="description" content="Qua sông ngầm và đi sâu vào biển Nguyệt Lan để khai khiếu.">
+  <title>Đại điển Khai Khiếu · Cổ Chân Nhân</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="world.css">
-  <link rel="preload" as="image" href="assets/world/wolf.png">
-  <script type="module" src="expedition.mjs"></script>
+  <link rel="stylesheet" href="awakening.css">
+  <script type="module" src="awakening.mjs"></script>
 </head>
-<body class="journey">
-  <a class="skip" href="#field">Tới bản đồ</a>
-  <header class="topbar">
-    <div class="shell topbar-inner">
-      <div class="identity">
-        <span class="seal" aria-hidden="true"><i></i></span>
-        <div class="match-heading">
-          <div>
-            <p class="region">Nam Cương <span aria-hidden="true">/</span> Thanh Mao Sơn</p>
-            <h1 id="location">Cổ Nguyệt Sơn Trại</h1>
+<body class="ceremony">
+  <main class="ceremony-shell">
+    <header class="ceremony-head">
+      <div><p class="region">Cổ Nguyệt Sơn Trại</p><h1>Đại điển Khai Khiếu</h1></div>
+      <button type="button" id="change-hero" class="subtle" hidden>Đổi nhân vật</button>
+    </header>
+    <form class="character-select" id="character-select">
+      <fieldset>
+        <legend>Chọn nhân vật</legend>
+        <div class="character-options">
+          <label><input type="radio" name="hero" value="huyen-bao" checked>
+            <img src="assets/huyen-bao-selection.png" width="128" height="128" alt="">
+            <strong>Huyền bào</strong><span>Nam cổ sư</span>
+          </label>
+          <label><input type="radio" name="hero" value="ao-reu">
+            <img src="assets/ao-reu-selection.png" width="128" height="128" alt="">
+            <strong>Áo rêu</strong><span>Nữ cổ sư</span>
+          </label>
+        </div>
+      </fieldset>
+      <button class="primary" type="submit">Vào hang Nguyệt Lan</button>
+    </form>
+    <section class="garden-frame" id="ceremony-stage" aria-label="Hang Nguyệt Lan" hidden>
+      <div class="ceremony-hud">
+        <div><span class="label">Độ sâu</span><strong><span id="depth">0</span> bước</strong></div>
+        <div><span class="label">Tư chất</span><strong id="grade">Chưa khai khiếu</strong></div>
+        <label><span class="label">Sức chống áp lực</span><progress id="resolve" max="27" value="27"></progress></label>
+      </div>
+      <canvas id="garden" tabindex="0" aria-label="Bản đồ hang Nguyệt Lan" aria-describedby="garden-hint"></canvas>
+      <div class="narration">
+        <p id="story-line" role="status"></p>
+        <button class="subtle" id="story-continue" type="button" hidden>Tiếp tục</button>
+      </div>
+      <div class="result" id="ceremony-result" hidden>
+        <div class="result-panel">
+          <p class="region" id="result-depth"></p>
+          <h2 id="result-grade" tabindex="-1"></h2>
+          <p id="result-note"></p>
+          <div class="result-actions">
+            <button class="subtle" id="retry" type="button">Thử lại</button>
+            <a class="primary nav-link" id="enter-village" href="village.html">Về Sơn Trại</a>
           </div>
-          <output class="turn" id="mode">Khám phá</output>
         </div>
       </div>
-      <div class="utilities">
-        <a href="awakening.html" class="subtle nav-link">Khai Khiếu</a>
-        <a href="duel.html" class="subtle nav-link">Đấu nhanh</a>
-        <button type="button" class="subtle reset" id="reset-trip">Chơi lại</button>
+      <div class="garden-foot">
+        <p id="garden-hint">Qua sông ở đoạn nước nông. Dùng WASD, phím mũi tên hoặc chạm một ô.</p>
+        <button class="subtle" id="finish" type="button" disabled>Chốt tư chất</button>
       </div>
-    </div>
-  </header>
-  <main class="shell expedition">
-    <div class="world-layout">
-      <section class="world-frame" aria-label="Bản đồ Thanh Mao Sơn">
-        <div id="field" class="field-window" tabindex="0" aria-describedby="field-hint" role="group" aria-label="Bản đồ có thể tương tác">
-          <div class="field-world" id="world-plane">
-            <div class="rampart-forest" id="rampart-forest" aria-hidden="true"></div>
-            <div class="field-tiles" id="map"></div>
-            <div class="map-ornaments" id="map-ornaments" aria-hidden="true"></div>
-            <div class="field-marker gate" id="gate-marker" aria-hidden="true"><span>Cổng đông</span></div>
-            <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
-            <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
-            <div class="field-unit beast" id="wolf-unit" aria-hidden="true" hidden><i class="unit-shadow"></i><i class="wolf-art"></i></div>
-            <div class="field-unit cursor" id="target-cursor" aria-hidden="true" hidden></div>
-          </div>
-          <section class="trail-card field-status" aria-label="Trạng thái chiến đấu">
-            <div class="hero-heading"><span class="hero-portrait" aria-hidden="true"></span><h2>Phương Nguyên</h2></div>
-            <div class="field-vital">
-              <div class="vital-note"><span>Sinh lực</span><b id="world-hp"></b></div>
-              <progress id="world-hp-meter" aria-label="Sinh lực người chơi"></progress>
-            </div>
-            <div class="field-vital">
-              <div class="vital-note"><span>Chân nguyên</span><b id="world-qi"></b></div>
-              <progress class="qi-meter" id="world-qi-meter" aria-label="Chân nguyên người chơi"></progress>
-            </div>
-            <div class="field-vital" id="wolf-status" hidden>
-              <div class="vital-note"><span>Sói rừng</span><b id="wolf-hp"></b></div>
-              <progress class="rival-meter" id="wolf-hp-meter" aria-label="Sinh lực sói"></progress>
-            </div>
-          </section>
-          <div class="field-shade" aria-hidden="true"></div>
-          <div class="field-caption"><span id="coordinates"></span></div>
-          <div id="defeat" class="result" hidden>
-            <div class="result-panel">
-              <h2>Bạn đã gục</h2>
-              <p>Thử lại từ lúc chạm trán sói.</p>
-              <button id="retry-encounter" type="button" class="primary">Thử lại trận</button>
-            </div>
-          </div>
-        </div>
-        <div class="field-footer">
-          <span id="field-hint">Bấm ô để đi, hoặc dùng WASD và phím mũi tên.</span>
-          <button class="run-toggle" id="run-toggle" type="button" aria-label="Chế độ chạy" aria-pressed="false" aria-keyshortcuts="Shift">Chạy · Tắt</button>
-        </div>
-      </section>
-
-      <aside class="world-sidebar" aria-label="Mục tiêu và trạng thái">
-        <section class="trail-card" id="objective-card">
-          <span class="quest-mark" aria-label="Mục tiêu">◆</span>
-          <h2 id="objective-title"></h2>
-          <p id="objective-detail"></p>
-          <button type="button" class="trail-guide" id="guide"></button>
-        </section>
-
-        <section class="trail-card encounter-intent" id="wolf-intent" hidden>
-          <div class="panel-label"><i class="marker" aria-hidden="true"></i> Ý định của sói</div>
-          <h2 id="wolf-intent-name"></h2>
-          <p id="wolf-intent-detail"></p>
-        </section>
-        <details class="trail-card encounter-log" id="encounter-log" hidden>
-          <summary>Diễn biến trận</summary>
-          <ul id="world-log"></ul>
-        </details>
-      </aside>
-
-      <section class="actions world-actions" id="field-actions" hidden aria-labelledby="field-actions-title">
-        <div class="actions-heading">
-          <h2 id="field-actions-title">Chọn hành động</h2>
-          <span>Mỗi hành động kết thúc lượt</span>
-        </div>
-        <div class="action-grid" id="field-action-grid"></div>
-        <p class="action-hint" id="field-action-hint"></p>
-      </section>
-    </div>
-    <div class="sr-only" role="status" id="world-announcement"></div>
+    </section>
+    <p class="sr-only" id="ceremony-announce" role="status"></p>
   </main>
 </body>
 </html>
