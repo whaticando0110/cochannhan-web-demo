@@ -59,6 +59,7 @@
             <div class="field-marker supply" id="supply-marker" aria-hidden="true" hidden><span>Chỗ tiếp tế</span></div>
             <div class="field-marker passage" id="rear-marker" aria-hidden="true" hidden><span>Hậu trại</span></div>
             <div class="field-marker passage" id="forest-marker" aria-hidden="true" hidden><span>Điểm tập kết</span></div>
+            <div class="field-marker passage" id="regroup-marker" aria-hidden="true" hidden><span>Đội viện trợ</span></div>
             <div class="field-marker passage" id="end-marker" aria-hidden="true" hidden><span>Lối mòn</span></div>
             <div class="field-unit hero" id="hero-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="sprite"></i></div>
             <div class="field-unit mentor" id="mentor-unit" aria-hidden="true"><i class="unit-shadow"></i><i class="mentor-art"></i></div>
@@ -88,6 +89,10 @@
           <div id="raid-dialogue" class="raid-dialogue" role="status" hidden>
             <img src="assets/rampart/tinh-nghi-portrait.png" alt="" width="48" height="48">
             <div><strong>Cổ Nguyệt Tĩnh Nghi <span class="mentor-rank">Tam chuyển đỉnh phong</span></strong><p></p></div>
+          </div>
+          <div id="forest-warning" class="raid-dialogue forest-warning" role="status" hidden>
+            <div><strong>Cổ sư tuần rừng</strong><p>Cẩn thận! Có Điện Lang sau lưng đội hình!</p></div>
+            <button type="button" class="trail-guide" id="forest-ready">Vào trận</button>
           </div>
           <div class="field-caption"><span id="coordinates"></span></div>
           <div id="defeat" class="result" hidden>
@@ -120,6 +125,15 @@
           <h2 id="wolf-intent-name"></h2>
           <p id="wolf-intent-detail"></p>
         </section>
+        <section class="forest-command" id="forest-command" aria-label="Hành động theo lượt" hidden>
+          <div class="forest-buttons">
+            <button type="button" data-action="move" aria-pressed="false"><kbd>1</kbd> Di chuyển</button>
+            <button type="button" data-action="strike"><kbd>2</kbd> Tay không</button>
+            <button type="button" data-action="moon"><kbd>3</kbd> Nguyệt Quang</button>
+            <button type="button" data-action="guard"><kbd>4</kbd> Thủ thế</button>
+          </div>
+          <p id="forest-report" aria-live="polite"></p>
+        </section>
       </aside>
 
     </div>
@@ -147,6 +161,15 @@
         <p id="rear-line" aria-live="polite"></p>
       </div>
       <button type="button" class="trail-guide" id="rear-next" autofocus>Tiếp tục</button>
+    </div>
+  </dialog>
+  <dialog class="mentor-dialog" id="forest-dialog" aria-labelledby="forest-speaker" aria-describedby="forest-line">
+    <div class="rear-dialog-content">
+      <div class="mentor-copy">
+        <h2 id="forest-speaker">Đội trưởng đội viện trợ</h2>
+        <p id="forest-line" aria-live="polite"></p>
+      </div>
+      <button type="button" class="trail-guide" id="forest-next" autofocus>Tiếp tục</button>
     </div>
   </dialog>
 </body>

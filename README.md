@@ -36,7 +36,9 @@ Ngay khi dùng xong nguyên thạch, camera theo đợt sói mới và Cuồng �
 
 Ở hậu trại, bấm **E** hoặc chạm **Báo tin** để báo động cho đội trưởng. Hai cổ sư lên lũy tiếp viện. Theo đội trưởng qua cổng đông bên hông tới điểm tập kết và trao đổi trước khi vào bãi săn. Tải lại trong cùng phiên sẽ tiếp tục từ mốc báo tin, cổng đông hoặc điểm tập kết đã đạt.
 
-Phần bãi săn hiện nối vào trận Điện Lang thời gian thực có sẵn. Chân nguyên hồi dần khi ngừng bắn. Né vùng màu đỏ trước lúc sói vồ và dùng **Thử lại trận** nếu gục.
+Tới bìa bãi săn, bạn thấy đội tuần rừng phối hợp phá vây bằng Nguyệt Nghê Thường, Tùng Châm và Nguyệt Mang. Đi tiếp qua lối rừng để thấy một Điện Lang tách đàn. Sau tiếng hô **Cẩn thận!**, chọn **Vào trận** để bắt đầu hướng dẫn theo lượt. Dùng các nút trên màn hình hoặc phím **1–4** để chọn di chuyển, đánh tay không, phóng Nguyệt Quang hay thủ thế. Khi chọn di chuyển, chạm ô xanh hoặc dùng WASD/phím mũi tên cho bước kề bên. Mỗi hành động hợp lệ kết thúc một lượt. Né khỏi vùng đỏ trước khi kết thúc lượt.
+
+Nếu gục, **Thử lại trận** đưa bạn về lượt một với chỉ số lúc chạm trán. Khi thắng, tới dấu đội viện trợ và bấm **E** hoặc **Trao đổi** để báo tin thú vương. Đây là điểm kết thúc đoạn chơi. Tải lại trước khi thắng bắt đầu lại từ điểm tập kết. Tải lại sau khi thắng giữ mục tiêu gặp đội, còn tải lại sau cuộc thoại giữ mốc hoàn thành.
 
 Huyền bào và Áo rêu có atlas 128 × 128 riêng cho động tác lấy đà, phóng nguyệt nhận, thu tay và trúng đòn. Khung chuyển động lấy từ bộ đấm và phản ứng trúng đòn của chính hai skin. Điểm rời tay được đo riêng theo khung phát chiêu của mỗi skin.
 
@@ -48,11 +50,12 @@ Bản thử nghiệm theo lượt trước đây còn tại `/duel.html`, với 
 
 ## Mã nguồn và kiểm thử
 
-- `dist/combat.mjs` giữ quy tắc của bản Đấu nhanh theo lượt.
+- `dist/combat.mjs` giữ quy tắc theo lượt dùng chung cho trận Điện Lang và Đấu nhanh.
 - `dist/world.mjs` định nghĩa địa hình, tìm đường, nhịp tấn công theo thời gian thực và sát thương ở bãi săn. `dist/rampart-defense.mjs` điều khiển cảnh phòng thủ, đạn và hiệu ứng trúng đòn.
-- `dist/expedition.mjs` nối bản đồ, camera và chiến đấu thời gian thực với bàn phím và cảm ứng. `dist/rampart-lesson.mjs` giữ các mốc bài tập và quy tắc hấp thụ. `dist/game.mjs` điều khiển trận Đấu nhanh.
+- `dist/expedition.mjs` nối bản đồ, camera và các cuộc chạm trán với bàn phím và cảm ứng. `dist/rampart-lesson.mjs` giữ các mốc bài tập và quy tắc hấp thụ. `dist/game.mjs` điều khiển trận Đấu nhanh.
 - `dist/beast-king-raid.mjs` điều phối cảnh xuất hiện của Cuồng Điện Lang và các mốc nối lại. [Hồ sơ atlas và VFX](docs/thu-trieu-assets.md)
 - `dist/reinforcement-post.mjs` điều quân tiếp viện và quản lý các điểm hẹn từ hậu trại tới bãi săn.
+- `dist/forest-team.mjs` phát mô hình và VFX đội viện trợ trong cảnh rừng. `dist/forest-encounter.mjs` định nghĩa vị trí chạm trán, đấu trường và bộ hành động đầu game. [Hồ sơ tạo hình](docs/forest-support/README.md)
 - `dist/assets/rampart/` chứa ba bộ hình 48 × 48 px cho nền, viền rừng và lũy gỗ. Xem cả [atlas nguồn và quy trình đóng gói](docs/tilesets/co-nguyet-rampart-v1).
 - `dist/` là bản web tĩnh tự chứa. Demo chạy hoàn toàn trên trình duyệt, dùng dữ liệu trận riêng và chỉ giữ trạng thái trong phiên.
 
