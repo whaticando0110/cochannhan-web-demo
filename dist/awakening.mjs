@@ -58,7 +58,7 @@ let bannerTimers = [];
 let cameraX = 0;
 let cameraY = 0;
 let frame;
-let storyIndex = 0;
+let storyIndex = -1;
 let narrationPulseTimer;
 let sceneProps = [];
 let ambientFireflies = [];
@@ -397,16 +397,16 @@ function renderStatus() {
     el.classList.toggle('reached', state.depth >= t);
     el.classList.toggle('current', t === currentThreshold);
   }
-
-  const count = state.gathered.length;
-  byId('hope-count').textContent = count;
-  const pips = byId('hope-pips');
-  pips.setAttribute('aria-label', `${count} trên ${hopeCells.length} cụm Hy Vọng Cổ`);
-  Array.from(pips.children).forEach((pip, idx) => pip.classList.toggle('lit', idx < count));
 }
 
 function showStory(index, flashSub = false) {
   storyIndex = index;
+  if (index < 0) {
+    narrationBar.hidden = true;
+    byId('story-line').textContent = '';
+    return;
+  }
+  narrationBar.hidden = false;
   byId('story-line').textContent = storyBeats[index];
   if (flashSub && !reduced.matches) {
     narrationBar.classList.remove('pulse');
@@ -418,10 +418,11 @@ function showStory(index, flashSub = false) {
 }
 
 function beatForProgress(next) {
+  if (next.x < 3) return -1;
   if (next.depth >= 34) return 4;
-  if (next.depth >= 18) return 3;
-  if (next.x >= flowerBank + 1) return 2;
-  if (next.x >= 4) return 1;
+  if (next.depth >= 22) return 3;
+  if (next.depth >= 12) return 2;
+  if (next.x >= flowerBank + 2) return 1;
   return 0;
 }
 
@@ -455,7 +456,7 @@ function step(x, y, now) {
       : 'Khí tức từ Linh Tuyền dần đặc quánh, bước đi chậm lại...');
   } else if (state.gathered !== from.gathered) {
     flash = { x, y, at: now };
-    updateHint(`Hy Vọng Cổ hội tụ (${state.gathered.length}/${hopeCells.length}) về phía cơ thể`);
+    updateHint('Hy Vọng Cổ hội tụ vào cơ thể.');
   } else if (newGrade !== prevGrade) {
     tierFlashAt = now;
     updateHint(`Không Khiếu rung động · Bước qua ngưỡng ${newGrade}`);
@@ -758,7 +759,7 @@ function resetCeremony() {
   tierFlashAt = -Infinity;
   stopBurstAt = -Infinity;
   byId('ceremony-result').hidden = true;
-  showStory(0, false);
+  showStory(-1, false);
   updateHint('Qua sông ở đoạn nước nông. Dùng WASD, phím mũi tên hoặc chạm một ô.');
   renderStatus();
   showBanner();

@@ -48,12 +48,7 @@
             <span data-tier="40">Giáp</span>
           </div>
         </div>
-        <div class="hud-stat hud-hope">
-          <span class="label">Hy Vọng Cổ (<span id="hope-count">0</span>/7)</span>
-          <div class="hope-pips" id="hope-pips" role="img" aria-label="0 trên 7 cụm Hy Vọng Cổ">
-            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-          </div>
-        </div>
+        <div class="hud-stat hud-quest" id="hud-quest" aria-hidden="true"></div>
       </div>
       <div class="stage-viewport">
         <canvas id="garden" tabindex="0" aria-label="Bản đồ hang Nguyệt Lan" aria-describedby="garden-hint"></canvas>
@@ -62,7 +57,7 @@
           <p class="banner-title">Đại điển khai khiếu</p>
         </div>
       </div>
-      <div class="narration" id="narration-bar" aria-live="polite">
+      <div class="narration" id="narration-bar" aria-live="polite" hidden>
         <span class="narration-tag">Nhân Tổ truyện</span>
         <p id="story-line" role="status"></p>
       </div>

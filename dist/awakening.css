@@ -47,15 +47,7 @@ body.ceremony { background: #101619; }
 .tier-track span.reached { color: #f4e6be; background: #2d463e; border-color: #93b89a; }
 .tier-track span.current { color: #12211d; background: #cde3b5; border-color: #e7f4d7; font-weight: 700; }
 
-.hope-pips { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
-.hope-pips i {
-  width: 12px; height: 12px; border-radius: 50%; display: block;
-  background: #1b2c30; border: 1px solid #355052; transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
-}
-.hope-pips i.lit {
-  background: radial-gradient(circle at 40% 35%, #fcf7df, #cbb06e 72%);
-  border-color: #e5d295; box-shadow: 0 0 6px rgba(229, 210, 149, 0.55);
-}
+.hud-quest { min-height: 1px; }
 
 .stage-viewport { position: relative; }
 #garden { display: block; width: 100%; height: clamp(288px, 64svh, 576px); image-rendering: pixelated; background: #0d1217; touch-action: manipulation; cursor: crosshair; }
@@ -108,9 +100,7 @@ body.ceremony { background: #101619; }
   .ceremony-shell { width: calc(100% - 16px); padding-top: 10px; }
   .ceremony-head { margin-bottom: 9px; }
   .ceremony-hud { grid-template-columns: minmax(78px, .8fr) 1.3fr; gap: 8px 10px; padding: 9px 10px; }
-  .hud-hope { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .hud-hope .label { margin-bottom: 0; }
-  .hope-pips { margin-top: 0; }
+  .hud-quest:empty { display: none; }
   .hud-stat strong { font-size: .88rem; }
   .tier-track { max-width: none; gap: 4px; margin-top: 4px; }
   #garden { height: clamp(256px, 41svh, 304px); }
