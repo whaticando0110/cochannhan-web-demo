@@ -1,0 +1,557 @@
+{
+  "name": "Gói Hệ Ẩn (Ẩn Thạch / Ẩn Lân Cổ) & Hẻm Đá Phục Kích cho Godot Vượt Thanh Mao",
+  "loreReferences": [
+    "Ẩn Thạch Cổ (Chương 116 / 121 bản Việt): Tàng hình bản thể cổ sư nhưng không ẩn được y phục đang mặc, vẫn để lộ quần áo nếu mặc đồ.",
+    "Ẩn Lân Cổ Nhị chuyển (Chương 116 / 121 / 130 bản Việt): Hợp luyện từ Ẩn Thạch Cổ và Ngư Lân Cổ; tạo gợn vảy cá nước che khuất trọn vẹn cả người lẫn y phục.",
+    "Cơ chế demo tách riêng khỏi nguyên tác: Điện Lang thường mất khóa mục tiêu (?) và dồn sang ô dấu cũ, kết hợp địa hình Hẻm Đá Phục Kích có mảng nứt đi được và bẫy đá rơi màu hổ phách."
+  ],
+  "activityReuseEvaluation": {
+    "checkedFiles": [
+      "apps/activity-sandbox/public/art/an-lan.png",
+      "apps/activity-sandbox/public/art/an-lan.json",
+      "apps/activity-sandbox/public/art/gu-novel-stealth-scales.png",
+      "scripts/aseprite/prod/prod_gu_an_lan.lua"
+    ],
+    "verdict": "direct_lossless_atlas_reuse",
+    "reusedActivityAtlasDirectly": true,
+    "details": [
+      "Toàn bộ 16 khung trong an-lan.png (cast-0..3, shimmer-0..7, uncloak-0..3) đã dùng binary alpha 0|255 và bảng 5 màu cá nước #1f4b66/#4292ba/#7cd4ee/#c8f6ff/#f2fcff rất sạch.",
+      "Đã giải nén không tổn hao cả 16 khung từ an-lan.png + spriteSourceSize vào lưới đều 1024x512 (8x4 ô 128x128 @ 2x2 macro-pixel), dịch chuẩn điểm neo fx_foot(32,50) -> footAnchor128[64,120] (+10px logic) và fx_center(32,32) -> [64,76] (+6px logic) cho Godot arena.gd.",
+      "Icon an-lan-co-icon.png (32x32) được dựng sắc nét từ dáng cá vảy đá của gu-novel-stealth-scales.png kết hợp đốm lân quang xanh băng."
+    ]
+  },
+  "godotRender": {
+    "boardSize": [
+      803,
+      477
+    ],
+    "origin": [
+      39,
+      35
+    ],
+    "tileSize": [
+      91,
+      82
+    ],
+    "heroSpan": 112,
+    "pivotRatio": [
+      -0.5,
+      -0.77
+    ],
+    "rockfallDistinction": "Màu hổ phách (#f7b733 / #ffe894) dùng khung góc + mũi tên rơi dọc từ trên xuống (v) + bóng tròn đáy — tuyệt đối không dùng gạch chéo 45° của đòn vồ (#fb816a)."
+  },
+  "assets": {
+    "an-lan-co": {
+      "rank": 2,
+      "reusedFromActivity": true,
+      "atlasFile": "res://assets/ambush-veil-review/an-lan-co.png",
+      "iconFile": "res://assets/ambush-veil-review/an-lan-co-icon.png",
+      "editableSource": "res://assets/ambush-veil-review/an-lan-co.aseprite",
+      "width": 1024,
+      "height": 512,
+      "cellSize": [
+        128,
+        128
+      ],
+      "iconSize": [
+        32,
+        32
+      ],
+      "macroPixelGrid": [
+        2,
+        2
+      ],
+      "grid": [
+        8,
+        4
+      ],
+      "footAnchor128": [
+        64,
+        120
+      ],
+      "centerAnchor128": [
+        64,
+        76
+      ],
+      "godotSpan": 112,
+      "pivotRatio": [
+        -0.5,
+        -0.77
+      ],
+      "clips": {
+        "cast": {
+          "row": 0,
+          "count": 4,
+          "loop": false,
+          "durationMs": 640,
+          "durationsMs": [
+            120,
+            160,
+            180,
+            180
+          ],
+          "bboxes128": [
+            {
+              "x0": 44,
+              "y0": 92,
+              "x1": 85,
+              "y1": 117
+            },
+            {
+              "x0": 44,
+              "y0": 68,
+              "x1": 85,
+              "y1": 109
+            },
+            {
+              "x0": 42,
+              "y0": 48,
+              "x1": 83,
+              "y1": 87
+            },
+            {
+              "x0": 50,
+              "y0": 40,
+              "x1": 81,
+              "y1": 67
+            }
+          ]
+        },
+        "shimmer": {
+          "row": 1,
+          "count": 8,
+          "loop": true,
+          "durationMs": 800,
+          "durationsMs": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "bboxes128": [
+            {
+              "x0": 50,
+              "y0": 48,
+              "x1": 79,
+              "y1": 109
+            },
+            {
+              "x0": 50,
+              "y0": 42,
+              "x1": 81,
+              "y1": 101
+            },
+            {
+              "x0": 48,
+              "y0": 52,
+              "x1": 77,
+              "y1": 103
+            },
+            {
+              "x0": 66,
+              "y0": 40,
+              "x1": 79,
+              "y1": 95
+            },
+            {
+              "x0": 44,
+              "y0": 50,
+              "x1": 81,
+              "y1": 107
+            },
+            {
+              "x0": 48,
+              "y0": 38,
+              "x1": 77,
+              "y1": 93
+            },
+            {
+              "x0": 42,
+              "y0": 46,
+              "x1": 73,
+              "y1": 105
+            },
+            {
+              "x0": 50,
+              "y0": 40,
+              "x1": 81,
+              "y1": 109
+            }
+          ]
+        },
+        "uncloak": {
+          "row": 2,
+          "count": 4,
+          "loop": false,
+          "durationMs": 520,
+          "durationsMs": [
+            90,
+            110,
+            140,
+            180
+          ],
+          "bboxes128": [
+            {
+              "x0": 42,
+              "y0": 52,
+              "x1": 87,
+              "y1": 103
+            },
+            {
+              "x0": 32,
+              "y0": 48,
+              "x1": 99,
+              "y1": 109
+            },
+            {
+              "x0": 24,
+              "y0": 46,
+              "x1": 109,
+              "y1": 119
+            },
+            {
+              "x0": 72,
+              "y0": 62,
+              "x1": 119,
+              "y1": 121
+            }
+          ]
+        },
+        "wolf_lost_target": {
+          "row": 3,
+          "count": 4,
+          "loop": true,
+          "durationMs": 560,
+          "durationsMs": [
+            140,
+            140,
+            140,
+            140
+          ],
+          "anchorHint": "wolf_point + Vector2(0, -58)",
+          "bboxes128": [
+            {
+              "x0": 46,
+              "y0": 52,
+              "x1": 83,
+              "y1": 69
+            },
+            {
+              "x0": 46,
+              "y0": 52,
+              "x1": 83,
+              "y1": 69
+            },
+            {
+              "x0": 46,
+              "y0": 50,
+              "x1": 83,
+              "y1": 67
+            },
+            {
+              "x0": 46,
+              "y0": 50,
+              "x1": 83,
+              "y1": 67
+            }
+          ]
+        }
+      }
+    },
+    "an-thach-co": {
+      "rank": 1,
+      "atlasFile": "res://assets/ambush-veil-review/an-thach-co.png",
+      "iconFile": "res://assets/ambush-veil-review/an-thach-co-icon.png",
+      "editableSource": "res://assets/ambush-veil-review/an-thach-co.aseprite",
+      "width": 768,
+      "height": 384,
+      "cellSize": [
+        128,
+        128
+      ],
+      "iconSize": [
+        32,
+        32
+      ],
+      "macroPixelGrid": [
+        2,
+        2
+      ],
+      "grid": [
+        6,
+        3
+      ],
+      "footAnchor128": [
+        64,
+        120
+      ],
+      "centerAnchor128": [
+        64,
+        76
+      ],
+      "godotSpan": 112,
+      "pivotRatio": [
+        -0.5,
+        -0.77
+      ],
+      "clips": {
+        "cast": {
+          "row": 0,
+          "count": 6,
+          "loop": false,
+          "durationMs": 540,
+          "durationsMs": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "bboxes128": [
+            {
+              "x0": 42,
+              "y0": 110,
+              "x1": 87,
+              "y1": 123
+            },
+            {
+              "x0": 40,
+              "y0": 100,
+              "x1": 89,
+              "y1": 123
+            },
+            {
+              "x0": 38,
+              "y0": 64,
+              "x1": 91,
+              "y1": 123
+            },
+            {
+              "x0": 36,
+              "y0": 64,
+              "x1": 93,
+              "y1": 123
+            },
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 60,
+              "x1": 87,
+              "y1": 113
+            }
+          ]
+        },
+        "partial_cloak": {
+          "row": 1,
+          "count": 6,
+          "loop": true,
+          "durationMs": 660,
+          "durationsMs": [
+            110,
+            110,
+            110,
+            110,
+            110,
+            110
+          ],
+          "note": "Ẩn thân thể nhưng giữ viền y phục & đai lưng nổi nét — thể hiện nhược điểm Chương 116/121.",
+          "bboxes128": [
+            {
+              "x0": 42,
+              "y0": 60,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 60,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 60,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            }
+          ]
+        },
+        "reveal": {
+          "row": 2,
+          "count": 6,
+          "loop": false,
+          "durationMs": 420,
+          "durationsMs": [
+            70,
+            70,
+            70,
+            70,
+            70,
+            70
+          ],
+          "bboxes128": [
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 42,
+              "y0": 64,
+              "x1": 87,
+              "y1": 113
+            },
+            {
+              "x0": 44,
+              "y0": 88,
+              "x1": 85,
+              "y1": 91
+            },
+            {
+              "x0": 44,
+              "y0": 96,
+              "x1": 85,
+              "y1": 99
+            },
+            {
+              "x0": 44,
+              "y0": 104,
+              "x1": 85,
+              "y1": 107
+            },
+            {
+              "x0": 44,
+              "y0": 112,
+              "x1": 85,
+              "y1": 115
+            }
+          ]
+        }
+      }
+    },
+    "ambush-canyon-tiles": {
+      "atlasFile": "res://assets/ambush-veil-review/ambush-canyon-tiles.png",
+      "width": 364,
+      "height": 164,
+      "cellSize": [
+        91,
+        82
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "tiles": {
+        "canyon_floor_0": [
+          0,
+          0
+        ],
+        "canyon_floor_1": [
+          1,
+          0
+        ],
+        "canyon_floor_2": [
+          2,
+          0
+        ],
+        "canyon_floor_3": [
+          3,
+          0
+        ],
+        "cracked_walkable_a": [
+          0,
+          1
+        ],
+        "cracked_walkable_b": [
+          1,
+          1
+        ],
+        "low_split_rock_a": [
+          2,
+          1
+        ],
+        "low_split_rock_b": [
+          3,
+          1
+        ]
+      }
+    },
+    "rockfall-telegraph": {
+      "atlasFile": "res://assets/ambush-veil-review/rockfall-telegraph.png",
+      "editableSource": "res://assets/ambush-veil-review/rockfall-telegraph.aseprite",
+      "width": 364,
+      "height": 164,
+      "cellSize": [
+        91,
+        82
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "tiles": {
+        "rockfall_warn_a": [
+          0,
+          0
+        ],
+        "rockfall_warn_b": [
+          1,
+          0
+        ],
+        "rockfall_imminent": [
+          2,
+          0
+        ],
+        "rockfall_impact_dust": [
+          3,
+          0
+        ],
+        "pounce_ref_diagonal": [
+          0,
+          1
+        ],
+        "safe_canyon_step": [
+          1,
+          1
+        ],
+        "stealth_lost_tile": [
+          2,
+          1
+        ],
+        "cracked_rockfall_combo": [
+          3,
+          1
+        ]
+      }
+    }
+  }
+}
