@@ -1,6 +1,7 @@
 import { aptitude, awakeningStorageKey, baseStepMs, cellId, createCeremony, finalDepth, flowerBank, height,
   hopeCells, move, routeTo, seaEssenceLabel, seaEssenceRatio, stepPace, terrain, width } from './awakening-rules.mjs';
-import { lessonCheckpointKey } from './village-arrival.mjs';
+import { canSkipAwakening, rebirthProfile, startRun } from './roguelike.mjs';
+import { newSeed, readRun, runUrl, writeRun } from './roguelike-storage.mjs';
 
 const byId = id => document.getElementById(id);
 const selection = byId('character-select');
@@ -18,6 +19,10 @@ map.width = width * tile;
 map.height = height * tile;
 const ink = map.getContext('2d');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const runEntry = byId('run-entry');
+const startButton = byId('enter-run');
+const resume = byId('resume-run');
+const skip = byId('skip-ceremony');
 
 const sprite = new Image();
 const orchids = new Image();
@@ -233,7 +238,6 @@ function resize() {
 
 function saveOutcome(grade, seaPct) {
   try {
-    sessionStorage.removeItem(lessonCheckpointKey);
     sessionStorage.setItem(awakeningStorageKey, JSON.stringify({
       hero: selectedHero,
       depth: state.depth,
@@ -244,7 +248,6 @@ function saveOutcome(grade, seaPct) {
   } catch {
     // Session persistence is best-effort in static environments.
   }
-  byId('enter-village').href = `village.html?hero=${selectedHero}&depth=${state.depth}&essence=${seaPct}`;
 }
 
 function showBanner() {
@@ -380,7 +383,7 @@ function showResult() {
 
   byId('result-note').textContent = note;
   drawApertureInterior(resultShownAt);
-  byId('enter-village').focus({ preventScroll: true });
+  startButton.focus({ preventScroll: true });
 }
 
 function updateHint(note) {
@@ -769,13 +772,47 @@ function resetCeremony() {
 }
 
 byId('retry').addEventListener('click', resetCeremony);
+
+function goToRun(profile) {
+  const run = startRun(profile, newSeed());
+  location.assign(runUrl('run.html', run, writeRun(run)));
+}
+
+function updateRunEntry() {
+  if (!stage.hidden) return;
+  const run = readRun();
+  const active = run?.phase === 'battle' || run?.phase === 'reward';
+  const reborn = canSkipAwakening(run);
+  runEntry.hidden = !active && !reborn;
+  selection.hidden = active;
+  resume.hidden = !active;
+  skip.hidden = !reborn;
+  if (active) {
+    byId('run-entry-title').textContent = 'Lượt chơi đang dở';
+    byId('run-entry-detail').textContent = 'Tiếp tục từ màn và lượt đã lưu.';
+    resume.href = runUrl('run.html', run, !location.hash);
+  } else if (reborn) {
+    byId('run-entry-title').textContent = 'Hồi sinh';
+    const { grade, seaPct } = run.profile;
+    byId('run-entry-detail').textContent = `Có thể khai khiếu lại hoặc bắt đầu lượt mới với ${grade}, Nguyên Hải ${seaPct}% như trước.`;
+  }
+}
+
+startButton.addEventListener('click', () => {
+  const profile = state?.finished && rebirthProfile(selectedHero, state.depth);
+  if (profile) goToRun(profile);
+});
+skip.addEventListener('click', () => {
+  const run = readRun();
+  if (canSkipAwakening(run)) goToRun(run.profile);
+});
 selection.addEventListener('submit', event => {
   event.preventDefault();
   const selected = new FormData(selection).get('hero');
   selectedHero = selected === 'ao-reu' ? 'ao-reu' : 'huyen-bao';
   sprite.src = 'assets/' + selectedHero + '-travel.png';
-  byId('enter-village').href = 'village.html?hero=' + selectedHero;
   selection.hidden = true;
+  runEntry.hidden = true;
   stage.hidden = false;
   changeHero.hidden = false;
   resetCeremony();
@@ -790,6 +827,7 @@ changeHero.addEventListener('click', () => {
   stage.hidden = true;
   changeHero.hidden = true;
   selection.hidden = false;
+  updateRunEntry();
   selection.querySelector('input:checked').focus();
 });
 
@@ -800,5 +838,7 @@ paintMap();
 new ResizeObserver(resize).observe(canvas);
 window.addEventListener('pagehide', () => cancelAnimationFrame(frame));
 window.addEventListener('pageshow', event => {
-  if (event.persisted && !stage.hidden) frame = requestAnimationFrame(tick);
+  if (event.persisted) return location.reload();
+  updateRunEntry();
 });
+updateRunEntry();

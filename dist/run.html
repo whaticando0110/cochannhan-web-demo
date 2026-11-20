@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b19">
+  <title>Cổ Chân Nhân · Vượt Thanh Mao</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="run.css">
+  <script type="module" src="run.mjs"></script>
+</head>
+<body>
+  <main class="run-shell" id="run-shell" hidden>
+    <header class="run-top">
+      <div class="identity"><span class="seal" aria-hidden="true"><i></i></span><span class="brand">Cổ Chân Nhân</span></div>
+      <a href="index.html" class="subtle nav-link" id="home">Về đầu</a>
+    </header>
+    <ol class="run-route" id="route" aria-label="Các màn của lượt chơi"></ol>
+    <div class="run-layout">
+      <section class="run-encounter" aria-labelledby="floor">
+        <header class="run-encounter-title"><h1 id="floor" tabindex="-1"></h1><span class="turn" id="turn"></span></header>
+        <div class="run-stage" id="stage">
+          <div class="run-board" id="board" role="group" aria-label="Ô chiến đấu"></div>
+          <div class="run-actor run-hero" id="hero" aria-hidden="true"><i class="actor-ring"></i><i class="sprite"></i></div>
+          <div class="run-actor run-wolf" id="wolf" aria-hidden="true"><i class="actor-ring"></i><i class="wolf-art"></i></div>
+        </div>
+        <section class="run-commands" id="commands" aria-label="Hành động theo lượt">
+          <div class="run-actions" id="actions"></div>
+          <p id="hint" aria-live="polite"></p>
+        </section>
+        <section class="run-outcome" id="outcome" aria-labelledby="outcome-title" hidden>
+          <h2 id="outcome-title" tabindex="-1"></h2>
+          <p id="outcome-copy"></p>
+          <div id="rewards" class="run-rewards"></div>
+        </section>
+      </section>
+      <aside class="run-aside">
+        <section class="run-panel run-profile" aria-label="Cổ sư">
+          <img id="hero-portrait" width="70" height="70" alt="">
+          <div>
+            <h2 id="hero-name"></h2>
+            <p class="run-grade" id="grade"></p>
+          </div>
+          <div class="run-resources">
+            <label for="hp"><span>Sinh lực</span><b id="hp-text"></b></label>
+            <progress id="hp"></progress>
+            <label for="qi"><span>Chân nguyên</span><b id="qi-text"></b></label>
+            <progress id="qi"></progress>
+          </div>
+        </section>
+        <section class="run-panel run-rival" aria-label="Đối thủ và ý định">
+          <label for="rival-hp"><span id="rival-name"></span><b id="rival-hp-text"></b></label>
+          <progress id="rival-hp"></progress>
+          <h2 id="intent"></h2>
+          <p id="intent-copy"></p>
+        </section>
+        <section class="run-panel run-log" aria-labelledby="log-heading">
+          <h2 id="log-heading">Diễn biến</h2>
+          <ol id="log"></ol>
+        </section>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

@@ -111,3 +111,9 @@ body.ceremony { background: #101619; }
   .aperture-frame { width: 152px; height: 152px; }
   #aperture-canvas { width: 140px; height: 140px; }
 }
+.run-entry {
+  display: grid; justify-items: start; gap: 11px; margin: 0 0 16px; padding: 16px 20px;
+  color: #e4e5d3; border: 1px solid #5d624e; background: #1a2926;
+}
+.run-entry h2 { font: 600 1.5rem var(--display); color: var(--gold); }
+.run-entry p { max-width: 65ch; }
