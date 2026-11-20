@@ -1,4 +1,18 @@
-# Cổ Chân Nhân · Demo web
+# Cổ Chân Nhân · Vượt Thanh Mao
+
+Demo roguelike web theo lượt. Lượt chơi đầu bắt đầu ở Đại điển Khai Khiếu. Tư chất quyết định giới hạn chân nguyên khởi điểm, từ 4 ở Đinh đẳng đến 7 ở Giáp đẳng.
+
+1. Chọn nhân vật, qua sông ngầm và hoàn thành Khai Khiếu.
+2. Vượt ba màn theo lượt. Đọc ý định đối thủ và vùng nguy hiểm màu đỏ. Dùng các nút trên màn hình hoặc phím **1–4** để đi, đánh tay không, dùng Nguyệt Quang hoặc thủ thế.
+3. Thắng một màn để chọn chiến lợi phẩm. Sinh lực, chân nguyên và sức mạnh tích lũy được mang qua màn sau. Vị trí đá thay đổi theo mã của lượt chơi.
+4. Khi chết, chọn **Hồi sinh**. Bạn có thể làm lại Đại điển hoặc bỏ qua để dùng nhân vật và tư chất trước đó. Cả hai đều bắt đầu ở màn đầu với tài nguyên khởi điểm. Lượt đang chơi tiếp tục được sau khi tải lại.
+
+Chạy `npm run preview` trong repo và mở [demo local](http://127.0.0.1:4173). Chạy `npm test` để kiểm thử.
+
+`dist/roguelike.mjs` quản lý chu kỳ màn, chiến lợi phẩm và hồ sơ Khai Khiếu. Luật chiến đấu dùng chung từ `dist/combat.mjs`. Bản lưu lưu mã ngẫu nhiên và các hành động đã chốt để khôi phục bàn, đối thủ và tài nguyên.
+
+<details>
+<summary>Tài liệu bản thử thú triều trước khi chuyển sang roguelike</summary>
 
 Sau **Đại điển Khai Khiếu**, lên lũy tây **Cổ Nguyệt Sơn Trại** để tập dùng Nguyệt Quang. Khi bạn hồi đầy chân nguyên, **Cuồng Điện Lang** xuất hiện. Tĩnh Nghi ở lại phòng thủ và giao nhiệm vụ chạy về hậu trại gọi viện binh.
 
@@ -67,3 +81,5 @@ npm test
 Đồ họa đường rừng và vật cản lấy từ dự án Discord Cổ Chân Nhân ở mốc `cb8b369f`. Lũy gỗ được ghép từ bộ ô làm theo ảnh Cổ Nguyệt Sơn Trại đã duyệt. Bộ **Huyền bào tay rộng** lấy từ bản Activity ở mốc `5738f80f`. Chỉ số và nhịp đánh được rút gọn cho demo.
 
 Điện Lang phổ thông dùng atlas trong suốt 16 khung 128 × 128 ở `dist/assets/world/dien-lang.png`. Tốc độ, thị lực và cảnh công trại dựa trên truyện. Bờm xanh than và mắt bắt sáng nhẹ là lựa chọn tạo hình cho demo. [Chương 127](https://truyenhoan.com/co-chan-nhan/chuong-127.html) · [Chương 150](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-150)
+
+</details>

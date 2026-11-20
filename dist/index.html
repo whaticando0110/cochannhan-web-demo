@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101a20">
-  <meta name="description" content="Qua sông ngầm và đi sâu vào biển Nguyệt Lan để khai khiếu.">
-  <title>Đại điển Khai Khiếu · Cổ Chân Nhân</title>
+  <meta name="description" content="Khai Khiếu và vượt các màn chiến đấu theo lượt ở Thanh Mao Sơn.">
+  <title>Cổ Chân Nhân · Thanh Mao Sơn</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="awakening.css">
   <script type="module" src="awakening.mjs"></script>
@@ -16,6 +16,12 @@
       <div><p class="region">Cổ Nguyệt Sơn Trại</p><h1>Đại điển Khai Khiếu</h1></div>
       <button type="button" id="change-hero" class="subtle" hidden>Đổi nhân vật</button>
     </header>
+    <section class="run-entry" id="run-entry" hidden>
+      <h2 id="run-entry-title"></h2>
+      <p id="run-entry-detail"></p>
+      <a class="primary nav-link" id="resume-run" href="run.html" hidden>Tiếp tục lượt chơi</a>
+      <button class="primary" id="skip-ceremony" type="button" hidden>Bỏ qua Khai Khiếu</button>
+    </section>
     <form class="character-select" id="character-select">
       <fieldset>
         <legend>Chọn nhân vật</legend>
@@ -72,7 +78,7 @@
           <p id="result-note"></p>
           <div class="result-actions">
             <button class="subtle" id="retry" type="button">Thử lại</button>
-            <a class="primary nav-link" id="enter-village" href="village.html">Xác nhận bắt đầu</a>
+            <button class="primary" id="enter-run" type="button">Bắt đầu lượt chơi</button>
           </div>
         </div>
       </div>
