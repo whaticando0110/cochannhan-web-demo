@@ -27,13 +27,14 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 ## Thứ tự triển khai
 
 1. Luyện trận dùng cùng bộ luật với Vượt Thanh Mao và tách bản lưu. Đây là nơi thử từng Cổ và cách đánh trùm.
-2. Luyện trận và phần thưởng đã dùng chung luật Ngọc Bì Cổ và Sinh Cơ Diệp. Gemini phụ trách nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh riêng. Bản Godot hiện dùng hiệu ứng dựng bằng mã.
+2. Luyện trận và phần thưởng dùng chung luật Ngọc Bì Cổ và Sinh Cơ Diệp. Gemini bàn giao nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh riêng.
 3. Ba bố cục vách che, đòn lao theo hàng và điểm nghỉ đã vào luật lưu v3. Gemini phụ trách viền vách và hình báo đòn ở đúng cỡ chơi. Các lượt đang chơi ở v1/v2 giữ luật đã dùng khi bắt đầu.
 4. Hai đòn và nhịp hồi của Cuồng Điện Lang đã có trong lượt chính và Luyện trận. Kết quả dò đường thắng là mốc kiểm bố cục. Duyệt nhịp di chuyển, báo đòn và hiệu ứng trong Godot trước khi chốt cân bằng.
 5. Chọn bộ Nhị chuyển sau khi thắng Cuồng Điện Lang. Chín cặp dùng được trong lượt mới và Luyện trận. Gemini làm atlas Nguyệt Mang và Bạch Ngọc trên nhánh asset riêng.
 6. Nối Bãi Đá Suối Sấm, cho đổi bộ giữa hai màn và thêm hệ Tửu. Lượt v4 tiếp tục giữ luật cũ ở Sườn đá Mù Sương và nhận luật mới ở Suối Sấm. Gemini phụ trách atlas Tửu Trùng, Tứ Vị Tửu Trùng và ô nước nông có dấu nhiễm điện.
 7. Nối Hẻm Đá Phục Kích và hệ Ẩn. Lượt v4/v5 giữ luật đã áp dụng trong hai màn trước khi tiếp tục vào hẻm. Gemini làm hiệu ứng hai Cổ hệ Ẩn và mẫu ô nứt/đá rơi trên nhánh asset riêng.
 8. Thêm điểm dừng, nguyên thạch trong túi, thương nhân và bảo vật cho lượt v7. Xem chi phí và kết quả dự kiến ở mức sinh lực, chân nguyên và số lá thực tế trước khi xác nhận.
+9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
 
@@ -77,6 +78,14 @@ Khi thêm hệ mới, chuẩn bị ít nhất hai Cổ có vai trò bổ sung v�
 Thắng Sườn đá Mù Sương nhận 4 nguyên thạch. Thắng Suối Sấm nhận 2. Mua bảo vật mới thay món đang mang. Giày cỏ lau thêm một ô cho lần Di chuyển đầu mỗi trận, có thể cộng với bước ẩn. Ngọc bài hộ thân chặn tối đa 3 sát thương còn lại của đòn đầu còn gây sát thương sau Thủ thế và lớp ngọc. Trâm tụ nguyên thêm 1 chân nguyên đầu trận đến mức sức chứa. Túi nguyên thạch và bảo vật thuộc lượt hiện tại.
 
 Kiểm 48 lượt v7 gồm bốn bộ thuần, ba mã lượt và bốn cách kết hợp điểm dừng. Có đường thắng khi nghỉ cả hai lần, nhặt nguyên thạch rồi mua cả hai món ở quầy, mua bảo vật rồi đổi chân nguyên lấy lá, hoặc đổi bảo vật giữa hai trận. Khi tải lại, cửa hàng giữ đúng món đã mua và chi phí đã trả.
+
+## Đồ họa trong trận
+
+Godot dùng các khung của bảy Cổ và Sinh Cơ Diệp cho cả Huyền bào và Áo rêu. Nguyệt Mang bay theo hàng riêng khi có Nguyệt Ấn. Ngọc Bì và Bạch Ngọc có khung tụ, duy trì và va chạm riêng. Tứ Vị đổi dấu sáng theo số lần tăng lực còn lại. Khi Ẩn Lân làm đòn nhắm trượt, Điện Lang hiện dấu mất mục tiêu đúng nhịp. Sinh lực tăng ở khung trị thương Sinh Cơ Diệp và chân nguyên tăng tại khung Tửu Trùng có hiệu lực.
+
+Mặt nước Suối Sấm nối theo bốn cạnh của các ô nước đã lưu. Dấu điện tím chỉ phủ các ô đang bị đòn khóa. Hẻm Đá vẽ ô nứt đi được và đá chặn theo dữ liệu bàn, đồng thời dùng dấu hổ phách cho đá rơi. Hàng lao của tinh anh và quét của Cuồng Điện Lang dùng chung hệ dấu theo hướng và bỏ qua ô đá.
+
+PNG và thiết lập nhập của Godot nằm ở các thư mục asset tương ứng. Nguồn chỉnh sửa, bảng khung và ảnh duyệt được lưu tại các commit bàn giao. [Ngọc Bì và Sinh Cơ](https://github.com/whaticando0110/cochannhan-web-demo/commit/971abaa) · [Nguyệt Mang và Bạch Ngọc](https://github.com/whaticando0110/cochannhan-web-demo/commit/5205ab5) · [Tửu và Suối Sấm](https://github.com/whaticando0110/cochannhan-web-demo/commit/d42a56a) · [Ẩn và Hẻm Đá](https://github.com/whaticando0110/cochannhan-web-demo/commit/d19a143) · [Vách che và đòn theo hàng](https://github.com/whaticando0110/cochannhan-web-demo/commit/f5fc683)
 
 <details>
 <summary>Kế hoạch của bản thử thú triều trước đây</summary>

@@ -6,6 +6,7 @@ signal training_requested
 signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
+const Art = preload("res://combat_art.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Arena = preload("res://arena.gd")
@@ -223,6 +224,7 @@ func build_hud() -> void:
 	label("Diễn biến", 880, 496, 265, 31, 25, GOLD, true)
 	report_label = label("", 880, 534, 264, 92, 14, MUTE)
 	report_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	report_label.max_lines_visible = 4
 	report_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
 	var descriptions := [
@@ -239,7 +241,7 @@ func build_hud() -> void:
 	if state.jade_skin:
 		descriptions.append(["jade_skin", "5   Ngọc Bì Cổ\nChặn %d · −%d CN" % [Rules.JADE_ABSORB, Rules.JADE_COST]])
 	if state.leaves > 0:
-		descriptions.append(["vital_leaf", "6   Sinh Cơ Diệp\nHồi tối đa %d sinh lực" % Rules.LEAF_HEAL])
+		descriptions.append(["vital_leaf", "6   Sinh Cơ Diệp\nHồi ≤%d sinh lực" % Rules.LEAF_HEAL])
 	if state.refined_gu == "moon_edge":
 		descriptions.append(["moon_edge", "7   Nguyệt Mang\nTầm %d ô · −%d CN" % [Gu.MOON_EDGE_RANGE, Gu.MOON_EDGE_COST]])
 	elif state.refined_gu == "white_jade":
@@ -253,6 +255,10 @@ func build_hud() -> void:
 		var row: Array = descriptions[index]
 		var action: String = row[0]
 		var node := button(row[1], 34 + index * (width + 12), 648, width, 67)
+		if Art.ICONS.has(action):
+			node.icon = Art.ICONS[action]
+			node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			node.add_theme_constant_override("icon_max_width", 20)
 		if descriptions.size() > 5:
 			node.add_theme_font_size_override("font_size", 15)
 		node.pressed.connect(func(): choose(action))
