@@ -11,6 +11,17 @@ Chạy `npm run preview` trong repo và mở [demo local](http://127.0.0.1:4173)
 
 `dist/roguelike.mjs` quản lý chu kỳ màn, chiến lợi phẩm và hồ sơ Khai Khiếu. Luật chiến đấu dùng chung từ `dist/combat.mjs`. Bản lưu lưu mã ngẫu nhiên và các hành động đã chốt để khôi phục bàn, đối thủ và tài nguyên.
 
+## Bản thử chiến đấu Godot
+
+Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard và bấm **F6** với cảnh `combat_preview.tscn` hoặc **F5** để chơi. Có thể chạy `godot --path godot-combat` từ thư mục repo.
+
+Một trận tại Rìa rừng Thanh Mao, lưới 8 × 5, cổ sư Huyền bào Đinh đẳng và một Điện Lang. Dùng các nút hoặc phím **1–4**. Chọn **Di chuyển** rồi bấm ô để né. Nhấn **R** để chơi lại trận. Bản thử dùng GDScript và renderer Compatibility, với sprite lấy từ atlas hiện có. Phạm vi là phần chiến đấu trên Windows.
+
+```sh
+godot --headless --path godot-combat --import
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/preview_smoke.gd
+```
+
 <details>
 <summary>Tài liệu bản thử thú triều trước khi chuyển sang roguelike</summary>
 
