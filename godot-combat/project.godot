@@ -1,8 +1,8 @@
 config_version=5
 
 [application]
-config/name="Cổ Chân Nhân — Trận Điện Lang"
-run/main_scene="res://combat_preview.tscn"
+config/name="Cổ Chân Nhân — Vượt Thanh Mao"
+run/main_scene="res://run_flow.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]

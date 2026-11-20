@@ -16,9 +16,28 @@ var wolf_hp := MAX_HP
 var qi := MAX_QI
 var intent := {}
 var result := ""
+var rocks: Array = ROCKS
+var max_qi := MAX_QI
+var wolf_max := MAX_HP
+var heavy_name := "Vồ mồi"
+var heavy_damage := 12
+var bite_damage := 8
+var pace := 1
+var moon_damage := 26
 
 
-func _init() -> void:
+func _init(options: Dictionary = {}) -> void:
+	rocks = options.get("rocks", ROCKS)
+	hp = options.get("hp", MAX_HP)
+	qi = options.get("qi", MAX_QI)
+	max_qi = options.get("max_qi", MAX_QI)
+	wolf_max = options.get("wolf_hp", MAX_HP)
+	wolf_hp = wolf_max
+	heavy_name = options.get("heavy", heavy_name)
+	heavy_damage = options.get("damage", heavy_damage)
+	bite_damage = options.get("bite", bite_damage)
+	pace = options.get("pace", pace)
+	moon_damage += int(options.get("moon_bonus", 0))
 	forecast()
 
 
@@ -56,7 +75,7 @@ func reach(start: int, budget: int, blocker: int = -1) -> Dictionary:
 		if steps >= budget:
 			continue
 		for candidate in neighbors(cell):
-			if candidate != blocker and candidate not in ROCKS and not walked.has(candidate):
+			if candidate != blocker and candidate not in rocks and not walked.has(candidate):
 				walked[candidate] = steps + 1
 				queue.append(candidate)
 	walked.erase(start)
@@ -72,11 +91,11 @@ func forecast() -> void:
 	if (turn - 1) % 2 == 0 and gap <= 5:
 		var cells: Array[int] = [hero]
 		for cell in neighbors(hero):
-			if cell not in ROCKS:
+			if cell not in rocks:
 				cells.append(cell)
-		intent = {"kind": "heavy", "name": "Vồ mồi", "cells": cells, "damage": 12}
+		intent = {"kind": "heavy", "name": heavy_name, "cells": cells, "damage": heavy_damage}
 	elif gap == 1:
-		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": 8}
+		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
 	else:
 		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
 
@@ -107,7 +126,7 @@ func wolf_step() -> int:
 	var distances := reach(hero, COLUMNS * ROWS)
 	var wolf_next := wolf
 	var best: int = distances.get(wolf, 1000)
-	for cell in reach(wolf, 1, hero):
+	for cell in reach(wolf, pace, hero):
 		var steps: int = distances.get(cell, 1000)
 		if steps < best:
 			best = steps
@@ -130,27 +149,27 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			hero = target
 			notes.append("Bạn di chuyển đến %s." % cell_name(hero))
 		"strike", "moon":
-			qi = mini(MAX_QI, qi + (1 if action == "strike" else -2))
-			var damage := mini(wolf_hp, 14 if action == "strike" else 26)
+			qi = mini(max_qi, qi + (1 if action == "strike" else -2))
+			var damage := mini(wolf_hp, 14 if action == "strike" else moon_damage)
 			wolf_hp -= damage
 			exchange.wolf_damage = damage
 			var name := "Nguyệt Quang" if action == "moon" else "Tay không"
 			notes.append("%s gây %d sát thương." % [name, damage])
 		"guard":
 			var previous_qi := qi
-			qi = mini(MAX_QI, qi + 1)
+			qi = mini(max_qi, qi + 1)
 			notes.append("Thủ thế và hồi 1 chân nguyên." if qi > previous_qi else "Bạn vào thế thủ.")
 
 	if wolf_hp <= 0:
 		result = VICTORY
-		notes.append("Điện Lang đã gục.")
+		notes.append("Đối thủ đã gục.")
 	elif intent.kind == "advance":
 		wolf = wolf_step()
 		if wolf != exchange.wolf_from:
 			exchange.reaction = "advance"
-			notes.append("Điện Lang áp sát đến %s." % cell_name(wolf))
+			notes.append("Đối thủ áp sát đến %s." % cell_name(wolf))
 		else:
-			notes.append("Điện Lang giữ vị trí.")
+			notes.append("Đối thủ giữ vị trí.")
 	elif hero in intent.cells:
 		var damage: int = intent.damage
 		if action == "guard":

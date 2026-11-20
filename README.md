@@ -11,15 +11,18 @@ Chạy `npm run preview` trong repo và mở [demo local](http://127.0.0.1:4173)
 
 `dist/roguelike.mjs` quản lý chu kỳ màn, chiến lợi phẩm và hồ sơ Khai Khiếu. Luật chiến đấu dùng chung từ `dist/combat.mjs`. Bản lưu lưu mã ngẫu nhiên và các hành động đã chốt để khôi phục bàn, đối thủ và tài nguyên.
 
-## Bản thử chiến đấu Godot
+## Bản Godot
 
-Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard và bấm **F6** với cảnh `combat_preview.tscn` hoặc **F5** để chơi. Có thể chạy `godot --path godot-combat` từ thư mục repo.
+Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard rồi bấm **F5**, hoặc chạy `godot --path godot-combat` từ thư mục repo. **F6** với cảnh `combat_preview.tscn` vẫn mở trận Điện Lang độc lập.
 
-Một trận tại Rìa rừng Thanh Mao, lưới 8 × 5, cổ sư Huyền bào Đinh đẳng và một Điện Lang. Dùng các nút hoặc phím **1–4**. Chọn **Di chuyển** rồi bấm ô để né. Nhấn **R** để chơi lại trận. Bản thử dùng GDScript và renderer Compatibility, với sprite lấy từ atlas hiện có. Phạm vi là phần chiến đấu trên Windows.
+Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi theo biển hoa để mở Không Khiếu. Dùng **WASD**, phím mũi tên hoặc bấm một ô để tới. Trong ba trận theo lượt, dùng **1–4** và bấm ô để di chuyển. Qua mỗi màn đầu chọn một chiến lợi phẩm để mang sang màn sau.
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ và mỗi lựa chọn chiến lợi phẩm. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import
 godot --headless --path godot-combat --fixed-fps 60 --script res://tests/preview_smoke.gd
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/run_flow_smoke.gd
 ```
 
 <details>

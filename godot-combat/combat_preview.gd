@@ -1,8 +1,13 @@
 extends Control
 
+signal action_committed
+signal battle_finished
+
 const Rules = preload("res://battle_rules.gd")
 const Arena = preload("res://arena.gd")
+const RunData = preload("res://run_state.gd")
 const PORTRAIT = preload("res://assets/huyen-bao-selection.png")
+const REU_PORTRAIT = preload("res://assets/ao-reu-selection.png")
 const GOLD := Color("#f1d89f")
 const IVORY := Color("#f0e8d6")
 const MUTE := Color("#aebfb4")
@@ -10,8 +15,13 @@ const GREEN := Color("#a2d6aa")
 const CYAN := Color("#9ed6eb")
 const RED := Color("#ec9b85")
 
-var state := Rules.new()
-var field: Control
+var state: Rules = Rules.new()
+var run: RunData
+var room_title := "Rìa rừng Thanh Mao"
+var enemy_name := "Điện Lang"
+var hero_name := "Cổ sư Huyền bào"
+var grade := "Đinh đẳng"
+var field: Arena
 var turn_label: Label
 var hp_label: Label
 var qi_label: Label
@@ -34,7 +44,20 @@ var selecting := false
 func _ready() -> void:
 	headline.font_names = PackedStringArray(["Cambria", "Georgia", "Noto Serif"])
 	build_hud()
-	reset_battle()
+	if run == null:
+		reset_battle()
+	else:
+		show_battle()
+
+
+func configure(current_run: RunData) -> void:
+	run = current_run
+	state = run.battle
+	var floor_data: Dictionary = RunData.FLOORS[run.floor]
+	room_title = floor_data.name
+	enemy_name = floor_data.enemy
+	hero_name = "Cổ sư Áo rêu" if run.profile.hero == "ao-reu" else "Cổ sư Huyền bào"
+	grade = "%s · Nguyên Hải %d%%" % [run.profile.grade, run.profile.sea_pct]
 
 
 func style(fill: Color, border: Color, radius: int = 3) -> StyleBoxFlat:
@@ -99,27 +122,34 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 func build_hud() -> void:
 	label("CỔ CHÂN NHÂN  /  THANH MAO SƠN", 36, 22, 600, 30, 17, GREEN)
-	label("Rìa rừng Thanh Mao", 34, 48, 790, 60, 54, GOLD, true)
-	label("Trận theo lượt  ·  Điện Lang", 38, 113, 600, 27, 20, MUTE)
+	label(room_title, 34, 48, 790, 60, 54, GOLD, true)
+	var mode := "Trận theo lượt"
+	if run != null:
+		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
 	turn_label = label("", 678, 105, 160, 33, 20, GOLD, true)
 	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	reset_button = button("Chơi lại trận", 1006, 44, 160, 46)
+	reset_button.visible = run == null
 	reset_button.pressed.connect(reset_battle)
 	panel(33, 151, 805, 481)
 	field = Arena.new()
+	if run != null:
+		field.room = run.floor
+		field.skin = run.profile.hero
 	set_bounds(field, 34, 153, 803, 477)
 	field.cell_selected.connect(select_cell)
 
 	panel(860, 151, 306, 160)
 	var portrait := TextureRect.new()
-	portrait.texture = PORTRAIT
+	portrait.texture = REU_PORTRAIT if field.skin == "ao-reu" else PORTRAIT
 	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_bounds(portrait, 869, 156, 55, 61)
-	label("Cổ sư Huyền bào", 925, 160, 228, 31, 26, GOLD, true)
-	label("Đinh đẳng", 926, 192, 210, 24, 15, MUTE)
+	label(hero_name, 925, 160, 228, 31, 26, GOLD, true)
+	label(grade, 926, 192, 223, 24, 15, MUTE)
 	label("Sinh lực", 880, 222, 220, 21, 16, IVORY)
 	hp_label = label("", 1054, 222, 94, 21, 16, GREEN)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -127,13 +157,13 @@ func build_hud() -> void:
 	label("Chân nguyên", 880, 263, 169, 22, 16, IVORY)
 	qi_label = label("", 1054, 263, 94, 22, 16, CYAN)
 	qi_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	qi_bar = bar(880, 290, 267, CYAN, Rules.MAX_QI)
+	qi_bar = bar(880, 290, 267, CYAN, state.max_qi)
 
 	panel(860, 325, 306, 146, Color("#282a23"))
-	label("Điện Lang", 880, 337, 190, 30, 26, GOLD, true)
+	label(enemy_name, 880, 337, 190, 30, 21, GOLD, true)
 	wolf_label = label("", 1054, 342, 94, 24, 16, RED)
 	wolf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	wolf_bar = bar(880, 374, 267, RED, Rules.MAX_HP)
+	wolf_bar = bar(880, 374, 267, RED, state.wolf_max)
 	intent_name = label("", 880, 394, 266, 26, 21, RED, true)
 	intent_copy = label("", 880, 425, 264, 40, 14, IVORY)
 	intent_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -161,8 +191,8 @@ func build_hud() -> void:
 
 func update_hud() -> void:
 	hp_label.text = "%d / %d" % [state.hp, Rules.MAX_HP]
-	qi_label.text = "%d / %d" % [state.qi, Rules.MAX_QI]
-	wolf_label.text = "%d / %d" % [state.wolf_hp, Rules.MAX_HP]
+	qi_label.text = "%d / %d" % [state.qi, state.max_qi]
+	wolf_label.text = "%d / %d" % [state.wolf_hp, state.wolf_max]
 	hp_bar.value = state.hp
 	qi_bar.value = state.qi
 	wolf_bar.value = state.wolf_hp
@@ -170,16 +200,16 @@ func update_hud() -> void:
 	match state.result:
 		Rules.VICTORY:
 			intent_name.text = "Thắng trận"
-			intent_copy.text = "Bạn đã hạ Điện Lang."
+			intent_copy.text = "Bạn đã hạ %s." % enemy_name
 		Rules.DEFEAT:
 			intent_name.text = "Bạn đã gục"
-			intent_copy.text = "Chọn Chơi lại trận hoặc nhấn R."
+			intent_copy.text = "Chọn Chơi lại trận hoặc nhấn R." if run == null else "Lượt chơi đã kết thúc."
 		_:
 			intent_name.text = state.intent.name
 			if state.intent.damage > 0:
 				intent_copy.text = "Gây %d sát thương ở vùng đỏ." % state.intent.damage
 			else:
-				intent_copy.text = "Điện Lang sẽ tiến về phía bạn."
+				intent_copy.text = "%s sẽ tiến về phía bạn." % enemy_name
 	report_label.text = "\n".join(report.slice(0, 3))
 	for action in actions:
 		var control: Button = actions[action]
@@ -189,14 +219,18 @@ func update_hud() -> void:
 
 
 func reset_battle() -> void:
-	if busy:
+	if busy or run != null:
 		return
 	state = Rules.new()
+	show_battle()
+
+
+func show_battle() -> void:
 	selecting = false
 	field.clear_effects()
 	field.set_selecting(false)
 	field.set_state(state)
-	report.assign(["Điện Lang đã nhắm vào vùng đỏ."])
+	report.assign(["%s đang chuẩn bị hành động." % enemy_name])
 	hint_label.text = "Chọn hành động. Ô đỏ sẽ bị đánh sau lượt của bạn."
 	update_hud()
 	reset_button.release_focus()
@@ -224,11 +258,12 @@ func select_cell(cell: int) -> void:
 
 
 func resolve(action: String, cell: int = -1) -> void:
-	var exchange := state.take_turn(action, cell)
+	var exchange: Dictionary = state.take_turn(action, cell) if run == null else run.perform(action, cell)
 	if exchange.has("error"):
 		hint_label.text = exchange.error
 		return
 	busy = true
+	action_committed.emit()
 	selecting = false
 	field.set_selecting(false)
 	for control in actions.values():
@@ -242,7 +277,12 @@ func resolve(action: String, cell: int = -1) -> void:
 		report.push_front(note)
 	report = report.slice(0, 4)
 	update_hud()
-	hint_label.text = "Chọn hành động cho lượt tiếp theo." if state.result.is_empty() else "Nhấn R hoặc chọn Chơi lại trận."
+	if state.result.is_empty():
+		hint_label.text = "Chọn hành động cho lượt tiếp theo."
+	elif run == null:
+		hint_label.text = "Nhấn R hoặc chọn Chơi lại trận."
+	else:
+		battle_finished.emit()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -251,7 +291,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: "moon", KEY_4: "guard"}
 	if key_actions.has(event.keycode):
 		choose(key_actions[event.keycode])
-	elif event.keycode == KEY_R:
+	elif event.keycode == KEY_R and run == null:
 		reset_battle()
 	else:
 		return
