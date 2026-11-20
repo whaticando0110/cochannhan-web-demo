@@ -1,6 +1,8 @@
 extends Control
 
 signal cell_selected(cell: int)
+signal cell_focused(cell: int)
+signal exchange_cue(cue: String)
 
 const Rules = preload("res://battle_rules.gd")
 const TRAIL = preload("res://assets/trail.png")
@@ -41,12 +43,14 @@ var shock_point := Vector2.ZERO
 var shock_damage := 0
 var shock_progress := 1.0
 var shock_cold := true
+var shock_guarded := false
 var shock_tween: Tween
 
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	mouse_exited.connect(func(): mouse_cell = -1; queue_redraw())
+	focus_mode = Control.FOCUS_CLICK
+	mouse_exited.connect(point_to.bind(-1))
 
 
 func set_state(state: Rules) -> void:
@@ -66,6 +70,8 @@ func set_state(state: Rules) -> void:
 
 func set_selecting(value: bool) -> void:
 	selecting = value
+	if not value:
+		mouse_cell = -1
 	queue_redraw()
 
 
@@ -81,29 +87,38 @@ func cell_center(cell: int) -> Vector2:
 	return ORIGIN + (Vector2(Rules.grid(cell)) + Vector2(0.5, 0.5)) * TILE
 
 
+func point_to(cell: int) -> void:
+	if mouse_cell == cell:
+		return
+	mouse_cell = cell
+	cell_focused.emit(cell)
+	queue_redraw()
+
+
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		var point := (((event as InputEventMouse).position - ORIGIN) / TILE).floor()
 		var cell := -1
 		if point.x >= 0 and point.y >= 0 and point.x < Rules.COLUMNS and point.y < Rules.ROWS:
 			cell = int(point.x + point.y * Rules.COLUMNS)
-		mouse_cell = cell
-		queue_redraw()
+		point_to(cell)
 		if cell >= 0 and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			cell_selected.emit(cell)
 			accept_event()
 
 
-func paint_marker(rect: Rect2, color: Color, striped: bool) -> void:
+func paint_marker(rect: Rect2, color: Color, striped: bool, destination: bool) -> void:
 	draw_rect(rect.grow(-1), Color(color, 0.25))
 	draw_rect(rect.grow(-1), Color(color, 0.92), false, 1.5)
-	if not striped:
-		draw_circle(rect.get_center(), 3.0, color)
-		return
-	for line in range(10, int(rect.size.x + rect.size.y), 14):
-		var start := Vector2(maxf(0, line - rect.size.y), minf(line, rect.size.y))
-		var end := Vector2(minf(line, rect.size.x), maxf(0, line - rect.size.x))
-		draw_line(rect.position + start, rect.position + end, Color(color, 0.24), 1.5, true)
+	if striped:
+		for line in range(10, int(rect.size.x + rect.size.y), 14):
+			var start := Vector2(maxf(0, line - rect.size.y), minf(line, rect.size.y))
+			var end := Vector2(minf(line, rect.size.x), maxf(0, line - rect.size.x))
+			draw_line(rect.position + start, rect.position + end, Color(color, 0.24), 1.5, true)
+	if destination:
+		var center := rect.get_center()
+		draw_colored_polygon(PackedVector2Array([center + Vector2(0, -5), center + Vector2(5, 0),
+			center + Vector2(0, 5), center + Vector2(-5, 0)]), color)
 
 
 func paint_tiles() -> void:
@@ -122,10 +137,12 @@ func paint_tiles() -> void:
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rules != null and cell in rules.rocks:
 			draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
-		if cell in threatened:
-			paint_marker(rect, Color("#fb816a"), true)
-		elif selecting and cell in available:
-			paint_marker(rect, GREEN, false)
+		var danger := cell in threatened
+		var accessible := selecting and cell in available
+		if danger:
+			paint_marker(rect, Color("#ffc29a") if accessible else Color("#fb816a"), true, accessible)
+		elif accessible:
+			paint_marker(rect, GREEN, false, true)
 		if mouse_cell == cell:
 			draw_rect(rect.grow(-3), Color("#f4dfbcb8"), false, 2.0)
 	if room != 2:
@@ -187,10 +204,11 @@ func _draw() -> void:
 		draw_texture_rect(projectile, Rect2(Vector2(-25, -25), Vector2(50, 50)), false)
 		draw_set_transform(Vector2.ZERO)
 	if shock_progress < 1.0:
-		var tone := Color("#c5f7ff") if shock_cold else Color("#ffb994")
+		var tone := Color("#f8d68c") if shock_guarded else Color("#c5f7ff") if shock_cold else Color("#ffb994")
 		var alpha := 1.0 - shock_progress
 		draw_arc(shock_point, 6 + shock_progress * 26, 0, TAU, 24, Color(tone, alpha * 0.8), 2.0, true)
-		draw_string(ThemeDB.fallback_font, shock_point + Vector2(-12, -10 - 26 * shock_progress), "−%d" % shock_damage,
+		var marker := "Đỡ  −%d" % shock_damage if shock_guarded else "−%d" % shock_damage
+		draw_string(ThemeDB.fallback_font, shock_point + Vector2(-12, -10 - 26 * shock_progress), marker,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(tone, alpha))
 
 
@@ -204,20 +222,25 @@ func set_wolf_frame(frame: float) -> void:
 	queue_redraw()
 
 
-func impact(point: Vector2, damage: int, cold: bool) -> void:
+func impact(point: Vector2, damage: int, cold: bool, guarded: bool = false) -> void:
 	shock_point = point
 	shock_damage = damage
 	shock_cold = cold
+	shock_guarded = guarded
 	if shock_tween != null and shock_tween.is_valid():
 		shock_tween.kill()
 	shock_tween = create_tween()
 	shock_tween.tween_method(func(progress: float): shock_progress = progress; queue_redraw(), 0.0, 1.0, .38)
 
 
-func slide_hero(point: Vector2, seconds: float) -> void:
-	var tween := create_tween().set_parallel()
-	tween.tween_method(func(value: Vector2): hero_point = value; queue_redraw(), hero_point, point, seconds)
-	tween.tween_method(set_hero_frame, 0.0, 7.9, seconds)
+func slide_hero(path: Array[int]) -> void:
+	var tween := create_tween()
+	var step_start := hero_point
+	for cell in path:
+		var step_end := cell_center(cell)
+		tween.tween_method(func(value: Vector2): hero_point = value; queue_redraw(), step_start, step_end, .15)
+		tween.parallel().tween_method(set_hero_frame, 0.0, 7.9, .15)
+		step_start = step_end
 	await tween.finished
 
 
@@ -246,11 +269,12 @@ func cast(at: Vector2) -> void:
 
 
 func play_exchange(exchange: Dictionary) -> void:
-	threatened.clear()
 	available.clear()
+	exchange_cue.emit("player")
+	var guarding: bool = exchange.action == "guard"
 	if exchange.action == "move":
 		hero_art = "move"
-		await slide_hero(cell_center(rules.hero), .23)
+		await slide_hero(exchange.hero_path)
 	elif exchange.action == "moon":
 		await cast(wolf_point)
 	elif exchange.action == "strike":
@@ -260,17 +284,21 @@ func play_exchange(exchange: Dictionary) -> void:
 		strike.tween_method(func(p: Vector2): hero_point = p; queue_redraw(), rally, rally + forward, .11)
 		strike.tween_method(func(p: Vector2): hero_point = p; queue_redraw(), rally + forward, rally, .10)
 		await strike.finished
-	elif exchange.action == "guard":
+	elif guarding:
 		hero_art = "guard"
 		var brace := create_tween()
 		brace.tween_method(set_hero_frame, 6.0, 13.0, .23)
 		await brace.finished
-	hero_art = "ready"
+	if not guarding:
+		hero_art = "ready"
+	exchange_cue.emit("player_contact")
 	if exchange.wolf_damage > 0:
 		impact(wolf_point, exchange.wolf_damage, true)
 		var hit := create_tween()
 		hit.tween_method(set_wolf_frame, 12.0, 15.9, .18)
 		await hit.finished
+	if not exchange.reaction.is_empty():
+		exchange_cue.emit("enemy")
 	if exchange.reaction == "advance":
 		var approach := create_tween().set_parallel()
 		approach.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), wolf_point, cell_center(rules.wolf), .26)
@@ -280,16 +308,31 @@ func play_exchange(exchange: Dictionary) -> void:
 	elif exchange.reaction in ["heavy", "strike", "miss"]:
 		var start := wolf_point
 		var target := cell_center(rules.hero) if exchange.reaction != "miss" else cell_center(exchange.hero_from)
+		var vector := target - start
+		var landing := target - vector.normalized() * minf(47, vector.length() * .42)
+		var windup := create_tween().set_parallel()
+		var coil := 14.0 if room == 2 else 8.0
+		windup.tween_method(set_wolf_frame, coil, coil, .20)
+		windup.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), start, start - vector.normalized() * 10, .20)
+		await windup.finished
 		var attack := create_tween().set_parallel()
-		attack.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), start, start.lerp(target, .23), .17)
+		attack.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), wolf_point, landing, .17)
 		var strike_start := 14.0 if room == 2 else 8.0
 		attack.tween_method(set_wolf_frame, strike_start, strike_start + (1.0 if room == 2 else 2.0), .17)
 		await attack.finished
+		exchange_cue.emit("enemy_contact")
 		if exchange.hero_damage > 0:
-			impact(hero_point, exchange.hero_damage, false)
-			hero_art = "cast"
-			hero_frame = 9
+			impact(hero_point + (Vector2(0, -9) if guarding else Vector2.ZERO), exchange.hero_damage, false, guarding)
+			if guarding:
+				hero_frame = 14
+			else:
+				hero_art = "cast"
+				hero_frame = 9
 		var recover := create_tween()
 		recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), wolf_point, start, .17)
 		await recover.finished
+	if guarding:
+		var lower := create_tween()
+		lower.tween_method(set_hero_frame, 14.0, 18.0, .20)
+		await lower.finished
 	set_state(rules)

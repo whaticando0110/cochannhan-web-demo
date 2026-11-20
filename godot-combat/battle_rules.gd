@@ -7,6 +7,11 @@ const MAX_HP := 48
 const MAX_QI := 4
 const VICTORY := "win"
 const DEFEAT := "loss"
+const MOVE_RANGE := 2
+const MOON_RANGE := 4
+const MOON_COST := 2
+const STRIKE_DAMAGE := 14
+const GUARD_REDUCTION := .7
 
 var turn := 1
 var hero := 17
@@ -64,7 +69,7 @@ static func neighbors(cell: int) -> Array[int]:
 	return adjacent
 
 
-func reach(start: int, budget: int, blocker: int = -1) -> Dictionary:
+func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {}) -> Dictionary:
 	var walked := {start: 0}
 	var queue: Array[int] = [start]
 	var index := 0
@@ -77,13 +82,14 @@ func reach(start: int, budget: int, blocker: int = -1) -> Dictionary:
 		for candidate in neighbors(cell):
 			if candidate != blocker and candidate not in rocks and not walked.has(candidate):
 				walked[candidate] = steps + 1
+				parents[candidate] = cell
 				queue.append(candidate)
 	walked.erase(start)
 	return walked
 
 
 func move_targets() -> Array:
-	return [] if not result.is_empty() else reach(hero, 2, wolf).keys()
+	return [] if not result.is_empty() else reach(hero, MOVE_RANGE, wolf).keys()
 
 
 func forecast() -> void:
@@ -111,10 +117,10 @@ func unavailable(action: String) -> String:
 			if distance(hero, wolf) != 1:
 				return "Tay không cần đứng kề Điện Lang."
 		"moon":
-			if qi < 2:
-				return "Cần 2 chân nguyên để phóng Nguyệt Quang."
-			if distance(hero, wolf) > 4:
-				return "Điện Lang ở ngoài tầm 4 ô."
+			if qi < MOON_COST:
+				return "Cần %d chân nguyên để phóng Nguyệt Quang." % MOON_COST
+			if distance(hero, wolf) > MOON_RANGE:
+				return "Đối thủ ở ngoài tầm %d ô." % MOON_RANGE
 		"guard":
 			pass
 		_:
@@ -134,30 +140,63 @@ func wolf_step() -> int:
 	return wolf_next
 
 
-func take_turn(action: String, target: int = -1) -> Dictionary:
+func preview_action(action: String, target: int = -1) -> Dictionary:
 	var error := unavailable(action)
 	if not error.is_empty():
 		return {"error": error}
-	if action == "move" and target not in move_targets():
-		return {"error": "Chọn ô có viền xanh để di chuyển."}
+	var steps := 0
+	var path: Array[int] = []
+	if action == "move":
+		var parents := {}
+		steps = reach(hero, MOVE_RANGE, wolf, parents).get(target, 0)
+		if steps == 0:
+			return {"error": "Chọn ô có ký hiệu chỉ đường để di chuyển."}
+		var cell := target
+		while cell != hero:
+			path.push_front(cell)
+			cell = parents[cell]
+	var position_after := target if action == "move" else hero
+	var dealt := 0
+	var qi_after := qi
+	match action:
+		"strike":
+			dealt = mini(wolf_hp, STRIKE_DAMAGE)
+			qi_after = mini(max_qi, qi + 1)
+		"moon":
+			dealt = mini(wolf_hp, moon_damage)
+			qi_after = qi - MOON_COST
+		"guard":
+			qi_after = mini(max_qi, qi + 1)
+	var receives := 0
+	if dealt < wolf_hp and position_after in intent.cells:
+		var damage: int = intent.damage
+		if action == "guard":
+			damage = ceili(damage * (1.0 - GUARD_REDUCTION))
+		receives = mini(hp, damage)
+	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path}
+
+
+func take_turn(action: String, target: int = -1) -> Dictionary:
+	var preview := preview_action(action, target)
+	if preview.has("error"):
+		return preview
 
 	var exchange := {"action": action, "hero_from": hero, "wolf_from": wolf,
-		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": []}
+		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path}
 	var notes: Array = exchange.notes
+	var previous_qi := qi
+	qi = preview.qi
 	match action:
 		"move":
 			hero = target
 			notes.append("Bạn di chuyển đến %s." % cell_name(hero))
 		"strike", "moon":
-			qi = mini(max_qi, qi + (1 if action == "strike" else -2))
-			var damage := mini(wolf_hp, 14 if action == "strike" else moon_damage)
+			var damage: int = preview.dealt
 			wolf_hp -= damage
 			exchange.wolf_damage = damage
 			var name := "Nguyệt Quang" if action == "moon" else "Tay không"
 			notes.append("%s gây %d sát thương." % [name, damage])
 		"guard":
-			var previous_qi := qi
-			qi = mini(max_qi, qi + 1)
 			notes.append("Thủ thế và hồi 1 chân nguyên." if qi > previous_qi else "Bạn vào thế thủ.")
 
 	if wolf_hp <= 0:
@@ -171,14 +210,14 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		else:
 			notes.append("Đối thủ giữ vị trí.")
 	elif hero in intent.cells:
-		var damage: int = intent.damage
-		if action == "guard":
-			damage = ceili(damage * 0.3)
-		damage = mini(hp, damage)
+		var damage: int = preview.receives
 		hp -= damage
 		exchange.hero_damage = damage
 		exchange.reaction = intent.kind
-		notes.append("%s trúng bạn, mất %d sinh lực." % [intent.name, damage])
+		if action == "guard":
+			notes.append("Đỡ %s, còn chịu %d sát thương." % [str(intent.name).to_lower(), damage])
+		else:
+			notes.append("%s trúng bạn, mất %d sinh lực." % [intent.name, damage])
 		if hp <= 0:
 			result = DEFEAT
 	else:

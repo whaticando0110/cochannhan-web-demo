@@ -39,6 +39,7 @@ var report: Array[String] = []
 var headline := SystemFont.new()
 var busy := false
 var selecting := false
+var target_cell := -1
 
 
 func _ready() -> void:
@@ -139,6 +140,8 @@ func build_hud() -> void:
 		field.skin = run.profile.hero
 	set_bounds(field, 34, 153, 803, 477)
 	field.cell_selected.connect(select_cell)
+	field.cell_focused.connect(inspect_cell)
+	field.exchange_cue.connect(show_exchange)
 
 	panel(860, 151, 306, 160)
 	var portrait := TextureRect.new()
@@ -175,27 +178,38 @@ func build_hud() -> void:
 	report_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
 	var descriptions := [
-		["move", "1   Di chuyển\n      Tối đa 2 ô"],
-		["strike", "2   Tay không\n      14 sát thương · +1 CN"],
-		["moon", "3   Nguyệt Quang\n      Tầm 4 ô · −2 chân nguyên"],
-		["guard", "4   Thủ thế\n      Giảm 70% · +1 chân nguyên"],
+		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
+		["strike", "2   Tay không\n%d sát thương · +1 CN" % Rules.STRIKE_DAMAGE],
+		["moon", "3   Nguyệt Quang\nTầm %d ô · −%d chân nguyên" % [Rules.MOON_RANGE, Rules.MOON_COST]],
+		["guard", "4   Thủ thế\nGiảm %d%% · +1 chân nguyên" % roundi(Rules.GUARD_REDUCTION * 100)],
 	]
 	for index in range(descriptions.size()):
 		var row: Array = descriptions[index]
 		var action: String = row[0]
 		var node := button(row[1], 34 + index * 286, 648, 274, 67)
 		node.pressed.connect(func(): choose(action))
+		node.mouse_entered.connect(inspect_action.bind(action))
+		node.focus_entered.connect(inspect_action.bind(action))
+		node.mouse_exited.connect(show_hint)
 		actions[action] = node
 	hint_label = label("", 35, 728, 1125, 25, 15, MUTE)
 
 
-func update_hud() -> void:
+func update_hero_hp() -> void:
 	hp_label.text = "%d / %d" % [state.hp, Rules.MAX_HP]
+	hp_bar.value = state.hp
+
+
+func update_player_contact() -> void:
 	qi_label.text = "%d / %d" % [state.qi, state.max_qi]
 	wolf_label.text = "%d / %d" % [state.wolf_hp, state.wolf_max]
-	hp_bar.value = state.hp
 	qi_bar.value = state.qi
 	wolf_bar.value = state.wolf_hp
+
+
+func update_hud() -> void:
+	update_hero_hp()
+	update_player_contact()
 	turn_label.text = "Lượt %02d" % state.turn
 	match state.result:
 		Rules.VICTORY:
@@ -207,7 +221,7 @@ func update_hud() -> void:
 		_:
 			intent_name.text = state.intent.name
 			if state.intent.damage > 0:
-				intent_copy.text = "Gây %d sát thương ở vùng đỏ." % state.intent.damage
+				intent_copy.text = "Gây %d sát thương ở vùng gạch đỏ sau hành động của bạn." % state.intent.damage
 			else:
 				intent_copy.text = "%s sẽ tiến về phía bạn." % enemy_name
 	report_label.text = "\n".join(report.slice(0, 3))
@@ -227,13 +241,80 @@ func reset_battle() -> void:
 
 func show_battle() -> void:
 	selecting = false
+	target_cell = -1
 	field.clear_effects()
 	field.set_selecting(false)
 	field.set_state(state)
 	report.assign(["%s đang chuẩn bị hành động." % enemy_name])
-	hint_label.text = "Chọn hành động. Ô đỏ sẽ bị đánh sau lượt của bạn."
 	update_hud()
+	show_hint()
 	reset_button.release_focus()
+
+
+func show_hint() -> void:
+	if busy or not state.result.is_empty():
+		return
+	if selecting:
+		hint_label.text = "Ô xanh né được đòn. Ô hổ phách vẫn đi được nhưng nằm trong vùng đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
+	else:
+		hint_label.text = "Địch đáp trả sau hành động của bạn. Rê chuột lên lệnh hoặc chọn lệnh bằng Tab để xem kết quả dự kiến."
+
+
+func show_exchange(cue: String) -> void:
+	match cue:
+		"player":
+			hint_label.text = "Bạn đang hành động…"
+		"player_contact":
+			update_player_contact()
+		"enemy":
+			hint_label.text = "%s đang đáp trả…" % enemy_name
+		"enemy_contact":
+			update_hero_hp()
+
+
+func inspect_action(action: String) -> void:
+	if busy or not state.result.is_empty():
+		return
+	if action == "move":
+		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % Rules.MOVE_RANGE
+		return
+	var result := state.preview_action(action)
+	if result.has("error"):
+		hint_label.text = result.error
+		return
+	var pieces: PackedStringArray = []
+	if result.dealt > 0:
+		pieces.append("Gây %d sát thương" % result.dealt)
+	if result.receives > 0:
+		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
+	elif result.dealt >= state.wolf_hp:
+		pieces.append("Kết liễu đối thủ trước khi địch đáp trả")
+	else:
+		pieces.append("Lượt này giữ nguyên sinh lực")
+	pieces.append("Chân nguyên còn %d/%d" % [result.qi, state.max_qi])
+	hint_label.text = "  ·  ".join(pieces)
+
+
+func inspect_cell(cell: int) -> void:
+	if not selecting or busy:
+		return
+	if cell < 0:
+		show_hint()
+		return
+	target_cell = cell
+	var preview := state.preview_action("move", cell)
+	var name := Rules.cell_name(cell)
+	if preview.has("error"):
+		hint_label.text = "%s · %s" % [name, "Ô có đá chặn." if cell in state.rocks else "Ô này ngoài tầm hoặc đang bị chiếm."]
+		return
+	var outcome: String
+	if preview.receives > 0:
+		outcome = "Vẫn nằm trong vùng đánh · chịu %d sát thương" % preview.receives
+	elif not state.intent.cells.is_empty():
+		outcome = "Ra khỏi vùng đánh · né được đòn"
+	else:
+		outcome = "Giữ nguyên sinh lực trong lượt này"
+	hint_label.text = "%s · %d bước · %s" % [name, preview.steps, outcome]
 
 
 func choose(action: String) -> void:
@@ -246,7 +327,12 @@ func choose(action: String) -> void:
 	if action == "move":
 		selecting = not selecting
 		field.set_selecting(selecting)
-		hint_label.text = "Chọn ô viền xanh. Các ô đỏ nằm trong vùng địch đánh." if selecting else "Chọn hành động."
+		target_cell = state.hero if selecting else -1
+		if selecting:
+			field.grab_focus()
+		else:
+			field.release_focus()
+		show_hint()
 		update_hud()
 		return
 	resolve(action)
@@ -269,7 +355,6 @@ func resolve(action: String, cell: int = -1) -> void:
 	for control in actions.values():
 		control.disabled = true
 	reset_button.disabled = true
-	hint_label.text = "Đang giải quyết lượt…"
 	await field.play_exchange(exchange)
 	busy = false
 	reset_button.disabled = false
@@ -278,7 +363,7 @@ func resolve(action: String, cell: int = -1) -> void:
 	report = report.slice(0, 4)
 	update_hud()
 	if state.result.is_empty():
-		hint_label.text = "Chọn hành động cho lượt tiếp theo."
+		show_hint()
 	elif run == null:
 		hint_label.text = "Nhấn R hoặc chọn Chơi lại trận."
 	else:
@@ -296,3 +381,22 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+func _input(event: InputEvent) -> void:
+	if selecting and not busy and event is InputEventKey and event.pressed and not event.echo:
+		if navigate_selection(event.keycode):
+			get_viewport().set_input_as_handled()
+
+
+func navigate_selection(code: Key) -> bool:
+	var arrows := {KEY_LEFT: Vector2i.LEFT, KEY_RIGHT: Vector2i.RIGHT, KEY_UP: Vector2i.UP, KEY_DOWN: Vector2i.DOWN}
+	if code == KEY_ENTER or code == KEY_KP_ENTER:
+		select_cell(target_cell)
+	elif arrows.has(code):
+		var point: Vector2i = Rules.grid(target_cell) + arrows[code]
+		if Rect2i(0, 0, Rules.COLUMNS, Rules.ROWS).has_point(point):
+			field.point_to(point.y * Rules.COLUMNS + point.x)
+	else:
+		return false
+	return true
