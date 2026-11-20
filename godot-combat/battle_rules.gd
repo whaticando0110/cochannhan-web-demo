@@ -53,6 +53,9 @@ var water: Array = []
 var brew_left := 0
 var brew_ready := false
 var strong_strikes := 0
+var cracks: Array = []
+var steps_bonus := 0
+var veil_turns := 0
 
 
 func _init(options: Dictionary = {}) -> void:
@@ -80,6 +83,7 @@ func _init(options: Dictionary = {}) -> void:
 	build_family = Gu.build_family(refined_gu, starter_gu)
 	revised_ward = options.get("revised_ward", false)
 	water = options.get("water", [])
+	cracks = options.get("cracks", [])
 	brew_left = Gu.BREW_CHARGES if starter_gu == "brew" else 0
 	forecast()
 
@@ -127,7 +131,19 @@ func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {})
 
 
 func move_targets() -> Array:
-	return [] if not result.is_empty() else reach(hero, MOVE_RANGE, wolf).keys()
+	return [] if not result.is_empty() else reach(hero, movement_range(), wolf).keys()
+
+
+func movement_range() -> int:
+	return MOVE_RANGE + steps_bonus
+
+
+func can_extend_veil() -> bool:
+	return build_family == "veil" and steps_bonus == 1
+
+
+func scale_veil_cost() -> int:
+	return Gu.SCALE_VEIL_COST - int(can_extend_veil())
 
 
 func ray_blocker(from: int, to: int) -> int:
@@ -154,15 +170,21 @@ func ray_blocker(from: int, to: int) -> int:
 
 func forecast() -> void:
 	var gap := distance(hero, wolf)
+	var ranged := tactic in ["storm", "ford", "ambush"]
 	var enraged := enraged_phase()
 	var heavy_turn := (turn - 1) % 2 == 0 or enraged
 	if recovering:
 		intent = {"kind": "recover", "name": "Hồi thế", "cells": [], "damage": 0}
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
-	elif tactic in ["storm", "ford"] and heavy_turn and gap <= Gu.MOON_EDGE_RANGE and ray_blocker(wolf, hero) < 0:
-		intent = {"kind": "shot", "name": "Hồ quang", "cells": [hero], "damage": heavy_damage, "pattern": "bolt"}
-	elif tactic not in ["storm", "ford"] and heavy_turn and gap <= 5:
+	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
+		intent = {"kind": "fall", "name": "Đá rơi", "cells": cracks, "damage": heavy_damage + 3, "pattern": "rubble"}
+	elif ranged and heavy_turn and gap <= (5 if tactic == "ambush" else Gu.MOON_EDGE_RANGE) and ray_blocker(wolf, hero) < 0:
+		if tactic == "ambush":
+			intent = {"kind": "ambush", "name": "Vồ phục kích", "cells": cells_around_hero(), "damage": heavy_damage}
+		else:
+			intent = {"kind": "shot", "name": "Hồ quang", "cells": [hero], "damage": heavy_damage, "pattern": "bolt"}
+	elif not ranged and heavy_turn and gap <= 5:
 		var is_charge := (tactic == "elite" and heavy_count % 2 == 1) or (
 			tactic == "king" and (heavy_count % 2 == 0) == enraged)
 		if is_charge:
@@ -176,11 +198,7 @@ func forecast() -> void:
 				"cells": cells, "damage": heavy_damage, "pattern": "row", "row": row,
 				"direction": 1 if grid(wolf).x <= grid(hero).x else -1}
 			return
-		var cells: Array[int] = [hero]
-		for cell in neighbors(hero):
-			if cell not in rocks:
-				cells.append(cell)
-		intent = {"kind": "heavy", "name": heavy_name, "cells": cells, "damage": heavy_damage}
+		intent = {"kind": "heavy", "name": heavy_name, "cells": cells_around_hero(), "damage": heavy_damage}
 	elif gap == 1:
 		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
 	else:
@@ -191,8 +209,20 @@ func enraged_phase() -> bool:
 	return tactic == "king" and wolf_hp * 2 < wolf_max
 
 
+func cells_around_hero() -> Array[int]:
+	var cells: Array[int] = [hero]
+	for cell in neighbors(hero):
+		if cell not in rocks:
+			cells.append(cell)
+	return cells
+
+
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford"]
+	return tactic in ["ravine", "storm", "ford", "ambush"]
+
+
+func aim_can_be_lost() -> bool:
+	return intent.kind in ["shot", "ambush", "strike"]
 
 
 func white_jade_absorb() -> int:
@@ -271,6 +301,20 @@ func unavailable(action: String) -> String:
 				return "Cú Tay không vẫn đang được cường hóa."
 			if qi < Gu.FOUR_FLAVORS_COST:
 				return "Cần %d chân nguyên để dùng Tứ Vị Tửu Trùng." % Gu.FOUR_FLAVORS_COST
+		"stone_veil":
+			if starter_gu != action:
+				return "Ẩn Thạch Cổ chưa được trang bị."
+			if steps_bonus > 0:
+				return "Bước ẩn đang được chuẩn bị."
+			if qi < Gu.STONE_VEIL_COST:
+				return "Cần %d chân nguyên để dùng Ẩn Thạch Cổ." % Gu.STONE_VEIL_COST
+		"scale_veil":
+			if refined_gu != action:
+				return "Ẩn Lân Cổ chưa được trang bị."
+			if veil_turns > 0:
+				return "Ẩn Lân vẫn còn hiệu lực."
+			if qi < scale_veil_cost():
+				return "Cần %d chân nguyên để dùng Ẩn Lân Cổ." % scale_veil_cost()
 		"vital_leaf":
 			if leaves <= 0:
 				return "Đã hết Sinh Cơ Diệp."
@@ -301,7 +345,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var path: Array[int] = []
 	if action == "move":
 		var parents := {}
-		steps = reach(hero, MOVE_RANGE, wolf, parents).get(target, 0)
+		steps = reach(hero, movement_range(), wolf, parents).get(target, 0)
 		if steps == 0:
 			return {"error": "Chọn ô có ký hiệu chỉ đường để di chuyển."}
 		var cell := target
@@ -318,8 +362,12 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var counter := counter_ready
 	var brew_setup := brew_ready
 	var boosted := strong_strikes
+	var extra_steps := steps_bonus
+	var concealment := veil_turns
 	var set_trigger := false
 	match action:
+		"move":
+			extra_steps = 0
 		"strike":
 			set_trigger = counter_ready or boosted > 0
 			var bonus := counter_bonus() if counter_ready else Gu.BREW_STRIKE_BONUS if boosted > 0 else 0
@@ -355,11 +403,24 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			qi_after -= Gu.FOUR_FLAVORS_COST
 			boosted = 2 if set_trigger else 1
 			brew_setup = false
+		"stone_veil":
+			extra_steps = 1
+			qi_after -= Gu.STONE_VEIL_COST
+		"scale_veil":
+			concealment = Gu.SCALE_VEIL_TURNS
+			qi_after -= scale_veil_cost()
+			set_trigger = can_extend_veil()
+			if set_trigger:
+				extra_steps = 2
 		"vital_leaf":
 			healed = mini(LEAF_HEAL, MAX_HP - hp)
 	var receives := 0
 	var absorbed := 0
-	if dealt < wolf_hp and position_after in intent.cells:
+	var hit: bool = dealt < wolf_hp and position_after in intent.cells
+	var evaded := hit and concealment > 0 and aim_can_be_lost()
+	if evaded:
+		concealment = 0
+	elif hit:
 		var damage: int = intent.damage
 		if action == "guard":
 			damage = ceili(damage * (1.0 - GUARD_REDUCTION))
@@ -372,7 +433,8 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
 		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if dealt < wolf_hp else 0,
 		"ward_strength": protection, "moon_mark": mark and dealt < wolf_hp, "set_trigger": set_trigger,
-		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted}
+		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
+		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -382,7 +444,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 
 	var exchange := {"action": action, "hero_from": hero, "wolf_from": wolf,
 		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path,
-		"healed": preview.healed, "absorbed": preview.absorbed, "enemy_intent": intent, "set_trigger": preview.set_trigger}
+		"healed": preview.healed, "absorbed": preview.absorbed, "enemy_intent": intent,
+		"set_trigger": preview.set_trigger, "evaded": preview.evaded}
 	var notes: Array = exchange.notes
 	var previous_qi := qi
 	qi = preview.qi
@@ -394,6 +457,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	counter_ready = preview.counter_ready
 	brew_ready = preview.brew_ready
 	strong_strikes = preview.strong_strikes
+	steps_bonus = preview.steps_bonus
+	veil_turns = preview.veil_turns
 	match action:
 		"move":
 			hero = target
@@ -421,6 +486,12 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("Tửu Trùng hồi %d chân nguyên." % (qi - previous_qi))
 		"four_flavors":
 			notes.append("Tứ Vị cường hóa %d cú Tay không." % strong_strikes)
+		"stone_veil":
+			notes.append("Ẩn Thạch chuẩn bị một bước đi xa.")
+		"scale_veil":
+			notes.append("Ẩn Lân che thân và y phục.")
+			if preview.set_trigger:
+				notes.append("Bước ẩn kế tiếp đi tối đa 4 ô.")
 		"vital_leaf":
 			leaves -= 1
 			hp += int(preview.healed)
@@ -438,6 +509,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("Đối thủ áp sát đến %s." % cell_name(wolf))
 		else:
 			notes.append("Đối thủ giữ vị trí.")
+	elif preview.evaded:
+		exchange.reaction = "miss"
+		notes.append("Ẩn Lân làm đối thủ mất dấu.")
 	elif hero in intent.cells:
 		var damage: int = preview.receives
 		hp -= damage
@@ -458,9 +532,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		notes.append("Bạn đứng ngoài vùng nước nhiễm điện." if intent.kind == "flood" else "Bạn né được %s." % str(intent.name).to_lower())
 
 	if result.is_empty():
-		if intent.kind in ["heavy", "shot", "flood"]:
+		if intent.kind in ["heavy", "shot", "flood", "ambush", "fall"]:
 			heavy_count += 1
-		recovering = (intent.kind == "heavy" and tactic == "king") or intent.kind in ["shot", "flood"]
+		recovering = (intent.kind == "heavy" and tactic == "king") or intent.kind in ["shot", "flood", "ambush", "fall"]
 		turn += 1
 		forecast()
 	else:
@@ -471,4 +545,6 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		counter_ready = false
 		brew_ready = false
 		strong_strikes = 0
+		steps_bonus = 0
+		veil_turns = 0
 	return exchange

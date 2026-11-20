@@ -3,7 +3,10 @@ extends RefCounted
 const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
-const CURRENT_VERSION := 5
+const CURRENT_VERSION := 6
+const RIDGE_FLOOR := 3
+const FORD_FLOOR := 4
+const AMBUSH_FLOOR := 5
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -26,9 +29,14 @@ const THUNDER_FORD := {"name": "Bãi Đá Suối Sấm", "enemy": "Điện Lang 
 	"bite": 10, "hp": 76, "heavy": "Hồ quang", "pace": 1, "wolf_cell": 22,
 	"rooms": [[5, 11, 28, 35], [4, 12, 27, 38], [3, 13, 29, 34]],
 	"water": [[18, 19, 20, 21, 26, 27], [10, 11, 18, 19, 20, 21], [18, 19, 20, 21, 27, 28]]}
+const AMBUSH_PASS := {"name": "Hẻm Đá Phục Kích", "enemy": "Điện Lang phục kích", "damage": 17,
+	"bite": 10, "hp": 82, "heavy": "Vồ phục kích", "pace": 2, "wolf_cell": 22,
+	"rooms": [[4, 11, 13, 26, 35], [3, 12, 27, 29, 36], [2, 10, 14, 25, 34]],
+	"cracks": [[19, 20, 21, 27, 28], [18, 19, 20, 21, 28], [18, 19, 20, 21, 28, 29]]}
 const CHAPTER_HEAL := 18
 const CHAPTER_QI := 3
 const FORD_HEAL := 20
+const AMBUSH_HEAL := 22
 const LEGACY_REWARDS := {
 	"medicine": ["Dược thảo", "Hồi tối đa 24 sinh lực"],
 	"stone": ["Nguyên thạch", "+1 sức chứa và hồi đầy chân nguyên"],
@@ -68,10 +76,13 @@ func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERS
 
 
 func stage_at(index: int) -> Dictionary:
-	if index == FLOORS.size() + 1:
-		return THUNDER_FORD
-	if index == FLOORS.size():
-		return CHAPTER_TWO
+	match index:
+		RIDGE_FLOOR:
+			return CHAPTER_TWO
+		FORD_FLOOR:
+			return THUNDER_FORD
+		AMBUSH_FLOOR:
+			return AMBUSH_PASS
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -87,10 +98,12 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = route
 			2:
 				tactic = "king"
-			3:
+			RIDGE_FLOOR:
 				tactic = "storm"
-			4:
+			FORD_FLOOR:
 				tactic = "ford"
+			AMBUSH_FLOOR:
+				tactic = "ambush"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -99,6 +112,7 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 	return Rules.new({"hp": hp, "qi": qi, "max_qi": max_qi, "wolf_hp": stage.hp,
 		"rocks": RAVINE_COVERS[variant] if tactic == "ravine" else stage.rooms[variant],
 		"water": stage.water[variant] if stage.has("water") else [],
+		"cracks": stage.cracks[variant] if stage.has("cracks") else [],
 		"heavy": stage.heavy, "damage": stage.damage,
 		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
 		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
@@ -234,16 +248,18 @@ func begin_chapter() -> bool:
 
 func workshop_vitals() -> Dictionary:
 	var heal := FORD_HEAL if phase == "ford_workshop" else CHAPTER_HEAL
+	if phase == "ambush_workshop":
+		heal = AMBUSH_HEAL
 	return {"hp": mini(Rules.MAX_HP, battle.hp + heal),
 		"qi": mini(battle.max_qi, battle.qi + CHAPTER_QI)}
 
 
 func revised_ward_rules() -> bool:
-	return version >= 5 or floor > FLOORS.size() or phase == "ford_workshop"
+	return version >= 5 or floor >= FORD_FLOOR or phase == "ford_workshop"
 
 
 func can_cross_ford() -> bool:
-	return phase == "complete" and floor == FLOORS.size()
+	return phase == "complete" and floor == RIDGE_FLOOR
 
 
 func cross_ford() -> bool:
@@ -254,15 +270,40 @@ func cross_ford() -> bool:
 	return true
 
 
-func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop"] or recipe not in Gu.RECIPES or starter not in Gu.STARTERS:
+func can_enter_pass() -> bool:
+	return phase == "complete" and floor == FORD_FLOOR
+
+
+func enter_pass() -> bool:
+	if not can_enter_pass():
 		return false
-	if not revised_ward_rules() and (recipe == "four_flavors" or starter == "brew"):
+	phase = "ambush_workshop"
+	journal.append(["enter_pass"])
+	return true
+
+
+func workshop_size() -> int:
+	if version >= 6 or phase == "ambush_workshop":
+		return 4
+	return 3 if revised_ward_rules() else 2
+
+
+func equip_build(recipe: String, starter: String) -> bool:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop"]:
+		return false
+	var count := workshop_size()
+	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
 		return false
 	var vitals := workshop_vitals()
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
 		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": battle.leaves}
-	floor = FLOORS.size() + int(phase == "ford_workshop")
+	match phase:
+		"ford_workshop":
+			floor = FORD_FLOOR
+		"ambush_workshop":
+			floor = AMBUSH_FLOOR
+		_:
+			floor = RIDGE_FLOOR
 	battle = encounter(vitals.hp, vitals.qi, battle.max_qi, arsenal)
 	phase = "battle"
 	journal.append(["equip", recipe, starter])
@@ -279,9 +320,14 @@ func reward_history() -> PackedStringArray:
 
 func snapshot() -> Dictionary:
 	var saved := {"version": version, "hero": profile.hero, "depth": profile.depth, "seed": seed, "journal": journal}
-	if version == 4 and (phase == "ford_workshop" or floor > FLOORS.size()):
-		saved.version = CURRENT_VERSION
-		saved.chapter_rules = 4
+	var schema := version
+	if phase == "ambush_workshop" or floor >= AMBUSH_FLOOR:
+		schema = 6
+	elif version == 4 and (phase == "ford_workshop" or floor >= FORD_FLOOR):
+		schema = 5
+	if schema != version:
+		saved.version = schema
+		saved.chapter_rules = version
 	return saved
 
 
@@ -297,9 +343,9 @@ static func restore(saved: Variant) -> RefCounted:
 		return null
 	var rules_version := int(saved.version)
 	if saved.has("chapter_rules"):
-		if saved.version != 5 or not finite_integer(saved.chapter_rules, 4, 4):
+		if saved.version < 5 or not finite_integer(saved.chapter_rules, 4, int(saved.version) - 1):
 			return null
-		rules_version = 4
+		rules_version = int(saved.chapter_rules)
 	var run = load("res://run_state.gd").new(profile_data, int(saved.seed), rules_version)
 	for command in saved.journal:
 		if not command is Array or command.is_empty() or not command[0] is String:
@@ -317,14 +363,17 @@ static func restore(saved: Variant) -> RefCounted:
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":
-					committed = saved.version >= 5 and command[0] == "cross_ford" and run.cross_ford()
+					if command[0] == "cross_ford":
+						committed = saved.version >= 5 and run.cross_ford()
+					elif command[0] == "enter_pass":
+						committed = saved.version >= 6 and run.enter_pass()
 				_:
 					committed = run.reward(command[0])
 			if not committed:
 				return null
 		elif command.size() != 2 or not finite_integer(command[1], -1, 39) or run.perform(command[0], int(command[1])).has("error"):
 			return null
-	if saved.has("chapter_rules") and run.phase != "ford_workshop" and run.floor <= FLOORS.size():
+	if run.snapshot().version != saved.version:
 		return null
 	return run
 

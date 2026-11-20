@@ -45,6 +45,17 @@ func click_button(name: String) -> void:
 	await process_frame
 
 
+func select_kit(recipe: String, starter: String) -> void:
+	for choice in [["workshop_recipe", Gu.RECIPES.find(recipe)], ["workshop_starter", Gu.STARTERS.find(starter)]]:
+		var input := flow.find_child(choice[0], true, false) as OptionButton
+		check(input != null and choice[1] in range(input.item_count), "Missing workshop selection for " + str(choice[0]))
+		if input == null or choice[1] not in range(input.item_count):
+			return
+		input.select(choice[1])
+		input.item_selected.emit(choice[1])
+	await click_button("equip_confirm")
+
+
 func wait_until(condition: Callable, message: String, frames: int = 900) -> void:
 	for index in range(frames):
 		if condition.call():
@@ -195,7 +206,7 @@ func check_rank_two_gu() -> void:
 func play_rank_two() -> void:
 	check(flow.run.version == 3 and flow.run.can_begin_chapter(), "v3 victory did not expose rank two")
 	await click_button("chapter_two")
-	check(flow.run.version == 5 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
+	check(flow.run.version == 6 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
 	await launch()
 	check(flow.run.phase == "refinement" and not flow.run.equip_build("wrong", "moon"), "Reload lost the workshop or accepted an unknown Gu")
 	await capture("godot-rank2-bo-co.png")
@@ -206,7 +217,7 @@ func play_rank_two() -> void:
 			check(copy.equip_build(recipe, starter) and copy.battle.build_family == Gu.build_family(recipe, starter)
 				and copy.battle.moon_equipped == (starter == "moon") and copy.battle.jade_skin == (starter == "jade_skin")
 				and not copy.equip_build(recipe, starter), "Wrong equipment or repeated workshop transaction for " + recipe + "/" + starter)
-	await click_button("moon_edge_moon")
+	await select_kit("moon_edge", "moon")
 	check(flow.current.state.refined_gu == "moon_edge" and flow.current.actions.has("moon_edge") and flow.current.state.qi == 3,
 		"Chapter II did not equip Nguyệt Mang or restore the displayed Qi")
 	await capture("godot-rank2-san-dau.png")
@@ -226,7 +237,7 @@ func play_rank_two() -> void:
 		and flow.run.floor == 0, "Rebirth kept the rank II equipment")
 	flow.run = Run.restore(workshop)
 	flow.show_run()
-	await click_button("moon_edge_moon")
+	await select_kit("moon_edge", "moon")
 	await play_commands([[KEY_1, 18], [KEY_4], [KEY_3], [KEY_4]])
 	check(flow.run.battle.moon_mark and flow.run.battle.wolf_hp == 39 and flow.run.battle.qi == 3,
 		"The ranged duel did not expose the intended marked shot")
@@ -246,7 +257,7 @@ func play_rank_two() -> void:
 	await launch()
 	check(flow.run.phase == "ford_workshop" and flow.run.version == 4, "Reload lost v4 replay rules or the crossing")
 	await capture("godot-suoisam-chon-bo.png")
-	await click_button("four_flavors_brew")
+	await select_kit("four_flavors", "brew")
 	check(flow.run.floor == 4 and flow.current.actions.has("brew") and flow.current.actions.has("four_flavors")
 		and flow.run.battle.brew_left == 2, "Crossing failed to equip the new family")
 	await capture("godot-suoisam.png")
@@ -266,6 +277,55 @@ func play_rank_two() -> void:
 		"Finishing the ford did not close Chapter II")
 	await launch()
 	check(flow.run.phase == "complete" and flow.run.battle.hp == 6, "The migrated final victory did not replay")
+	await click_button("enter_pass")
+	check(flow.run.phase == "ambush_workshop" and flow.run.snapshot().version == 6 and flow.run.snapshot().chapter_rules == 4,
+		"Continuing from the ford did not preserve the earliest rule version")
+	await launch()
+	check(flow.run.phase == "ambush_workshop" and flow.run.workshop_size() == 4, "Hẻm Đá did not reopen with four families")
+	await capture("godot-hem-da-chon-bo.png")
+	await select_kit("scale_veil", "stone_veil")
+	check(flow.run.floor == 5 and flow.current.actions.has("stone_veil") and flow.current.actions.has("scale_veil"),
+		"Could not equip the new pair in the new encounter")
+	await capture("godot-hem-da-phuc-kich.png")
+	await shoot(KEY_7)
+	check(flow.run.battle.hp == 28 and flow.run.battle.intent.kind == "recover", "Ẩn Lân did not evade the first ambush")
+	await shoot(KEY_3)
+	await shoot(KEY_4)
+	await shoot(KEY_7)
+	check(flow.run.battle.movement_range() == 4 and flow.run.battle.veil_turns == 1, "Paired veil did not prepare a four-step move")
+	await launch()
+	check(flow.run.battle.movement_range() == 4 and flow.run.battle.veil_turns == 1,
+		"Saved Hẻm Đá state lost the pending movement or concealment")
+	await shoot(KEY_1, 21)
+	check(flow.run.battle.hero == 21 and flow.run.battle.movement_range() == 2 and flow.run.battle.hp == 28,
+		"The four-step move did not consume the bonus or avoid the old target cells")
+
+
+func check_ambush_kit() -> void:
+	var kit := {"starter_gu": "stone_veil", "moon_equipped": false, "refined_gu": "scale_veil"}
+	var pass_rules := Run.battle_for(Run.AMBUSH_PASS, 0, 48, 4, 4, 0, kit, "ambush", true)
+	check(pass_rules.intent.kind == "ambush" and pass_rules.preview_action("scale_veil").evaded
+		and pass_rules.veil_turns == 0, "Preview did not evade a direct ambush, or mutated the veil")
+	check(pass_rules.take_turn("scale_veil").reaction == "miss" and pass_rules.hp == 48, "The ambush landed through concealment")
+	pass_rules.take_turn("stone_veil")
+	check(pass_rules.movement_range() == 3, "Ẩn Thạch should prepare a three-step move")
+	pass_rules.take_turn("guard")
+	pass_rules.hero = 19
+	pass_rules.intent = {"kind": "fall", "name": "Đá rơi", "cells": pass_rules.cracks, "damage": 20}
+	var falling := pass_rules.preview_action("scale_veil")
+	check(not falling.evaded and falling.receives == 20 and falling.steps_bonus == 2 and falling.qi == 1,
+		"Ẩn Lân must leave area damage intact and extend movement only for a matching pair")
+	pass_rules.take_turn("scale_veil")
+	check(pass_rules.scale_veil_cost() == 2 and pass_rules.steps_bonus == 2,
+		"The pending enhanced move must not discount a second Ẩn Lân")
+	var mixed := Rules.new({"refined_gu": "scale_veil"})
+	check(mixed.scale_veil_cost() == 2 and mixed.build_family.is_empty(), "Mixed Ẩn Lân must retain its base cost")
+	for variant in range(3):
+		var trial := Run.battle_for(Run.AMBUSH_PASS, variant, 48, 4, 4, 0, {}, "ambush", true)
+		check(trial.hero not in trial.cracks and trial.wolf not in trial.cracks and trial.intent.kind == "ambush",
+			"Spawn or first attack does not match the layout design")
+		for cell in trial.cracks:
+			check(cell not in trial.rocks, "A cracked floor cell also claims to be a wall")
 
 
 func check_ford_gu() -> void:
@@ -457,6 +517,7 @@ func exercise() -> void:
 	check_third_save()
 	check_rank_two_gu()
 	check_ford_gu()
+	check_ambush_kit()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -551,5 +612,5 @@ func exercise() -> void:
 	await play_rank_two()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: ceremony, rebirth, v1-v4 compatibility, loadouts, revised ward, paired brew, ford migration and reload")
+		print("Godot run passed: legacy saves, four Gu families, ford and pass migration, targeting, concealment and four-step movement")
 	quit(1 if failed else 0)

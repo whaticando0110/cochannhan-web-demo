@@ -21,13 +21,13 @@ Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**.
 
 **Ngọc Bì Cổ** là một lựa chọn thưởng sau màn đầu. Dùng phím **5** để tốn 1 chân nguyên và tạo lớp ngọc chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Có thể nhận **Sinh Cơ Diệp** sau trận Khe đá. Dùng phím **6** để tiêu một lá và hồi tối đa 12 sinh lực trước đòn đáp trả. Luyện Nguyệt Quang, hồi phục và Mở rộng Nguyên Hải vẫn có tác dụng như ghi trên thẻ thưởng.
 
-Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một Cổ Nhất chuyển với một Cổ Nhị chuyển rồi thử bộ tại **Sườn đá Mù Sương**. Thắng trận có thể đổi bộ ở điểm nghỉ và đi tới **Bãi Đá Suối Sấm**. Nước nông đi được. Ô nước tím sẽ nhiễm điện sau lượt của bạn. Cả hai bên cần đường bắn thoáng để phóng đòn.
+Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một Cổ Nhất chuyển với một Cổ Nhị chuyển rồi lần lượt đi qua **Sườn đá Mù Sương**, **Bãi Đá Suối Sấm** và **Hẻm Đá Phục Kích**. Có thể đổi bộ ở điểm nghỉ. Tại Suối Sấm, nước tím báo trước đòn dẫn lôi. Tại Hẻm Đá, ô nứt màu hổ phách báo trước đá rơi. Cả hai bên cần đường bắn thoáng để phóng đòn.
 
-**7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể thay Ngọc Bì bằng Bạch Ngọc để chặn mạnh hơn và mở Phản đòn. Hệ Tửu dùng **3** để hồi chân nguyên bằng Tửu Trùng, rồi dùng Tứ Vị để cường hóa hai cú Tay không khi ghép đúng bộ. Có chín cách ghép giữa ba hệ. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
+**7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể dùng Bạch Ngọc để tăng sức chặn và mở Phản đòn. Bộ Tửu hồi chân nguyên rồi cường hóa hai cú Tay không. Bộ Ẩn dùng Ẩn Thạch chuẩn bị bước đi xa và Ẩn Lân để làm địch mất dấu. Dùng hai Cổ hệ Ẩn nối tiếp giúp lần Di chuyển kế tiếp đi tối đa bốn ô. Có 16 cặp giữa bốn hệ. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
 
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Lượt v3 mở luật mới khi vào Nhị chuyển. Lượt v4 giữ cách xử lý cũ tại Sườn đá Mù Sương và mở luật mới khi tới Suối Sấm. Phạm vi kiểm hiện tại là Windows.
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Lượt v3 mở luật mới khi vào Nhị chuyển. Lượt v4/v5 giữ các luật đã dùng ở màn cũ và mở hệ Ẩn khi vào Hẻm Đá. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

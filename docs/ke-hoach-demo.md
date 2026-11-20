@@ -11,7 +11,8 @@ Ba trận của chương đầu luyện ba kỹ năng theo thứ tự. Đọc v�
 | Điểm nghỉ trước hang | Chọn hồi tối đa 8 sinh lực, hồi 1 chân nguyên hoặc đi tiếp. Mỗi lượt chơi chỉ chọn một lần, có xem trước chỉ số. | Sinh Cơ Diệp dùng trong trận. Ngọc Bì Cổ giữ quyền sử dụng qua các màn, lớp ngọc hết khi chuyển trận. |
 | Hang Cuồng Điện Lang | Vồ vùng và quét hành lang dùng dấu khác nhau. Trùm hồi thế sau mỗi đòn nặng. Dưới nửa sinh lực, nó đổi thứ tự đòn và có thể ra đòn nặng ngay khi hết hồi thế. | Màn kết quả ghi đường đi, chiến lợi phẩm và tài nguyên còn lại. |
 | Sườn đá Mù Sương | Màn đầu Nhị chuyển có ba bố cục. Điện Lang phóng lôi khóa một ô khi có đường ngắm, rồi hồi thế một lượt. Vách đá chặn đòn tầm xa của hai bên. | Chọn **Nguyệt Mang Cổ**, **Bạch Ngọc Cổ** hoặc **Tứ Vị Tửu Trùng** và ghép với một Cổ Nhất chuyển. Hai Cổ cùng hệ mở hiệu ứng bộ. |
-| Bãi Đá Suối Sấm | Vào sau Sườn đá Mù Sương. Điện Lang dẫn lôi luân phiên nhiễm điện vùng nước nông theo bố cục và bắn Hồ quang vào một ô. Mỗi đòn lôi có một lượt hồi thế. Vách đá chặn Hồ quang. | Điểm nghỉ cho hồi tối đa 20 sinh lực và 3 chân nguyên, giữ số lá còn lại và cho đổi một trong chín bộ. |
+| Bãi Đá Suối Sấm | Vào sau Sườn đá Mù Sương. Điện Lang dẫn lôi luân phiên nhiễm điện vùng nước nông theo bố cục và bắn Hồ quang vào một ô. Mỗi đòn lôi có một lượt hồi thế. Vách đá chặn Hồ quang. | Điểm nghỉ cho hồi tối đa 20 sinh lực và 3 chân nguyên, giữ số lá còn lại và cho đổi bộ. |
+| Hẻm Đá Phục Kích | Vào sau Suối Sấm. Điện Lang vồ vào vùng quanh mục tiêu khi có đường ngắm rồi chuyển sang đòn làm đá rơi trên các ô nứt. Hai đòn có một lượt hồi thế. Ô nứt đi được, vách đá chặn đi và bắn. | Điểm nghỉ hồi tối đa 22 sinh lực và 3 chân nguyên, giữ số lá còn lại và cho đổi một trong 16 bộ. |
 
 ## Luật để thử
 
@@ -31,23 +32,29 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 4. Hai đòn và nhịp hồi của Cuồng Điện Lang đã có trong lượt chính và Luyện trận. Kết quả dò đường thắng là mốc kiểm bố cục. Duyệt nhịp di chuyển, báo đòn và hiệu ứng trong Godot trước khi chốt cân bằng.
 5. Chọn bộ Nhị chuyển sau khi thắng Cuồng Điện Lang. Chín cặp dùng được trong lượt mới và Luyện trận. Gemini làm atlas Nguyệt Mang và Bạch Ngọc trên nhánh asset riêng.
 6. Nối Bãi Đá Suối Sấm, cho đổi bộ giữa hai màn và thêm hệ Tửu. Lượt v4 tiếp tục giữ luật cũ ở Sườn đá Mù Sương và nhận luật mới ở Suối Sấm. Gemini phụ trách atlas Tửu Trùng, Tứ Vị Tửu Trùng và ô nước nông có dấu nhiễm điện.
+7. Nối Hẻm Đá Phục Kích và hệ Ẩn. Lượt v4/v5 giữ luật đã áp dụng trong hai màn trước khi tiếp tục vào hẻm. Gemini làm hiệu ứng hai Cổ hệ Ẩn và mẫu ô nứt/đá rơi trên nhánh asset riêng.
 
 ## Bộ Cổ ở Nhị chuyển
 
-Mỗi màn thử cấp một Cổ Nhị chuyển và một Cổ Nhất chuyển để lắp thành cặp. Giá trị sinh lực, chân nguyên và số lá chuyển sang được hiển thị trước khi xác nhận. Có thể chọn lại cặp trước trận Suối Sấm. Luyện trận cho đổi cặp và chơi lại với cả ba hệ.
+Mỗi màn thử cấp một Cổ Nhị chuyển và một Cổ Nhất chuyển để lắp thành cặp. Giá trị sinh lực, chân nguyên và số lá chuyển sang được hiển thị trước khi xác nhận. Có thể chọn lại cặp ở hai điểm nghỉ. Luyện trận có cả bốn hệ.
 
 | Hệ | Cặp cùng hệ | Cách đánh trong demo |
 | --- | --- | --- |
 | Nguyệt | Nguyệt Quang Cổ + Nguyệt Mang Cổ | Nguyệt Quang đặt Nguyệt Ấn. Nguyệt Mang có tầm 6 ô, tốn 3 chân nguyên, gây 30 sát thương và thêm 12 khi tiêu ấn. Chỉ một ấn bám trên địch và giữ đến khi bị tiêu hoặc trận kết thúc. |
 | Hộ thể | Ngọc Bì Cổ + Bạch Ngọc Cổ | Luật v5 cho Bạch Ngọc chặn 11 sát thương của đòn kế tiếp trong ba lượt, tốn 2 chân nguyên. Thay lớp Ngọc Bì đang hoạt động tăng sức chặn lên 15 và chỉ tốn 1 chân nguyên. Lớp Bạch Ngọc của bộ này chặn được sát thương thì cú Tay không kế tiếp được cộng 10 sát thương. |
 | Tửu | Tửu Trùng + Tứ Vị Tửu Trùng | Tửu Trùng hồi tối đa 2 chân nguyên, dùng được hai lần mỗi trận. Tứ Vị tốn 2 chân nguyên để cộng 12 sát thương cho cú Tay không kế tiếp. Dùng Tửu Trùng trước khi kích Tứ Vị cho hai cú được cường hóa. |
-| Phối hệ | Sáu cặp khác hệ | Dùng tác dụng cơ bản của từng Cổ. Ví dụ dùng Tửu Trùng để nạp chân nguyên cho Nguyệt Mang hoặc Bạch Ngọc. |
+| Ẩn | Ẩn Thạch Cổ + Ẩn Lân Cổ | Ẩn Thạch tốn 1 chân nguyên và chuẩn bị lần Di chuyển tối đa ba ô. Ẩn Lân tốn 2 chân nguyên, làm trượt một lần địch nhắm trực tiếp trong hai lượt đáp trả tính cả lượt kích hoạt. Sau khi chuẩn bị bằng Ẩn Thạch, lần kích Ẩn Lân kế tiếp tốn 1 chân nguyên và nâng lần Di chuyển lên bốn ô. Đá rơi và nước nhiễm điện vẫn gây sát thương khi đứng trong vùng. |
+| Phối hệ | 12 cặp khác hệ | Dùng tác dụng cơ bản của từng Cổ. Ví dụ dùng Ẩn Thạch để vào tầm Nguyệt Mang, Ẩn Lân để né đòn nhắm trực tiếp trong bộ có Tửu Trùng, hoặc Ngọc Bì để chuẩn bị cho sát thương diện rộng. |
 
-Sinh Cơ Diệp là vật phẩm trị thương dùng chung với cả ba hệ. Màn thử cấp sẵn cặp Cổ. Khi làm hệ thống hợp luyện, chương 98 là cơ sở cho hai bí phương: Nguyệt Quang và hai Tiểu Quang tạo Nguyệt Mang, Bạch Thỉ và Ngọc Bì tạo Bạch Ngọc. Chương 100 mô tả lớp phòng hộ trắng mỏng của Bạch Ngọc mạnh hơn Ngọc Bì. Hiệu ứng bộ, Phản đòn và các con số trong bảng là luật thiết kế của demo. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html) · [Chương 100](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-100.html)
+Sinh Cơ Diệp là vật phẩm trị thương dùng chung với cả bốn hệ. Màn thử cấp sẵn cặp Cổ. Khi làm hệ thống hợp luyện, chương 98 là cơ sở cho hai bí phương: Nguyệt Quang và hai Tiểu Quang tạo Nguyệt Mang, Bạch Thỉ và Ngọc Bì tạo Bạch Ngọc. Chương 100 mô tả lớp phòng hộ trắng mỏng của Bạch Ngọc mạnh hơn Ngọc Bì. Hiệu ứng bộ, Phản đòn và các con số trong bảng là luật thiết kế của demo. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html) · [Chương 100](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-100.html)
 
 Chương 225 mô tả Tửu Trùng tinh luyện chân nguyên của cổ sư Nhất chuyển. Chương 121 mô tả Tứ Vị Tửu Trùng tinh luyện chân nguyên Nhị chuyển. Tên hệ Tửu, cách hồi chân nguyên theo lượt và cách cường hóa Tay không là thiết kế riêng của demo. [Chương 121](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-121.html) · [Chương 225](https://truyenfull.live/co-chan-nhan/chuong-225/)
 
+Chương 116 và 121 ghi Ẩn Thạch là Nhất chuyển, chỉ giấu thân thể. Ẩn Lân là Nhị chuyển, có thể giấu cả y phục. Chương 130 mô tả Điện Lang mất dấu khi Phương Nguyên dùng Ẩn Lân. Tầm di chuyển, số lượt che thân và phân nhóm hệ Ẩn thuộc luật demo. [Chương 116](https://truyenhoan.com/co-chan-nhan/chuong-116.html) · [Chương 121](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-121.html) · [Chương 130](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-130.html)
+
 Kiểm thử v5 đi hết hai màn Nhị chuyển với 108 tổ hợp gồm chín bộ, bốn bậc tư chất và ba cặp bố cục. Khi phát lại đúng 12 chuỗi hành động có dùng Bạch Ngọc của v4 trên luật v5, bộ Hộ thể thắng với thêm 3–6 sinh lực ở Sườn đá Mù Sương. Một đường thắng thử của bộ Hộ thể ở Suối Sấm còn 5 sinh lực.
+
+Kiểm thử v6 tìm được đường thắng ở Hẻm Đá cho 192 tổ hợp gồm 16 cặp, bốn bậc tư chất và ba bố cục. Trong phép tìm đường thắng sớm, bộ Nguyệt thuần thắng sau 4–6 lượt và có trường hợp chỉ còn 4 sinh lực. Ba bộ thuần còn lại thắng sau 9 lượt, thấp nhất 7 sinh lực. Phép thử Đinh đẳng ưu tiên bảo toàn sinh lực trong 13 lượt tìm được đường dùng Ẩn Lân giữ nguyên sinh lực ở cả ba bố cục. Mười sáu cặp cũng qua cả ba màn Nhị chuyển ở một lượt Đinh đẳng cố định.
 
 Khi thêm hệ mới, chuẩn bị ít nhất hai Cổ có vai trò bổ sung và một lựa chọn phối hệ. Chốt tương tác trong Luyện trận trước khi đưa cả bộ vào chiến lợi phẩm. Địa Thính Nhục Nhĩ Thảo phù hợp một nhánh do thám khi đã có màn phục kích và đường đi để người chơi tận dụng.
 

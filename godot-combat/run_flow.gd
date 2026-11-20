@@ -10,9 +10,10 @@ const REU = preload("res://assets/ao-reu-selection.png")
 const GOLD := Color("#f1d89f")
 const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
-const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2], Run.CHAPTER_TWO, Run.THUNDER_FORD]
-const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4]
-const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford"]
+const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2],
+	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS]
+const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush"]
 const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
@@ -193,10 +194,10 @@ func show_result() -> void:
 	menu = make_menu()
 	switch_to(menu)
 	var section := "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()]
-	if run.phase == "ford_workshop" or run.floor > Run.FLOORS.size():
-		section = "NHỊ CHUYỂN    /    2 TRÊN 2"
-	elif run.floor == Run.FLOORS.size() or run.phase == "refinement":
-		section = "NHỊ CHUYỂN    /    1 TRÊN 2"
+	if run.floor >= Run.RIDGE_FLOOR or run.phase == "refinement":
+		var stage_number := maxi(1, run.floor - Run.RIDGE_FLOOR + 1)
+		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop"])
+		section = "NHỊ CHUYỂN    /    %d TRÊN 3" % stage_number
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.stage_at(run.floor)
@@ -219,12 +220,20 @@ func show_result() -> void:
 			title = "Chuẩn bị qua Suối Sấm"
 			description = "Giữ bộ %s + %s hoặc đổi trước khi xuống suối." % [
 				Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name]
+		"ambush_workshop":
+			title = "Chuẩn bị vào Hẻm Đá"
+			description = "Nghỉ ở chân hẻm và chọn bộ trước trận phục kích."
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
 		"complete":
 			title = "Vượt qua " + str(floor.name)
-			description = "Bến đá phía trước dẫn qua Suối Sấm." if run.can_cross_ford() else "Bạn đã vượt qua cả hai màn Nhị chuyển."
+			if run.can_cross_ford():
+				description = "Bến đá phía trước dẫn qua Suối Sấm."
+			elif run.can_enter_pass():
+				description = "Dấu chân Điện Lang dẫn vào hẻm đá bên kia suối."
+			else:
+				description = "Bạn đã vượt qua cả ba màn Nhị chuyển."
 		_:
 			title = "Vượt qua Thanh Mao Sơn"
 			description = "Cuồng Điện Lang đã gục. Bạn đã vượt qua cả ba màn."
@@ -236,7 +245,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop"]:
 		draw_workshop()
 	else:
 		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
@@ -260,6 +269,10 @@ func show_result() -> void:
 			if run.can_cross_ford():
 				var crossing := button(menu, "Tới Suối Sấm", Rect2(432, 480, 310, 54), cross_ford)
 				crossing.name = "cross_ford"
+				crossing.grab_focus()
+			elif run.can_enter_pass():
+				var crossing := button(menu, "Tới Hẻm Đá", Rect2(432, 480, 310, 54), enter_pass)
+				crossing.name = "enter_pass"
 				crossing.grab_focus()
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
@@ -313,39 +326,47 @@ func cross_ford() -> void:
 		show_result()
 
 
+func enter_pass() -> void:
+	if run.enter_pass():
+		persist()
+		show_result()
+
+
 func draw_workshop() -> void:
 	var revised := run.revised_ward_rules()
-	var count := Gu.RECIPES.size() if revised else 2
-	var width := (1008.0 - (count - 1) * 16.0) / count
-	var inner := width - 36.0
+	var count := run.workshop_size()
+	var card := panel(menu, Rect2(96, 298, 1008, 332), Color("#1a2b25"), Color("#586c54"))
+	var recipes: Array = []
+	var starters: Array = []
 	for i in range(count):
-		var recipe: String = Gu.RECIPES[i]
-		var family: String = Gu.GU[recipe].family
-		var card := panel(menu, Rect2(96 + i * (width + 16), 298, width, 353), Color("#1a2b25"), Color("#586c54"))
-		text(card, "Hệ %s · Nhị chuyển" % Gu.FAMILIES[family], Rect2(18, 15, inner, 30), 16, GREEN)
-		text(card, Gu.GU[recipe].name, Rect2(18, 46, inner, 44), 26, GOLD, true)
-		var stats: String
-		match family:
-			"ward":
-				var block := Gu.WHITE_JADE_REVISED_ABSORB if revised else Gu.WHITE_JADE_ABSORB
-				stats = "Chặn %d · %d lượt · −%d CN" % [block, Gu.WHITE_JADE_TURNS, Gu.WHITE_JADE_COST]
-			"brew":
-				stats = "Tay không +%d · −%d CN" % [Gu.BREW_STRIKE_BONUS, Gu.FOUR_FLAVORS_COST]
-			_:
-				stats = "%d sát thương · tầm %d ô · −%d CN" % [Gu.MOON_EDGE_DAMAGE, Gu.MOON_EDGE_RANGE, Gu.MOON_EDGE_COST]
-		text(card, stats, Rect2(18, 94, inner, 32), 17)
-		text(card, Gu.synergy_text(family, revised), Rect2(18, 126, inner, 71), 16, GREEN)
-		for j in range(count):
-			var starter: String = Gu.STARTERS[j]
-			var suffix := " · cùng hệ" if not Gu.build_family(recipe, starter).is_empty() else " · phối hệ"
-			var choice := button(card, Gu.GU[starter].name + suffix, Rect2(18, 204 + j * 44, inner, 38),
-				equip_build.bind(recipe, starter))
-			choice.name = recipe + "_" + starter
-			choice.add_theme_font_size_override("font_size", 17)
+		var refined: Dictionary = Gu.GU[Gu.RECIPES[i]]
+		var basic: Dictionary = Gu.GU[Gu.STARTERS[i]]
+		recipes.append("%s  ·  %s" % [refined.name, Gu.FAMILIES[refined.family]])
+		starters.append("%s  ·  %s" % [basic.name, Gu.FAMILIES[basic.family]])
+	var recipe := dropdown(card, "workshop_recipe", "Cổ Nhị chuyển", recipes,
+		maxi(0, Gu.RECIPES.find(run.battle.refined_gu)), Rect2(24, 18, 450, 46))
+	var starter := dropdown(card, "workshop_starter", "Cổ Nhất chuyển", starters,
+		maxi(0, Gu.STARTERS.find(run.battle.starter_gu)), Rect2(528, 18, 454, 46))
+	var blend := text(card, "", Rect2(24, 126, 948, 32), 24, GOLD, true)
+	var stats := text(card, "", Rect2(24, 170, 956, 54), 17)
+	var synergy := text(card, "", Rect2(24, 228, 952, 34), 17, GREEN)
+	var refresh := func(_index: int):
+		var advanced_id: String = Gu.RECIPES[recipe.selected]
+		var first_id: String = Gu.STARTERS[starter.selected]
+		var family := Gu.build_family(advanced_id, first_id)
+		blend.text = "Phối hệ" if family.is_empty() else "Bộ " + str(Gu.FAMILIES[family])
+		stats.text = "%s\n%s" % [Gu.equip_description(advanced_id, revised), Gu.equip_description(first_id, revised)]
+		synergy.text = Gu.synergy_text(family, revised)
+	recipe.item_selected.connect(refresh)
+	starter.item_selected.connect(refresh)
+	refresh.call(0)
+	var fight := button(card, "Vào trận với bộ này", Rect2(676, 270, 306, 44),
+		func(): equip_build(Gu.RECIPES[recipe.selected], Gu.STARTERS[starter.selected]))
+	fight.name = "equip_confirm"
 	var vitals: Dictionary = run.workshop_vitals()
 	text(menu, "Khi vào trận  ·  Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d  ·  Giữ Sinh Cơ Diệp ×%d" %
 		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, vitals.qi, run.battle.max_qi, run.battle.leaves],
-		Rect2(96, 664, 1008, 39), 18, GREEN)
+		Rect2(96, 644, 1008, 39), 18, GREEN)
 
 
 func training_builds() -> Array:

@@ -152,7 +152,7 @@ func build_hud() -> void:
 	label(room_title, 34, 48, 790, 60, 54, GOLD, true)
 	var mode := "Trận theo lượt"
 	if run != null:
-		mode = "Nhị chuyển · %d/2" % (run.floor - RunData.FLOORS.size() + 1) if run.floor >= RunData.FLOORS.size() else "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+		mode = "Nhị chuyển · %d/3" % (run.floor - RunData.RIDGE_FLOOR + 1) if run.floor >= RunData.RIDGE_FLOOR else "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 	elif not training.is_empty():
 		mode = "Luyện trận"
 	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
@@ -226,6 +226,8 @@ func build_hud() -> void:
 		descriptions.append(["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]])
 	elif state.starter_gu == "brew":
 		descriptions.append(["brew", "3   Tửu Trùng\n+%d chân nguyên" % Gu.BREW_QI])
+	elif state.starter_gu == "stone_veil":
+		descriptions.append(["stone_veil", "3   Ẩn Thạch\nBước ẩn 3 ô · −%d CN" % Gu.STONE_VEIL_COST])
 	descriptions.append(["guard", "4   Thủ thế\nGiảm %d%% · +1 CN" % roundi(Rules.GUARD_REDUCTION * 100)])
 	if state.jade_skin:
 		descriptions.append(["jade_skin", "5   Ngọc Bì Cổ\nChặn %d · −%d CN" % [Rules.JADE_ABSORB, Rules.JADE_COST]])
@@ -237,6 +239,8 @@ func build_hud() -> void:
 		descriptions.append(["white_jade", "7   Bạch Ngọc"])
 	elif state.refined_gu == "four_flavors":
 		descriptions.append(["four_flavors", "7   Tứ Vị Tửu Trùng\nTay không +%d · −%d CN" % [Gu.BREW_STRIKE_BONUS, Gu.FOUR_FLAVORS_COST]])
+	elif state.refined_gu == "scale_veil":
+		descriptions.append(["scale_veil", "7   Ẩn Lân"])
 	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
 	for index in range(descriptions.size()):
 		var row: Array = descriptions[index]
@@ -279,6 +283,8 @@ func update_hud() -> void:
 		supplies.append("Dưỡng tửu")
 	if state.strong_strikes > 0:
 		supplies.append("Tinh nguyên ×%d" % state.strong_strikes)
+	if state.veil_turns > 0:
+		supplies.append("Ẩn Lân · %d lượt" % state.veil_turns)
 	if actions.has("vital_leaf"):
 		supplies.append("Sinh Cơ ×%d" % state.leaves)
 	wards_label.text = "    ".join(supplies)
@@ -300,6 +306,10 @@ func update_hud() -> void:
 				intent_copy.text = "Hồ quang khóa ô %s · %d sát thương." % [Rules.cell_name(state.intent.cells[0]), state.intent.damage]
 			elif state.intent.kind == "flood":
 				intent_copy.text = "Nước tím gây %d sát thương. Hãy lên ô khô." % state.intent.damage
+			elif state.intent.kind == "fall":
+				intent_copy.text = "Đá rơi vào ô nứt · %d sát thương." % state.intent.damage
+			elif state.intent.kind == "ambush":
+				intent_copy.text = "Vồ vùng quanh bạn · %d sát thương." % state.intent.damage
 			elif state.intent.kind == "recover":
 				intent_copy.text = "Đối thủ hồi thế trong lượt này."
 			elif state.intent.damage > 0:
@@ -307,11 +317,14 @@ func update_hud() -> void:
 			else:
 				intent_copy.text = "%s sẽ tiến về phía bạn." % enemy_name
 	report_label.text = "\n".join(report.slice(0, 3))
+	actions.move.text = "1   Di chuyển\nTối đa %d ô" % state.movement_range()
 	if actions.has("brew"):
 		actions.brew.text = "3   Tửu Trùng\n+%d CN · còn %d" % [Gu.BREW_QI, state.brew_left]
 	if actions.has("white_jade"):
 		var block := state.white_jade_absorb() + (Gu.WHITE_JADE_BONUS if state.can_upgrade_ward() else 0)
 		actions.white_jade.text = "7   Bạch Ngọc\nChặn %d · −%d CN" % [block, state.white_jade_cost()]
+	if actions.has("scale_veil"):
+		actions.scale_veil.text = "7   Ẩn Lân\nMất dấu · −%d CN" % state.scale_veil_cost()
 	for action in actions:
 		var control: Button = actions[action]
 		control.disabled = busy or not state.unavailable(action).is_empty()
@@ -353,6 +366,8 @@ func show_hint() -> void:
 	else:
 		if state.tactic == "ford":
 			hint_label.text = "Đi được qua nước nông. Ô nước chuyển tím khi có điện. Vách đá chặn đòn đánh xa."
+		elif state.tactic == "ambush":
+			hint_label.text = "Ô nứt đi được. Khi ô nứt sáng hổ phách, đá sẽ rơi vào đó sau lượt của bạn."
 		else:
 			hint_label.text = "Vách đá chặn đòn đánh xa. Chọn lệnh để xem kết quả dự kiến." if state.uses_cover() else "Địch đáp trả sau hành động của bạn. Chọn lệnh để xem kết quả dự kiến."
 
@@ -375,7 +390,7 @@ func inspect_action(action: String) -> void:
 		return
 	field.show_cover_ray(shot_range(action))
 	if action == "move":
-		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % Rules.MOVE_RANGE
+		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % state.movement_range()
 		return
 	var result := state.preview_action(action)
 	if result.has("error"):
@@ -392,6 +407,8 @@ func inspect_action(action: String) -> void:
 				pieces.append("Ghép Ngọc Bì → Bạch Ngọc")
 			"strike":
 				pieces.append("Phản đòn +%d" % state.counter_bonus() if state.counter_ready else "Tinh nguyên +%d" % Gu.BREW_STRIKE_BONUS)
+			"scale_veil":
+				pieces.append("Bước ẩn kế tiếp tối đa 4 ô")
 	elif action == "moon" and result.moon_mark and not state.moon_mark:
 		pieces.append("Đặt Nguyệt Ấn")
 	if result.healed > 0:
@@ -412,6 +429,12 @@ func inspect_action(action: String) -> void:
 		pieces.append("Chuẩn bị bộ Tửu")
 	if action == "four_flavors":
 		pieces.append("Cường hóa %d cú Tay không" % result.strong_strikes)
+	if action == "stone_veil":
+		pieces.append("Bước ẩn kế tiếp tối đa 3 ô")
+	if result.evaded:
+		pieces.append("Ẩn Lân làm đòn nhắm trượt")
+	elif action == "scale_veil" and result.veil_turns > 0:
+		pieces.append("Ẩn Lân còn %d lượt" % result.veil_turns)
 	pieces.append("Chân nguyên còn %d/%d" % [result.qi, state.max_qi])
 	hint_label.text = "  ·  ".join(pieces)
 
@@ -429,7 +452,9 @@ func inspect_cell(cell: int) -> void:
 		hint_label.text = "%s · %s" % [name, "Ô có đá chặn." if cell in state.rocks else "Ô này ngoài tầm hoặc đang bị chiếm."]
 		return
 	var outcome: String
-	if preview.absorbed > 0:
+	if preview.evaded:
+		outcome = "Ẩn Lân làm đối thủ mất dấu"
+	elif preview.absorbed > 0:
 		outcome = "Lớp ngọc chặn %d · còn chịu %d sát thương" % [preview.absorbed, preview.receives]
 	elif preview.receives > 0:
 		outcome = "Vẫn nằm trong vùng đánh · chịu %d sát thương" % preview.receives
@@ -509,7 +534,8 @@ func resolve(action: String, cell: int = -1) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: "brew" if state.starter_gu == "brew" else "moon",
+	var third := state.starter_gu if state.starter_gu in ["brew", "stone_veil"] else "moon"
+	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: third,
 		KEY_4: "guard", KEY_5: "jade_skin", KEY_6: "vital_leaf"}
 	if key_actions.has(event.keycode):
 		choose(key_actions[event.keycode])

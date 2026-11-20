@@ -56,6 +56,9 @@ var charge_direction := 1
 var bolt_warning := false
 var flood_warning := false
 var flood_active := false
+var rubble_warning := false
+var rubble_progress := 1.0
+var veiled := false
 var cover_ray := 0
 var bolt := PackedVector2Array()
 
@@ -85,6 +88,8 @@ func set_state(state: Rules) -> void:
 	charge_direction = rules.intent.get("direction", 1)
 	bolt_warning = rules.intent.get("pattern") == "bolt"
 	flood_warning = rules.intent.get("pattern") == "water"
+	rubble_warning = rules.intent.get("pattern") == "rubble"
+	veiled = rules.veil_turns > 0
 	queue_redraw()
 
 
@@ -107,6 +112,7 @@ func clear_effects() -> void:
 	projectile = null
 	bolt.clear()
 	flood_active = false
+	rubble_progress = 1.0
 	queue_redraw()
 
 
@@ -158,12 +164,16 @@ func paint_tiles() -> void:
 		var variant := (point.x * 3 + point.y * 5 + point.x * point.y) % 8
 		var edge := mini(point.x, Rules.COLUMNS - point.x - 1)
 		var shade := 0.67 + 0.05 * mini(edge, 2)
-		var ground: Texture2D = [TRAIL, MULCH, STONE, STONE, STONE][room]
+		var ground: Texture2D = [TRAIL, MULCH, STONE][mini(room, 2)]
 		var sample := ground.get_width() / 8.0
 		var ground_tint := Color(shade, shade * 1.11, shade * 1.19) if room >= 3 else Color(shade, shade, shade * .88)
+		if room == 5:
+			ground_tint = Color(shade * 1.15, shade, shade * .85)
 		draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), ground_tint)
 		if rules != null and cell in rules.water:
 			paint_water(rect, point, variant)
+		if rules != null and cell in rules.cracks:
+			paint_crack(rect, variant)
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rules != null and cell in rules.rocks:
 			draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
@@ -181,6 +191,8 @@ func paint_tiles() -> void:
 					Color("#ffe3adab"), 2.0, true)
 		elif danger and flood_warning:
 			paint_marker(rect, Color("#cebcff") if accessible else Color("#ad90f8"), true, accessible)
+		elif danger and rubble_warning:
+			paint_marker(rect, Color("#ffca87"), true, accessible)
 		elif danger and bolt_warning:
 			paint_marker(rect, Color("#a4d8ff") if accessible else Color("#87a6eb"), false, accessible)
 			var icon_at := rect.position + Vector2(16, 20)
@@ -219,6 +231,20 @@ func paint_water(rect: Rect2, point: Vector2i, variant: int) -> void:
 		draw_line(at, at + Vector2(20 - ripple * 2, -2), tint, 2.0, true)
 
 
+func paint_crack(rect: Rect2, variant: int) -> void:
+	var center := rect.get_center() + Vector2(variant - 4, 0)
+	var crack := PackedVector2Array([center + Vector2(-25, -19), center + Vector2(-9, -9),
+		center + Vector2(-11, 6), center + Vector2(13, 9), center + Vector2(22, 24)])
+	draw_polyline(crack, Color("#201715"), 3.5, true)
+	draw_line(center + Vector2(-11, 6), center + Vector2(-29, 16), Color("#302219"), 2.0, true)
+	draw_polyline(crack, Color("#cb9a5a8c"), 1.1, true)
+	if rubble_progress < 1.0:
+		var raised := center + Vector2(4, -34 * (1 - rubble_progress))
+		draw_colored_polygon(PackedVector2Array([raised + Vector2(-9, 1),
+			raised + Vector2(-3, -9), raised + Vector2(9, -5), raised + Vector2(6, 6)]),
+			Color("#e9bc85"))
+
+
 func atlas_frame(texture: Texture2D, cols: int, rows: int, frame: int, center: Vector2, span: float, face: int, tint: Color) -> void:
 	var cell_size := texture.get_size() / Vector2(cols, rows)
 	@warning_ignore("integer_division")
@@ -252,6 +278,8 @@ func _draw() -> void:
 			draw_dashed_line(hero_point, stop, Color("#c5f7ffb0"), 2.0, 7.0, true, true)
 			draw_arc(stop, 10, 0, TAU, 20, Color("#ffc49c"), 2.0, true)
 	var hero_tint := Color("#7f8b86") if rules.result == Rules.DEFEAT and hero_art == "ready" else Color.WHITE
+	if veiled:
+		hero_tint = Color("#b6e7e7a6")
 	var female := skin == "ao-reu"
 	if hero_art == "cast":
 		atlas_frame(REU_CAST if female else CAST, 8, 2, hero_frame, hero_point, 112, direction, hero_tint)
@@ -410,6 +438,11 @@ func play_exchange(exchange: Dictionary) -> void:
 		var caption := "Tửu Trùng" if is_brew else "Tinh nguyên ×%d" % rules.strong_strikes
 		impact(hero_point + Vector2(0, -16), 0, false, true, caption)
 		await get_tree().create_timer(.32).timeout
+	elif exchange.action in ["stone_veil", "scale_veil"]:
+		veiled = exchange.action == "scale_veil" or veiled
+		var caption := "Bước ẩn" if exchange.action == "stone_veil" else "Ẩn Lân"
+		impact(hero_point + Vector2(0, -16), 0, true, false, caption)
+		await get_tree().create_timer(.31).timeout
 	if not guarding:
 		hero_art = "ready"
 	exchange_cue.emit("player_contact")
@@ -438,9 +471,20 @@ func play_exchange(exchange: Dictionary) -> void:
 			impact(hero_point + Vector2(0, -15), exchange.hero_damage, false, guarding, caption)
 		await get_tree().create_timer(.35).timeout
 		flood_active = false
+	elif exchange.enemy_intent.kind == "fall" and not exchange.reaction.is_empty():
+		var rubble := create_tween()
+		rubble.tween_method(func(p: float): rubble_progress = p; queue_redraw(), 0.0, 1.0, .31)
+		await rubble.finished
+		exchange_cue.emit("enemy_contact")
+		if exchange.absorbed > 0:
+			ward_visible = false
+		if exchange.hero_damage > 0 or exchange.absorbed > 0:
+			var caption := "Chặn %d  /  −%d" % [exchange.absorbed, exchange.hero_damage] if exchange.absorbed > 0 else ""
+			impact(hero_point + Vector2(0, -15), exchange.hero_damage, false, guarding, caption)
+		await get_tree().create_timer(.22).timeout
 	elif exchange.enemy_intent.kind == "shot" and not exchange.reaction.is_empty():
 		await storm_shot(cell_center(exchange.enemy_intent.cells[0]), exchange.hero_damage, exchange.absorbed, guarding)
-	elif exchange.reaction in ["heavy", "strike", "miss"]:
+	elif exchange.reaction in ["heavy", "strike", "ambush", "miss"]:
 		var start := wolf_point
 		var target := cell_center(rules.hero) if exchange.reaction != "miss" else cell_center(exchange.hero_from)
 		var vector := target - start
@@ -484,6 +528,9 @@ func play_exchange(exchange: Dictionary) -> void:
 			recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), landing, charge_end, .18)
 		recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), charge_end if row >= 0 else landing, start, .17)
 		await recover.finished
+	if exchange.evaded:
+		impact(hero_point + Vector2(0, -15), 0, true, false, "Mất dấu")
+		await get_tree().create_timer(.17).timeout
 	if guarding:
 		var lower := create_tween()
 		lower.tween_method(set_hero_frame, 14.0, 18.0, .20)

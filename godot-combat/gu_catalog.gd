@@ -7,10 +7,12 @@ const GU := {
 	"white_jade": {"name": "Bạch Ngọc Cổ", "family": "ward", "rank": 2},
 	"brew": {"name": "Tửu Trùng", "family": "brew", "rank": 1},
 	"four_flavors": {"name": "Tứ Vị Tửu Trùng", "family": "brew", "rank": 2},
+	"stone_veil": {"name": "Ẩn Thạch Cổ", "family": "veil", "rank": 1},
+	"scale_veil": {"name": "Ẩn Lân Cổ", "family": "veil", "rank": 2},
 }
-const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu"}
-const STARTERS := ["moon", "jade_skin", "brew"]
-const RECIPES := ["moon_edge", "white_jade", "four_flavors"]
+const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
+const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
+const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
 const MOON_EDGE_RANGE := 6
 const MOON_EDGE_COST := 3
 const MOON_EDGE_DAMAGE := 30
@@ -26,6 +28,9 @@ const BREW_CHARGES := 2
 const BREW_QI := 2
 const FOUR_FLAVORS_COST := 2
 const BREW_STRIKE_BONUS := 12
+const STONE_VEIL_COST := 1
+const SCALE_VEIL_COST := 2
+const SCALE_VEIL_TURNS := 2
 
 
 static func build_family(recipe: String, starter: String) -> String:
@@ -33,6 +38,27 @@ static func build_family(recipe: String, starter: String) -> String:
 		return ""
 	var family: String = GU[recipe].family
 	return family if GU[starter].family == family else ""
+
+
+static func equip_description(id: String, revised_ward: bool) -> String:
+	match id:
+		"moon_edge":
+			return "Nguyệt Mang gây %d sát thương, tầm %d ô, tốn %d chân nguyên." % [MOON_EDGE_DAMAGE, MOON_EDGE_RANGE, MOON_EDGE_COST]
+		"white_jade":
+			var block := WHITE_JADE_REVISED_ABSORB if revised_ward else WHITE_JADE_ABSORB
+			return "Bạch Ngọc chặn %d sát thương, tốn %d chân nguyên." % [block, WHITE_JADE_COST]
+		"four_flavors":
+			return "Tứ Vị tăng %d sát thương cho cú Tay không kế tiếp, tốn %d chân nguyên." % [BREW_STRIKE_BONUS, FOUR_FLAVORS_COST]
+		"scale_veil":
+			return "Ẩn Lân làm trượt một đòn nhắm trực tiếp trong hai lượt, tốn %d chân nguyên." % SCALE_VEIL_COST
+		"stone_veil":
+			return "Ẩn Thạch chuẩn bị một bước đi tối đa ba ô, tốn %d chân nguyên." % STONE_VEIL_COST
+		"jade_skin":
+			return "Ngọc Bì tạo một lớp ngọc phòng ngự."
+		"brew":
+			return "Tửu Trùng hồi tối đa %d chân nguyên, dùng được %d lần mỗi trận." % [BREW_QI, BREW_CHARGES]
+		_:
+			return "Nguyệt Quang phóng nguyệt nhận tầm trung."
 
 
 static func synergy_text(family: String, revised_ward: bool = true) -> String:
@@ -45,4 +71,6 @@ static func synergy_text(family: String, revised_ward: bool = true) -> String:
 			return "Thay Ngọc Bì chặn thêm %d%s. Chặn thành công tăng %d sát thương Tay không." % [WHITE_JADE_BONUS, discount, counter]
 		"brew":
 			return "Dùng Tửu Trùng trước để Tứ Vị cường hóa hai cú Tay không."
+		"veil":
+			return "Dùng Ẩn Thạch trước để Ẩn Lân chỉ tốn 1 chân nguyên và lần Di chuyển kế tiếp đi tối đa 4 ô."
 	return ""
