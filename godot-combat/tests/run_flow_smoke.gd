@@ -195,7 +195,7 @@ func check_rank_two_gu() -> void:
 func play_rank_two() -> void:
 	check(flow.run.version == 3 and flow.run.can_begin_chapter(), "v3 victory did not expose rank two")
 	await click_button("chapter_two")
-	check(flow.run.version == 4 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
+	check(flow.run.version == 5 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
 	await launch()
 	check(flow.run.phase == "refinement" and not flow.run.equip_build("wrong", "moon"), "Reload lost the workshop or accepted an unknown Gu")
 	await capture("godot-rank2-bo-co.png")
@@ -234,6 +234,77 @@ func play_rank_two() -> void:
 	check(flow.run.phase == "complete" and flow.find_child("new_run", true, false) != null, "The successful combo did not end Chapter II")
 	await launch()
 	check(flow.run.phase == "complete" and flow.run.battle.hp == 4, "Chapter II victory did not replay")
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = 4
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.can_cross_ford() and not flow.run.battle.revised_ward, "v4 victory did not retain legacy rules")
+	if flow.run == null:
+		return
+	flow.show_run()
+	await click_button("cross_ford")
+	check(flow.run.phase == "ford_workshop" and flow.run.snapshot().chapter_rules == 4, "Old save did not migrate on crossing")
+	await launch()
+	check(flow.run.phase == "ford_workshop" and flow.run.version == 4, "Reload lost v4 replay rules or the crossing")
+	await capture("godot-suoisam-chon-bo.png")
+	await click_button("four_flavors_brew")
+	check(flow.run.floor == 4 and flow.current.actions.has("brew") and flow.current.actions.has("four_flavors")
+		and flow.run.battle.brew_left == 2, "Crossing failed to equip the new family")
+	await capture("godot-suoisam.png")
+	await shoot(KEY_3)
+	check(flow.run.battle.qi == 4 and flow.run.battle.brew_ready and flow.run.battle.hp == 24,
+		"Tửu Trùng key failed or an electrified ford hit a dry cell")
+	await shoot(KEY_7)
+	check(flow.run.battle.strong_strikes == 2 and flow.run.battle.qi == 2, "Tứ Vị did not consume the prep")
+	await launch()
+	check(flow.run.battle.strong_strikes == 2 and flow.run.battle.brew_left == 1 and flow.run.battle.intent.kind == "shot",
+		"Reload reverted the ford, Tửu charges or enemy forecast")
+	await play_commands([[KEY_1, 19], [KEY_1, 21], [KEY_2], [KEY_2]])
+	check(flow.run.battle.strong_strikes == 0 and flow.run.battle.wolf_hp == 24 and flow.run.battle.hp == 6,
+		"Both boosted strikes and the electrified water must resolve once")
+	await play_commands([[KEY_1, 14], [KEY_2], [KEY_2]])
+	check(flow.run.phase == "complete" and flow.run.floor == 4 and flow.find_child("cross_ford", true, false) == null,
+		"Finishing the ford did not close Chapter II")
+	await launch()
+	check(flow.run.phase == "complete" and flow.run.battle.hp == 6, "The migrated final victory did not replay")
+
+
+func check_ford_gu() -> void:
+	for variant in range(3):
+		var crossing := Run.battle_for(Run.THUNDER_FORD, variant, 48, 4, 4, 0, {}, "ford", true)
+		check(crossing.hero not in crossing.water and crossing.wolf not in crossing.water
+			and not crossing.move_targets().is_empty(), "A ford layout blocked or flooded a spawn")
+		for cell in crossing.water:
+			check(cell not in crossing.rocks, "A shallow-water tile also claims to be a wall")
+	var ward := Rules.new({"refined_gu": "white_jade", "moon_equipped": false, "jade_skin": true, "revised_ward": true})
+	ward.intent = {"kind": "recover", "cells": [], "damage": 0}
+	ward.take_turn("jade_skin")
+	ward.intent = {"kind": "shot", "name": "Hồ quang", "cells": [ward.hero], "damage": 16}
+	var result := ward.preview_action("white_jade")
+	check(result.absorbed == 15 and result.receives == 1 and result.qi == 2
+		and ward.take_turn("white_jade").hero_damage == 1 and ward.counter_ready and ward.counter_bonus() == 10,
+		"Revised armor combo was not stronger and cheaper")
+	var mixed := Rules.new({"refined_gu": "white_jade", "starter_gu": "brew", "moon_equipped": false, "revised_ward": true})
+	check(mixed.preview_action("white_jade").absorbed == 11 and mixed.white_jade_cost() == 2,
+		"Mixed revised armor incorrectly gained the set bonus")
+
+	var ford := Run.battle_for(Run.THUNDER_FORD, 0, 48, 3, 4, 0,
+		{"starter_gu": "brew", "moon_equipped": false, "refined_gu": "four_flavors"}, "ford", true)
+	check(ford.intent.kind == "flood" and ford.move_targets().has(18)
+		and ford.preview_action("move", 18).receives == 18 and ford.preview_action("move", 25).receives == 0,
+		"Ford water must be walkable, with a deterministic live-water damage forecast")
+	check(ford.preview_action("brew").brew_ready and ford.brew_left == 2 and not ford.brew_ready,
+		"Tửu forecast changed inventory")
+	ford.take_turn("brew")
+	check(ford.qi == 4 and ford.brew_left == 1 and ford.take_turn("brew").has("error"),
+		"Tửu Trùng must cap Qi, consume exactly one charge and reject full Qi")
+	ford.take_turn("four_flavors")
+	ford.wolf = ford.hero + 1
+	ford.intent = {"kind": "recover", "cells": [], "damage": 0}
+	check(ford.take_turn("four_flavors").has("error") and ford.preview_action("strike").dealt == 26, "Tinh nguyên must not stack")
+	ford.take_turn("strike")
+	check(ford.strong_strikes == 1 and ford.brew_left == 1, "Tay không did not use exactly one Tinh nguyên")
+	var off_set := Rules.new({"refined_gu": "four_flavors"})
+	check(off_set.preview_action("four_flavors").strong_strikes == 1, "Tứ Vị without Tửu Trùng received two charges")
 
 
 func play_rest_and_leaf() -> void:
@@ -385,6 +456,7 @@ func exercise() -> void:
 	check_gu_and_tactics()
 	check_third_save()
 	check_rank_two_gu()
+	check_ford_gu()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -479,5 +551,5 @@ func exercise() -> void:
 	await play_rank_two()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: ceremony, rebirth, v1/v2/v3 compatibility, training, ward and mark combos, workshop reload and Chapter II")
+		print("Godot run passed: ceremony, rebirth, v1-v4 compatibility, loadouts, revised ward, paired brew, ford migration and reload")
 	quit(1 if failed else 0)

@@ -10,16 +10,9 @@ const REU = preload("res://assets/ao-reu-selection.png")
 const GOLD := Color("#f1d89f")
 const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
-const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2], Run.CHAPTER_TWO]
-const TRAINING_ROOMS := [0, 1, 1, 2, 3]
-const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm"]
-const TRAINING_BUILDS := [
-	["Nhất chuyển", "", "moon"],
-	["Bộ Nguyệt", "moon_edge", "moon"],
-	["Bộ Hộ thể", "white_jade", "jade_skin"],
-	["Nguyệt Mang + Ngọc Bì", "moon_edge", "jade_skin"],
-	["Bạch Ngọc + Nguyệt Quang", "white_jade", "moon"],
-]
+const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2], Run.CHAPTER_TWO, Run.THUNDER_FORD]
+const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford"]
 const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
@@ -200,8 +193,10 @@ func show_result() -> void:
 	menu = make_menu()
 	switch_to(menu)
 	var section := "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()]
-	if run.floor == Run.FLOORS.size() or run.phase == "refinement":
-		section = "NHỊ CHUYỂN    /    SƯỜN ĐÁ MÙ SƯƠNG"
+	if run.phase == "ford_workshop" or run.floor > Run.FLOORS.size():
+		section = "NHỊ CHUYỂN    /    2 TRÊN 2"
+	elif run.floor == Run.FLOORS.size() or run.phase == "refinement":
+		section = "NHỊ CHUYỂN    /    1 TRÊN 2"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.stage_at(run.floor)
@@ -220,12 +215,16 @@ func show_result() -> void:
 		"refinement":
 			title = "Chọn bộ Cổ Nhị chuyển"
 			description = "Mang một Cổ Nhị chuyển và một Cổ Nhất chuyển. Ghép cùng hệ để mở hiệu ứng bộ."
+		"ford_workshop":
+			title = "Chuẩn bị qua Suối Sấm"
+			description = "Giữ bộ %s + %s hoặc đổi trước khi xuống suối." % [
+				Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name]
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
 		"complete":
-			title = "Vượt qua Sườn đá Mù Sương"
-			description = "Điện Lang phóng lôi đã gục. Bạn hoàn thành màn Nhị chuyển đầu tiên."
+			title = "Vượt qua " + str(floor.name)
+			description = "Bến đá phía trước dẫn qua Suối Sấm." if run.can_cross_ford() else "Bạn đã vượt qua cả hai màn Nhị chuyển."
 		_:
 			title = "Vượt qua Thanh Mao Sơn"
 			description = "Cuồng Điện Lang đã gục. Bạn đã vượt qua cả ba màn."
@@ -237,7 +236,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase == "refinement":
+	elif run.phase in ["refinement", "ford_workshop"]:
 		draw_workshop()
 	else:
 		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
@@ -255,10 +254,13 @@ func show_result() -> void:
 				workshop.name = "chapter_two"
 				workshop.grab_focus()
 		elif run.phase == "complete":
-			var starter := "moon" if run.battle.moon_equipped else "jade_skin"
-			text(menu, "Bộ đã dùng  ·  %s + %s" % [Gu.GU[starter].name, Gu.GU[run.battle.refined_gu].name],
+			text(menu, "Bộ đã dùng  ·  %s + %s" % [Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name],
 				Rect2(96, 310, 1000, 49), 23, GOLD)
 			draw_vitals(387)
+			if run.can_cross_ford():
+				var crossing := button(menu, "Tới Suối Sấm", Rect2(432, 480, 310, 54), cross_ford)
+				crossing.name = "cross_ford"
+				crossing.grab_focus()
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -305,28 +307,57 @@ func begin_chapter() -> void:
 		show_result()
 
 
+func cross_ford() -> void:
+	if run.cross_ford():
+		persist()
+		show_result()
+
+
 func draw_workshop() -> void:
-	for i in range(Gu.RECIPES.size()):
+	var revised := run.revised_ward_rules()
+	var count := Gu.RECIPES.size() if revised else 2
+	var width := (1008.0 - (count - 1) * 16.0) / count
+	var inner := width - 36.0
+	for i in range(count):
 		var recipe: String = Gu.RECIPES[i]
 		var family: String = Gu.GU[recipe].family
-		var card := panel(menu, Rect2(96 + i * 516, 304, 492, 304), Color("#1a2b25"), Color("#586c54"))
-		text(card, "Hệ %s · Nhị chuyển" % Gu.FAMILIES[family], Rect2(20, 15, 450, 32), 16, GREEN)
-		text(card, Gu.GU[recipe].name, Rect2(20, 48, 450, 45), 31, GOLD, true)
-		var stats := "%d sát thương · tầm %d ô · −%d chân nguyên" % [Gu.MOON_EDGE_DAMAGE, Gu.MOON_EDGE_RANGE, Gu.MOON_EDGE_COST]
-		if family == "ward":
-			stats = "Chặn %d · hiệu lực %d lượt · −%d chân nguyên" % [Gu.WHITE_JADE_ABSORB, Gu.WHITE_JADE_TURNS, Gu.WHITE_JADE_COST]
-		text(card, stats, Rect2(20, 100, 450, 28), 17)
-		text(card, Gu.synergy_text(family), Rect2(20, 138, 450, 51), 17, GREEN)
-		for j in range(Gu.STARTERS.size()):
+		var card := panel(menu, Rect2(96 + i * (width + 16), 298, width, 353), Color("#1a2b25"), Color("#586c54"))
+		text(card, "Hệ %s · Nhị chuyển" % Gu.FAMILIES[family], Rect2(18, 15, inner, 30), 16, GREEN)
+		text(card, Gu.GU[recipe].name, Rect2(18, 46, inner, 44), 26, GOLD, true)
+		var stats: String
+		match family:
+			"ward":
+				var block := Gu.WHITE_JADE_REVISED_ABSORB if revised else Gu.WHITE_JADE_ABSORB
+				stats = "Chặn %d · %d lượt · −%d CN" % [block, Gu.WHITE_JADE_TURNS, Gu.WHITE_JADE_COST]
+			"brew":
+				stats = "Tay không +%d · −%d CN" % [Gu.BREW_STRIKE_BONUS, Gu.FOUR_FLAVORS_COST]
+			_:
+				stats = "%d sát thương · tầm %d ô · −%d CN" % [Gu.MOON_EDGE_DAMAGE, Gu.MOON_EDGE_RANGE, Gu.MOON_EDGE_COST]
+		text(card, stats, Rect2(18, 94, inner, 32), 17)
+		text(card, Gu.synergy_text(family, revised), Rect2(18, 126, inner, 71), 16, GREEN)
+		for j in range(count):
 			var starter: String = Gu.STARTERS[j]
 			var suffix := " · cùng hệ" if not Gu.build_family(recipe, starter).is_empty() else " · phối hệ"
-			var choice := button(card, Gu.GU[starter].name + suffix, Rect2(20, 199 + j * 47, 452, 42),
+			var choice := button(card, Gu.GU[starter].name + suffix, Rect2(18, 204 + j * 44, inner, 38),
 				equip_build.bind(recipe, starter))
 			choice.name = recipe + "_" + starter
+			choice.add_theme_font_size_override("font_size", 17)
 	var vitals: Dictionary = run.workshop_vitals()
 	text(menu, "Khi vào trận  ·  Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d  ·  Giữ Sinh Cơ Diệp ×%d" %
 		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, vitals.qi, run.battle.max_qi, run.battle.leaves],
-		Rect2(96, 621, 1008, 39), 19, GREEN)
+		Rect2(96, 664, 1008, 39), 18, GREEN)
+
+
+func training_builds() -> Array:
+	var builds := [["Nhất chuyển", "", "moon"]]
+	for recipe in Gu.RECIPES:
+		for starter in Gu.STARTERS:
+			var family := Gu.build_family(recipe, starter)
+			var caption := "%s + %s" % [Gu.GU[recipe].name, Gu.GU[starter].name]
+			if not family.is_empty():
+				caption = "Bộ " + str(Gu.FAMILIES[family])
+			builds.append([caption, recipe, starter])
+	return builds
 
 
 func equip_build(recipe: String, starter: String) -> void:
@@ -447,7 +478,7 @@ func show_training_setup() -> void:
 	text(card, "Sinh lực ban đầu", Rect2(757, 147, 220, 34), 18)
 	var hp := starting_value(card, "training_hp", Vector2(757, 189), 1, Rules.MAX_HP, training_options.hp)
 	var build_labels: Array = []
-	for setup in TRAINING_BUILDS:
+	for setup in training_builds():
 		build_labels.append(setup[0])
 	var build := dropdown(card, "training_build", "Bộ Cổ", build_labels, training_options.build, Rect2(28, 252, 452, 43))
 	var jade := training_check(card, "training_jade", "Thêm Ngọc Bì (Nhất chuyển)", Vector2(525, 258), training_options.jade_skin)
@@ -500,10 +531,10 @@ func show_training_battle() -> void:
 	var next := BattleScene.instantiate()
 	var grade_index: int = training_options.grade
 	var opponent: int = training_options.opponent
-	var build: Array = TRAINING_BUILDS[training_options.build]
+	var build: Array = training_builds()[training_options.build]
 	next.configure_training({"stage": TRAINING_STAGES[opponent], "room": TRAINING_ROOMS[opponent],
 		"tactic": TRAINING_TACTICS[opponent], "hp": training_options.hp,
-		"moon_equipped": build[2] == "moon", "refined_gu": build[1],
+		"moon_equipped": build[2] == "moon", "refined_gu": build[1], "starter_gu": build[2],
 		"jade_skin": build[2] == "jade_skin" or (build[1].is_empty() and training_options.jade_skin), "leaves": training_options.leaves,
 		"hero": "ao-reu" if training_options.hero == 1 else "huyen-bao",
 		"grade": TRAINING_GRADES[grade_index], "max_qi": grade_index + 4, "qi": training_options.qi})

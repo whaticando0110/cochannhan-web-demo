@@ -54,6 +54,8 @@ var mark_visible := false
 var warned_row := -1
 var charge_direction := 1
 var bolt_warning := false
+var flood_warning := false
+var flood_active := false
 var cover_ray := 0
 var bolt := PackedVector2Array()
 
@@ -82,6 +84,7 @@ func set_state(state: Rules) -> void:
 	warned_row = rules.intent.get("row", -1)
 	charge_direction = rules.intent.get("direction", 1)
 	bolt_warning = rules.intent.get("pattern") == "bolt"
+	flood_warning = rules.intent.get("pattern") == "water"
 	queue_redraw()
 
 
@@ -103,6 +106,7 @@ func clear_effects() -> void:
 	shock_progress = 1.0
 	projectile = null
 	bolt.clear()
+	flood_active = false
 	queue_redraw()
 
 
@@ -154,10 +158,12 @@ func paint_tiles() -> void:
 		var variant := (point.x * 3 + point.y * 5 + point.x * point.y) % 8
 		var edge := mini(point.x, Rules.COLUMNS - point.x - 1)
 		var shade := 0.67 + 0.05 * mini(edge, 2)
-		var ground: Texture2D = [TRAIL, MULCH, STONE, STONE][room]
+		var ground: Texture2D = [TRAIL, MULCH, STONE, STONE, STONE][room]
 		var sample := ground.get_width() / 8.0
-		var ground_tint := Color(shade, shade * 1.11, shade * 1.19) if room == 3 else Color(shade, shade, shade * .88)
+		var ground_tint := Color(shade, shade * 1.11, shade * 1.19) if room >= 3 else Color(shade, shade, shade * .88)
 		draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), ground_tint)
+		if rules != null and cell in rules.water:
+			paint_water(rect, point, variant)
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rules != null and cell in rules.rocks:
 			draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
@@ -173,6 +179,8 @@ func paint_tiles() -> void:
 				var tail := -10 * charge_direction
 				draw_polyline(PackedVector2Array([tip + Vector2(tail, -9), tip, tip + Vector2(tail, 9)]),
 					Color("#ffe3adab"), 2.0, true)
+		elif danger and flood_warning:
+			paint_marker(rect, Color("#cebcff") if accessible else Color("#ad90f8"), true, accessible)
 		elif danger and bolt_warning:
 			paint_marker(rect, Color("#a4d8ff") if accessible else Color("#87a6eb"), false, accessible)
 			var icon_at := rect.position + Vector2(16, 20)
@@ -194,6 +202,21 @@ func paint_tiles() -> void:
 	for index in range(Rules.ROWS):
 		draw_string(ThemeDB.fallback_font, Vector2(16, ORIGIN.y + TILE.y * index + 45), str(index + 1),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#f5dfb2"))
+
+
+func paint_water(rect: Rect2, point: Vector2i, variant: int) -> void:
+	draw_rect(rect, Color("#7c68d2d9") if flood_active else Color("#36677bb5"))
+	for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var adjacent: Vector2i = point + offset
+		if Rect2i(0, 0, Rules.COLUMNS, Rules.ROWS).has_point(adjacent) and adjacent.y * Rules.COLUMNS + adjacent.x in rules.water:
+			continue
+		var edge := rect.get_center() + Vector2(offset) * TILE * .5
+		var span := Vector2(offset).orthogonal().abs() * TILE * .5
+		draw_line(edge - span, edge + span, Color("#96c0c077"), 2.0)
+	for ripple in range(4):
+		var at := rect.position + Vector2(7 + (variant * 13 + ripple * 24) % 58, 16 + ripple * 17)
+		var tint := Color("#eae2ffda") if flood_active else Color("#9fced596")
+		draw_line(at, at + Vector2(20 - ripple * 2, -2), tint, 2.0, true)
 
 
 func atlas_frame(texture: Texture2D, cols: int, rows: int, frame: int, center: Vector2, span: float, face: int, tint: Color) -> void:
@@ -382,6 +405,11 @@ func play_exchange(exchange: Dictionary) -> void:
 	elif exchange.action == "vital_leaf":
 		impact(hero_point + Vector2(0, -16), 0, false, true, "+%d" % exchange.healed)
 		await get_tree().create_timer(.38).timeout
+	elif exchange.action in ["brew", "four_flavors"]:
+		var is_brew: bool = exchange.action == "brew"
+		var caption := "Tửu Trùng" if is_brew else "Tinh nguyên ×%d" % rules.strong_strikes
+		impact(hero_point + Vector2(0, -16), 0, false, true, caption)
+		await get_tree().create_timer(.32).timeout
 	if not guarding:
 		hero_art = "ready"
 	exchange_cue.emit("player_contact")
@@ -398,6 +426,18 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
+	elif exchange.enemy_intent.kind == "flood" and not exchange.reaction.is_empty():
+		await get_tree().create_timer(.18).timeout
+		flood_active = true
+		queue_redraw()
+		exchange_cue.emit("enemy_contact")
+		if exchange.absorbed > 0:
+			ward_visible = false
+		if exchange.hero_damage > 0 or exchange.absorbed > 0:
+			var caption := "Chặn %d  /  −%d" % [exchange.absorbed, exchange.hero_damage] if exchange.absorbed > 0 else ""
+			impact(hero_point + Vector2(0, -15), exchange.hero_damage, false, guarding, caption)
+		await get_tree().create_timer(.35).timeout
+		flood_active = false
 	elif exchange.enemy_intent.kind == "shot" and not exchange.reaction.is_empty():
 		await storm_shot(cell_center(exchange.enemy_intent.cells[0]), exchange.hero_damage, exchange.absorbed, guarding)
 	elif exchange.reaction in ["heavy", "strike", "miss"]:
