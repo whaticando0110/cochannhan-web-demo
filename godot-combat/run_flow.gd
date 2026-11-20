@@ -183,13 +183,16 @@ func show_result() -> void:
 	switch_to(menu)
 	text(menu, "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()],
 		Rect2(96, 60, 1000, 41), 19, GREEN)
-	var floor: Dictionary = Run.FLOORS[run.floor]
+	var floor: Dictionary = run.stage_at(run.floor)
 	var title: String
 	var description: String
 	match run.phase:
+		"route":
+			title = "Chọn đường qua Thanh Mao"
+			description = "Điện Lang đã gục. Chọn lối vào màn hai trước khi nhận chiến lợi phẩm."
 		"reward":
 			title = "Chọn chiến lợi phẩm"
-			description = "Đã hạ %s. Chọn một món trước khi tới %s." % [floor.enemy, Run.FLOORS[run.floor + 1].name]
+			description = "Đã hạ %s. Chọn một món trước khi tới %s." % [floor.enemy, run.stage_at(run.floor + 1).name]
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
@@ -198,23 +201,21 @@ func show_result() -> void:
 			description = "Cuồng Điện Lang đã gục. Bạn đã vượt qua cả ba màn."
 	text(menu, title, Rect2(92, 119, 1020, 99), 56, GOLD, true)
 	text(menu, description, Rect2(96, 231, 1020, 60), 23)
-	if run.phase == "reward":
-		var i := 0
-		for id in Run.REWARDS:
-			var reward: Array = Run.REWARDS[id]
-			var card := panel(menu, Rect2(96 + i * 337, 324, 312, 222), Color("#1a2b25"), Color("#586c54"))
-			text(card, reward[0], Rect2(20, 20, 270, 63), 28, GOLD, true)
-			text(card, reward[1], Rect2(20, 88, 269, 52), 18)
-			var choose := button(card, "Nhận chiến lợi phẩm", Rect2(20, 158, 272, 45), func(): choose_reward(id))
-			choose.name = id
-			i += 1
-		text(menu, "Sinh lực %d / 48     ·     Chân nguyên %d / %d" % [run.battle.hp, run.battle.qi, run.battle.max_qi],
-			Rect2(96, 580, 980, 40), 20, GREEN)
+	if run.phase == "route":
+		draw_routes()
+	elif run.phase == "reward":
+		draw_rewards()
 	else:
 		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
-			Rect2(96, 335, 316, 54), show_entry)
+			Rect2(96, 480 if run.phase == "victory" else 335, 316, 54), show_entry)
 		next.name = "rebirth" if run.phase == "death" else "new_run"
 		next.grab_focus()
+		if run.phase == "victory":
+			var picks := " · ".join(run.reward_history())
+			var route_name := "Đường đã đi  ·  %s" % run.stage_at(1).name
+			text(menu, route_name, Rect2(96, 305, 1000, 38), 21, GOLD)
+			text(menu, "Chiến lợi phẩm  ·  %s" % picks, Rect2(96, 352, 1000, 38), 20)
+			draw_vitals(405)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -223,3 +224,70 @@ func choose_reward(id: String) -> void:
 	if run.reward(id):
 		persist()
 		show_run()
+
+
+func choose_route(id: String) -> void:
+	if run.choose_route(id):
+		persist()
+		show_result()
+
+
+func draw_vitals(y: float) -> void:
+	text(menu, "Sinh lực %d / 48     ·     Chân nguyên %d / %d" % [run.battle.hp, run.battle.qi, run.battle.max_qi],
+		Rect2(96, y, 980, 40), 20, GREEN)
+
+
+func draw_routes() -> void:
+	var i := 0
+	for id in Run.ROUTES:
+		var stage: Dictionary = Run.ROUTES[id]
+		var elite: bool = id == "elite"
+		var fill := Color("#302823") if elite else Color("#1a2d26")
+		var edge := Color("#916c4d") if elite else Color("#577b64")
+		var card := panel(menu, Rect2(96 + i * 516, 307, 490, 295), fill, edge)
+		text(card, stage.name, Rect2(23, 22, 444, 45), 34, GOLD, true)
+		text(card, "%s  ·  %d sinh lực" % [stage.enemy, stage.hp], Rect2(24, 88, 441, 31), 22)
+		text(card, "%s  ·  %d sát thương" % [stage.heavy, stage.damage], Rect2(24, 122, 441, 28), 18)
+		var heal := Run.ELITE_HEAL if elite else Run.NORMAL_HEAL
+		var energy := Run.ELITE_QI if elite else Run.NORMAL_QI
+		var benefit := "Hồi %d sinh lực hoặc %d chân nguyên" % [heal, energy]
+		if elite:
+			benefit += "\nCó món tăng sức chứa chân nguyên."
+		text(card, benefit, Rect2(24, 164, 441, 57), 18, GREEN if not elite else GOLD)
+		var choose := button(card, "Chọn tuyến tinh anh" if elite else "Đi qua khe đá",
+			Rect2(23, 231, 444, 45), choose_route.bind(id))
+		choose.name = id
+		i += 1
+	draw_vitals(621)
+
+
+func draw_rewards() -> void:
+	var options: Dictionary = run.reward_options()
+	var i := 0
+	var width := (1008.0 - 15.0 * (options.size() - 1)) / options.size()
+	for id in options:
+		var option: Array = options[id]
+		var preview: Dictionary = run.reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * (width + 15), 316, width, 269), Color("#1a2b25"), Color("#586c54"))
+		var inner := width - 36
+		text(card, option[0], Rect2(18, 18, inner, 66), 27, GOLD, true)
+		text(card, option[1], Rect2(18, 94, inner, 54), 17)
+		var delta := text(card, reward_delta(id, preview), Rect2(18, 160, inner, 44), 18, GREEN)
+		delta.name = id + "_delta"
+		var choose := button(card, "Nhận", Rect2(18, 207, inner, 44), choose_reward.bind(id))
+		choose.name = id
+		i += 1
+	draw_vitals(606)
+
+
+func reward_delta(id: String, preview: Dictionary) -> String:
+	match id:
+		"medicine":
+			return "Sinh lực %d → %d" % [run.battle.hp, preview.hp]
+		"stone":
+			return "Chân nguyên %d/%d → %d/%d" % [run.battle.qi, run.battle.max_qi, preview.qi, preview.max_qi]
+		"refine":
+			return "Sát thương %d → %d" % [run.battle.moon_damage, run.battle.moon_damage - run.moon_bonus + preview.moon_bonus]
+		"expand":
+			return "Sức chứa %d → %d" % [run.battle.max_qi, preview.max_qi]
+	return ""

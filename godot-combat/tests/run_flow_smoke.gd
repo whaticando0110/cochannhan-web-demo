@@ -80,6 +80,59 @@ func capture(name: String) -> void:
 	check(root.get_texture().get_image().save_png(args[0].path_join(name)) == OK, "Could not save " + name)
 
 
+func play_commands(commands: Array) -> void:
+	for command in commands:
+		await shoot(command[0], command[1] if command.size() == 2 else -1)
+
+
+func play_route(id: String, second_room: Array, boss: Array) -> void:
+	var elite := id == "elite"
+	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5)
+	flow.show_run()
+	await play_commands([[KEY_1, 10], [KEY_3], [KEY_3]])
+	check(flow.run.phase == "route" and flow.run.floor == 0, "First victory must open the fork")
+	await launch()
+	check(flow.run != null and flow.run.phase == "route" and flow.run.route.is_empty(), "Route menu did not survive reload")
+	if elite:
+		await capture("godot-nga-re.png")
+	await click_button(id)
+	check(flow.run.phase == "reward" and flow.run.route == id, "Route selection did not open the first reward")
+	await launch()
+	check(flow.run.phase == "reward" and flow.run.route == id, "Selected route was lost after reload")
+	var refine: Label = flow.find_child("refine_delta", true, false)
+	check(refine != null and refine.text == "Sát thương 26 → 33", "Refine preview is wrong")
+	var stone: Label = flow.find_child("stone_delta", true, false)
+	check(stone != null and stone.text == "Chân nguyên 0/4 → 3/4", "First stone preview is wrong")
+	if elite:
+		await capture("godot-thuong-man-dau.png")
+	await click_button("refine")
+	check(flow.run.floor == 1 and flow.run.battle.qi == 0 and flow.run.battle.moon_damage == 33
+		and flow.run.battle.wolf_hp == (62 if elite else 56), "Chosen route or first reward did not reach room two")
+	if not elite:
+		await capture("godot-khe-da-an-toan.png")
+	await play_commands(second_room)
+	check(flow.run.phase == "reward" and flow.run.floor == 1, "Second victory did not open a reward")
+	check(not flow.run.reward_options().has("refine"), "Refine may only be awarded once")
+	check(flow.run.reward_options().has("expand") == elite, "Expansion is reserved for the elite route")
+	var before: int = flow.run.battle.hp
+	var qi: int = flow.run.battle.qi
+	var expected := mini(4, qi + (4 if elite else 3))
+	check(flow.run.reward_preview("medicine").hp == mini(48, before + (22 if elite else 18)), "Healing preview is wrong")
+	if elite:
+		var duplicate: RefCounted = Run.restore(flow.run.snapshot())
+		check(duplicate.reward("expand") and duplicate.battle.qi == qi and duplicate.battle.max_qi == 5,
+			"Expanding essence capacity must preserve current essence")
+		await capture("godot-thuong-tinh-anh.png")
+	await click_button("stone")
+	check(flow.run.battle.qi == expected and flow.run.battle.max_qi == 4 and flow.run.battle.hp == before,
+		"Partial essence refill or carried health is wrong")
+	await play_commands(boss)
+	check(flow.run.phase == "victory" and flow.run.reward_history() == PackedStringArray(["Luyện Nguyệt Quang", "Nguyên thạch"]),
+		"New route did not end with the two rewards")
+	if elite:
+		await capture("godot-ket-qua-tuyen.png")
+
+
 func exercise() -> void:
 	var data := ProjectSettings.globalize_path("res://build")
 	DirAccess.make_dir_recursive_absolute(data)
@@ -146,14 +199,14 @@ func exercise() -> void:
 	check(flow.run.profile.hero == "ao-reu" and flow.run.profile.depth == 15 and flow.run.floor == 0
 		and flow.run.journal.is_empty(), "Repeating Khai Khiếu did not use the new profile")
 
-	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5)
+	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5, 1)
 	flow.show_run()
 	for code in [KEY_3, KEY_3]:
 		await shoot(code)
 	check(flow.run.phase == "reward", "First victory did not open rewards")
 	await capture("godot-chien-loi-pham.png")
 	await launch()
-	check(flow.run.phase == "reward" and flow.run.floor == 0, "Reward selection did not survive restart")
+	check(flow.run.version == 1 and flow.run.phase == "reward" and flow.run.floor == 0, "Legacy reward did not survive restart")
 	await click_button("stone")
 	check(flow.run.floor == 1 and flow.run.battle.qi == 5 and flow.run.battle.hp < 48, "Reward or retained HP mismatch")
 	await capture("godot-khe-da.png")
@@ -170,7 +223,11 @@ func exercise() -> void:
 	check(flow.run.phase == "victory", "Victory did not survive restart")
 	await click_button("new_run")
 	check(flow.find_child("skip_ceremony", true, false) == null, "Victory exposed Skip")
+	await play_route("ravine", [[KEY_4], [KEY_1, 19], [KEY_2], [KEY_3], [KEY_2]],
+		[[KEY_1, 10], [KEY_3], [KEY_1, 1], [KEY_3], [KEY_1, 8], [KEY_4], [KEY_1, 24], [KEY_4], [KEY_3]])
+	await play_route("elite", [[KEY_4], [KEY_4], [KEY_4], [KEY_3], [KEY_4], [KEY_3]],
+		[[KEY_1, 10], [KEY_3], [KEY_4], [KEY_3], [KEY_1, 1], [KEY_4], [KEY_3]])
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: ceremony, aptitude, death save, optional rebirth routes, rewards, three rooms, victory and reload")
+		print("Godot run passed: ceremony, rebirth, legacy restore, fork reload, both routes, reward previews and full victory")
 	quit(1 if failed else 0)

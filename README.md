@@ -17,7 +17,9 @@ Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard rồi bấm **F5**
 
 Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi theo biển hoa để mở Không Khiếu. Dùng **WASD**, phím mũi tên hoặc bấm một ô để tới. Trong ba trận theo lượt, dùng **1–4**. Sau khi chọn Di chuyển, bấm ô hoặc dùng **phím mũi tên + Enter**. Ô xanh né được đòn đã báo. Ô hổ phách đi được và vẫn nằm trong vùng đánh. Rê chuột hoặc dùng Tab vào lệnh để xem sát thương và chân nguyên dự kiến. Qua mỗi màn đầu chọn một chiến lợi phẩm để mang sang màn sau.
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ và mỗi lựa chọn chiến lợi phẩm. Phạm vi kiểm hiện tại là Windows.
+Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Thẻ tuyến cho biết sinh lực địch, sát thương và mức hồi phục sau chiến thắng. Mỗi thẻ chiến lợi phẩm hiện chỉ số trước và sau khi nhận. Nguyên thạch hồi chân nguyên. Tuyến tinh anh có thêm **Mở rộng Nguyên Hải** để tăng sức chứa. Hai tuyến đều dẫn tới Hang Cuồng Điện Lang và ghi lại chiến lợi phẩm ở màn kết quả.
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ, chọn tuyến và nhận chiến lợi phẩm. Lượt cũ tiếp tục theo luật thưởng lúc bắt đầu. Lượt mới dùng ngã rẽ và luật thưởng mới. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

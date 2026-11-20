@@ -54,7 +54,7 @@ func _ready() -> void:
 func configure(current_run: RunData) -> void:
 	run = current_run
 	state = run.battle
-	var floor_data: Dictionary = RunData.FLOORS[run.floor]
+	var floor_data: Dictionary = run.stage_at(run.floor)
 	room_title = floor_data.name
 	enemy_name = floor_data.enemy
 	hero_name = "Cổ sư Áo rêu" if run.profile.hero == "ao-reu" else "Cổ sư Huyền bào"
