@@ -1,0 +1,495 @@
+{
+  "name": "Gói Tửu Trùng (Nhất/Nhị chuyển) & Bãi Đá Suối Sấm cho Godot Vượt Thanh Mao",
+  "loreReferences": [
+    "Tửu Trùng Nhất chuyển (Chương 121 bản Việt): Hình dáng con tằm béo tròn toàn thân tỏa ánh trắng, lọc tạp chất tinh luyện chân nguyên Thanh Đồng.",
+    "Tứ Vị Tửu Trùng Nhị chuyển (Chương 121 & Chương 225 bản Việt): Hợp luyện từ hai Tửu Trùng và bốn loại rượu chua/ngọt/đắng/cay, tinh luyện chân nguyên Xích Thiết Nhị chuyển.",
+    "Cơ chế demo tách riêng khỏi nguyên tác: Trạng thái tích 1 hoặc 2 cộng dồn (stack_1 / stack_2) để cường hóa cú đánh Tay không (+12 sát thương trong gu_catalog.gd) và đòn Dẫn lôi qua nước trên Bãi Đá Suối Sấm."
+  ],
+  "godotRender": {
+    "boardSize": [
+      803,
+      477
+    ],
+    "origin": [
+      39,
+      35
+    ],
+    "tileSize": [
+      91,
+      82
+    ],
+    "heroSpan": 112,
+    "pivotRatio": [
+      -0.5,
+      -0.77
+    ],
+    "waterMaskFormula": "mask = (hasN?1:0) | (hasE?2:0) | (hasS?4:0) | (hasW?8:0); col = mask % 4; row = mask / 4",
+    "drawOrderPerTile": [
+      "1. wet_stone_slab (wet-stone-tiles.png row 0, col = variant % 4)",
+      "2. shallow_ford_bed (wet-stone-tiles.png row 1, col 2..3 if cell in rules.water)",
+      "3. water_mask_16 (water-mask-16.png col = mask % 4, row = floor(mask / 4))",
+      "4. arena grid line",
+      "5. wet_boulder (wet-stone-tiles.png row 1, col 0..1 if cell in rules.rocks) + wet_boulder_rim (3,1)",
+      "6. water_electric_telegraph (water-electric-telegraph.png — separate layer keeping center transparent so water & actors stay crisp)",
+      "7. safe_wet_stone_cell (2,1) if selectable move target",
+      "8. actor_ring -> hero / enemy -> Tuu Trung / Tu Vi Tuu Trung VFX overlay"
+    ]
+  },
+  "assets": {
+    "tuu-trung-co": {
+      "rank": 1,
+      "atlasFile": "res://assets/thunder-ford-review/tuu-trung-co.png",
+      "iconFile": "res://assets/thunder-ford-review/tuu-trung-co-icon.png",
+      "editableSource": "res://assets/thunder-ford-review/tuu-trung-co.aseprite",
+      "width": 768,
+      "height": 256,
+      "cellSize": [
+        128,
+        128
+      ],
+      "iconSize": [
+        32,
+        32
+      ],
+      "macroPixelGrid": [
+        2,
+        2
+      ],
+      "grid": [
+        6,
+        2
+      ],
+      "footAnchor128": [
+        64,
+        120
+      ],
+      "centerAnchor128": [
+        64,
+        76
+      ],
+      "godotSpan": 112,
+      "pivotRatio": [
+        -0.5,
+        -0.77
+      ],
+      "clips": {
+        "refine_cast": {
+          "row": 0,
+          "count": 6,
+          "loop": false,
+          "durationMs": 540,
+          "durationsMs": [
+            80,
+            85,
+            90,
+            95,
+            95,
+            95
+          ],
+          "qiGainMs": 255,
+          "bboxes128": [
+            {
+              "x0": 44,
+              "y0": 76,
+              "x1": 89,
+              "y1": 123
+            },
+            {
+              "x0": 40,
+              "y0": 74,
+              "x1": 89,
+              "y1": 97
+            },
+            {
+              "x0": 38,
+              "y0": 60,
+              "x1": 91,
+              "y1": 125
+            },
+            {
+              "x0": 34,
+              "y0": 52,
+              "x1": 95,
+              "y1": 127
+            },
+            {
+              "x0": 36,
+              "y0": 58,
+              "x1": 93,
+              "y1": 127
+            },
+            {
+              "x0": 42,
+              "y0": 54,
+              "x1": 87,
+              "y1": 59
+            }
+          ]
+        },
+        "qi_pulse": {
+          "row": 1,
+          "count": 6,
+          "loop": true,
+          "durationMs": 600,
+          "durationsMs": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "bboxes128": [
+            {
+              "x0": 36,
+              "y0": 74,
+              "x1": 91,
+              "y1": 101
+            },
+            {
+              "x0": 38,
+              "y0": 66,
+              "x1": 93,
+              "y1": 97
+            },
+            {
+              "x0": 36,
+              "y0": 62,
+              "x1": 91,
+              "y1": 97
+            },
+            {
+              "x0": 38,
+              "y0": 76,
+              "x1": 93,
+              "y1": 95
+            },
+            {
+              "x0": 36,
+              "y0": 68,
+              "x1": 91,
+              "y1": 89
+            },
+            {
+              "x0": 38,
+              "y0": 70,
+              "x1": 93,
+              "y1": 97
+            }
+          ]
+        }
+      }
+    },
+    "tu-vi-tuu-trung": {
+      "rank": 2,
+      "atlasFile": "res://assets/thunder-ford-review/tu-vi-tuu-trung.png",
+      "iconFile": "res://assets/thunder-ford-review/tu-vi-tuu-trung-icon.png",
+      "editableSource": "res://assets/thunder-ford-review/tu-vi-tuu-trung.aseprite",
+      "width": 768,
+      "height": 384,
+      "cellSize": [
+        128,
+        128
+      ],
+      "iconSize": [
+        32,
+        32
+      ],
+      "macroPixelGrid": [
+        2,
+        2
+      ],
+      "grid": [
+        6,
+        3
+      ],
+      "footAnchor128": [
+        64,
+        120
+      ],
+      "centerAnchor128": [
+        64,
+        76
+      ],
+      "godotSpan": 112,
+      "pivotRatio": [
+        -0.5,
+        -0.77
+      ],
+      "clips": {
+        "refine_cast": {
+          "row": 0,
+          "count": 6,
+          "loop": false,
+          "durationMs": 540,
+          "durationsMs": [
+            80,
+            85,
+            90,
+            95,
+            95,
+            95
+          ],
+          "bboxes128": [
+            {
+              "x0": 28,
+              "y0": 80,
+              "x1": 101,
+              "y1": 99
+            },
+            {
+              "x0": 34,
+              "y0": 72,
+              "x1": 95,
+              "y1": 97
+            },
+            {
+              "x0": 36,
+              "y0": 72,
+              "x1": 93,
+              "y1": 125
+            },
+            {
+              "x0": 34,
+              "y0": 70,
+              "x1": 95,
+              "y1": 125
+            },
+            {
+              "x0": 40,
+              "y0": 72,
+              "x1": 89,
+              "y1": 125
+            },
+            {
+              "x0": 44,
+              "y0": 72,
+              "x1": 85,
+              "y1": 97
+            }
+          ]
+        },
+        "stack_1": {
+          "row": 1,
+          "count": 6,
+          "loop": true,
+          "durationMs": 660,
+          "durationsMs": [
+            110,
+            110,
+            110,
+            110,
+            110,
+            110
+          ],
+          "bboxes128": [
+            {
+              "x0": 32,
+              "y0": 84,
+              "x1": 97,
+              "y1": 121
+            },
+            {
+              "x0": 46,
+              "y0": 78,
+              "x1": 83,
+              "y1": 99
+            },
+            {
+              "x0": 46,
+              "y0": 78,
+              "x1": 83,
+              "y1": 121
+            },
+            {
+              "x0": 32,
+              "y0": 84,
+              "x1": 97,
+              "y1": 93
+            },
+            {
+              "x0": 46,
+              "y0": 78,
+              "x1": 83,
+              "y1": 121
+            },
+            {
+              "x0": 46,
+              "y0": 78,
+              "x1": 83,
+              "y1": 99
+            }
+          ]
+        },
+        "stack_2": {
+          "row": 2,
+          "count": 6,
+          "loop": true,
+          "durationMs": 600,
+          "durationsMs": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "note": "Trạng thái 2 cộng dồn: cả 4 hạt Chua/Ngọt/Đắng/Cay + luồng tay Xích Thiết + vòng chân sáng rõ hơn hẳn stack_1",
+          "bboxes128": [
+            {
+              "x0": 30,
+              "y0": 70,
+              "x1": 101,
+              "y1": 127
+            },
+            {
+              "x0": 32,
+              "y0": 64,
+              "x1": 97,
+              "y1": 127
+            },
+            {
+              "x0": 32,
+              "y0": 62,
+              "x1": 97,
+              "y1": 127
+            },
+            {
+              "x0": 30,
+              "y0": 70,
+              "x1": 101,
+              "y1": 127
+            },
+            {
+              "x0": 32,
+              "y0": 64,
+              "x1": 97,
+              "y1": 127
+            },
+            {
+              "x0": 32,
+              "y0": 62,
+              "x1": 97,
+              "y1": 127
+            }
+          ]
+        }
+      }
+    },
+    "wet-stone-tiles": {
+      "atlasFile": "res://assets/thunder-ford-review/wet-stone-tiles.png",
+      "width": 364,
+      "height": 164,
+      "cellSize": [
+        91,
+        82
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "tiles": {
+        "wet_stone_0": [
+          0,
+          0
+        ],
+        "wet_stone_1": [
+          1,
+          0
+        ],
+        "wet_stone_2": [
+          2,
+          0
+        ],
+        "wet_stone_3": [
+          3,
+          0
+        ],
+        "wet_boulder_a": [
+          0,
+          1
+        ],
+        "wet_boulder_b": [
+          1,
+          1
+        ],
+        "shallow_ford_a": [
+          2,
+          1
+        ],
+        "shallow_ford_b": [
+          3,
+          1
+        ]
+      }
+    },
+    "water-mask-16": {
+      "atlasFile": "res://assets/thunder-ford-review/water-mask-16.png",
+      "editableSource": "res://assets/thunder-ford-review/water-mask-16.aseprite",
+      "width": 364,
+      "height": 328,
+      "cellSize": [
+        91,
+        82
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "bitWeights": {
+        "N": 1,
+        "E": 2,
+        "S": 4,
+        "W": 8
+      }
+    },
+    "water-electric-telegraph": {
+      "atlasFile": "res://assets/thunder-ford-review/water-electric-telegraph.png",
+      "editableSource": "res://assets/thunder-ford-review/water-electric-telegraph.aseprite",
+      "width": 364,
+      "height": 164,
+      "cellSize": [
+        91,
+        82
+      ],
+      "grid": [
+        4,
+        2
+      ],
+      "tiles": {
+        "water_shock_origin": [
+          0,
+          0
+        ],
+        "water_shock_spread_h": [
+          1,
+          0
+        ],
+        "water_shock_spread_v": [
+          2,
+          0
+        ],
+        "water_shock_spread_cross": [
+          3,
+          0
+        ],
+        "water_shock_pulse_b": [
+          0,
+          1
+        ],
+        "water_shock_edge_stop": [
+          1,
+          1
+        ],
+        "safe_wet_stone_cell": [
+          2,
+          1
+        ],
+        "wet_boulder_rim": [
+          3,
+          1
+        ]
+      }
+    }
+  }
+}
