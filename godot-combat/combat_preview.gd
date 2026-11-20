@@ -2,6 +2,8 @@ extends Control
 
 signal action_committed
 signal battle_finished
+signal training_requested
+signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
 const Arena = preload("res://arena.gd")
@@ -21,6 +23,9 @@ var room_title := "Rìa rừng Thanh Mao"
 var enemy_name := "Điện Lang"
 var hero_name := "Cổ sư Huyền bào"
 var grade := "Đinh đẳng"
+var skin := "huyen-bao"
+var room := 0
+var training: Dictionary = {}
 var field: Arena
 var turn_label: Label
 var hp_label: Label
@@ -34,6 +39,7 @@ var hp_bar: ProgressBar
 var qi_bar: ProgressBar
 var wolf_bar: ProgressBar
 var reset_button: Button
+var training_button: Button
 var actions := {}
 var report: Array[String] = []
 var headline := SystemFont.new()
@@ -55,10 +61,22 @@ func configure(current_run: RunData) -> void:
 	run = current_run
 	state = run.battle
 	var floor_data: Dictionary = run.stage_at(run.floor)
-	room_title = floor_data.name
-	enemy_name = floor_data.enemy
-	hero_name = "Cổ sư Áo rêu" if run.profile.hero == "ao-reu" else "Cổ sư Huyền bào"
-	grade = "%s · Nguyên Hải %d%%" % [run.profile.grade, run.profile.sea_pct]
+	var known_grade := "%s · Nguyên Hải %d%%" % [run.profile.grade, run.profile.sea_pct]
+	configure_identity(floor_data, run.floor, run.profile.hero, known_grade)
+
+
+func configure_training(settings: Dictionary) -> void:
+	training = settings.duplicate()
+	configure_identity(training.stage, training.room, training.hero, training.grade)
+
+
+func configure_identity(stage: Dictionary, arena_room: int, chosen_skin: String, starting_grade: String) -> void:
+	room_title = stage.name
+	enemy_name = stage.enemy
+	room = arena_room
+	skin = chosen_skin
+	grade = starting_grade
+	hero_name = "Cổ sư Áo rêu" if skin == "ao-reu" else "Cổ sư Huyền bào"
 
 
 func style(fill: Color, border: Color, radius: int = 3) -> StyleBoxFlat:
@@ -127,17 +145,24 @@ func build_hud() -> void:
 	var mode := "Trận theo lượt"
 	if run != null:
 		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+	elif not training.is_empty():
+		mode = "Luyện trận"
 	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
 	turn_label = label("", 678, 105, 160, 33, 20, GOLD, true)
 	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	reset_button = button("Chơi lại trận", 1006, 44, 160, 46)
 	reset_button.visible = run == null
 	reset_button.pressed.connect(reset_battle)
+	if run != null:
+		training_button = button("Luyện trận", 1006, 44, 160, 46)
+		training_button.pressed.connect(func(): training_requested.emit())
+	elif not training.is_empty():
+		training_button = button("Đổi thiết lập", 833, 44, 160, 46)
+		training_button.pressed.connect(func(): training_setup_requested.emit())
 	panel(33, 151, 805, 481)
 	field = Arena.new()
-	if run != null:
-		field.room = run.floor
-		field.skin = run.profile.hero
+	field.room = room
+	field.skin = skin
 	set_bounds(field, 34, 153, 803, 477)
 	field.cell_selected.connect(select_cell)
 	field.cell_focused.connect(inspect_cell)
@@ -235,7 +260,13 @@ func update_hud() -> void:
 func reset_battle() -> void:
 	if busy or run != null:
 		return
-	state = Rules.new()
+	if training.is_empty():
+		state = Rules.new()
+	else:
+		state = RunData.battle_for(training.stage, 0, Rules.MAX_HP, training.qi, training.max_qi)
+	if is_instance_valid(qi_bar):
+		qi_bar.max_value = state.max_qi
+		wolf_bar.max_value = state.wolf_max
 	show_battle()
 
 
@@ -355,9 +386,13 @@ func resolve(action: String, cell: int = -1) -> void:
 	for control in actions.values():
 		control.disabled = true
 	reset_button.disabled = true
+	if is_instance_valid(training_button):
+		training_button.disabled = true
 	await field.play_exchange(exchange)
 	busy = false
 	reset_button.disabled = false
+	if is_instance_valid(training_button):
+		training_button.disabled = false
 	for note in exchange.notes:
 		report.push_front(note)
 	report = report.slice(0, 4)

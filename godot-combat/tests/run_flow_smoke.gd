@@ -85,6 +85,44 @@ func play_commands(commands: Array) -> void:
 		await shoot(command[0], command[1] if command.size() == 2 else -1)
 
 
+func training_detour() -> void:
+	var save_before := FileAccess.get_file_as_string(path)
+	var snapshot_before: Dictionary = flow.run.snapshot().duplicate(true)
+	var open: Button = flow.current.training_button
+	click(open.get_global_rect().get_center())
+	await process_frame
+	check(flow.current.name == "TrainingSetup", "Could not open training during a run")
+	var opponent := flow.find_child("training_opponent", true, false) as OptionButton
+	var hero := flow.find_child("training_hero", true, false) as OptionButton
+	var grade := flow.find_child("training_grade", true, false) as OptionButton
+	var qi := flow.find_child("training_qi", true, false) as SpinBox
+	if opponent == null or hero == null or grade == null or qi == null:
+		check(false, "Training selection controls are missing")
+		return
+	opponent.select(3)
+	hero.select(1)
+	grade.select(3)
+	grade.item_selected.emit(3)
+	check(qi.max_value == 7, "Training Qi limit did not follow aptitude")
+	qi.value = 0
+	await capture("godot-luyen-thiet-lap.png")
+	await click_button("training_begin")
+	check(flow.current.state.wolf_hp == 84 and flow.current.state.qi == 0 and flow.current.state.max_qi == 7
+		and flow.current.field.skin == "ao-reu", "Training ignored opponent, skin or essence options")
+	await capture("godot-luyen-cuong-dien-lang.png")
+	await shoot(KEY_4)
+	check(flow.current.state.qi == 1 and flow.current.state.hp == 41, "Training did not use campaign combat laws")
+	key(KEY_R)
+	check(flow.current.state.hp == 48 and flow.current.state.qi == 0 and flow.current.state.turn == 1,
+		"Training retry changed the start conditions")
+	open = flow.current.training_button
+	click(open.get_global_rect().get_center())
+	await process_frame
+	await click_button("training_back")
+	check(flow.run.snapshot() == snapshot_before and FileAccess.get_file_as_string(path) == save_before
+		and flow.current.state == flow.run.battle, "Training modified the campaign or did not restore its battle")
+
+
 func play_route(id: String, second_room: Array, boss: Array) -> void:
 	var elite := id == "elite"
 	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5)
@@ -110,6 +148,8 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		and flow.run.battle.wolf_hp == (62 if elite else 56), "Chosen route or first reward did not reach room two")
 	if not elite:
 		await capture("godot-khe-da-an-toan.png")
+	else:
+		await training_detour()
 	await play_commands(second_room)
 	check(flow.run.phase == "reward" and flow.run.floor == 1, "Second victory did not open a reward")
 	check(not flow.run.reward_options().has("refine"), "Refine may only be awarded once")

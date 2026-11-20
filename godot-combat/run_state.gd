@@ -60,9 +60,13 @@ func stage_at(index: int) -> Dictionary:
 func encounter(hp: int, qi: int, max_qi: int) -> Rules:
 	var stage := stage_at(floor)
 	var variant := floori(seed / pow(3, floor)) % 3
+	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus)
+
+
+static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi: int, bonus: int = 0) -> Rules:
 	return Rules.new({"hp": hp, "qi": qi, "max_qi": max_qi, "wolf_hp": stage.hp,
 		"rocks": stage.rooms[variant], "heavy": stage.heavy, "damage": stage.damage,
-		"bite": stage.bite, "pace": stage.pace, "moon_bonus": moon_bonus})
+		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus})
 
 
 func perform(action: String, target: int = -1) -> Dictionary:

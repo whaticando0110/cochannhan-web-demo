@@ -1,4 +1,36 @@
-# Kế hoạch demo web Cổ Chân Nhân
+# Kế hoạch roguelike Godot · Vượt Thanh Mao
+
+Ba trận của chương đầu luyện ba kỹ năng theo thứ tự. Đọc vùng báo đòn, tận dụng địa hình, rồi quản lý chân nguyên trước trùm. Đợt đầu dùng hai tuyến đã có để thử địa hình và các kiểu dùng Cổ trước khi mở chương kế.
+
+| Màn | Thử thách và quyết định | Cổ hoặc vật phẩm xuất hiện |
+| --- | --- | --- |
+| Đại điển Khai Khiếu | Đi qua sông và biển Nguyệt Lan, nhận tư chất và sức chứa chân nguyên. Sau khi gục có thể giữ kết quả cũ để vào lượt mới. | Hy Vọng Cổ xuất hiện trong nghi lễ. Nguyệt Quang là Cổ đánh đầu tiên sau Đại điển. |
+| Rìa rừng Thanh Mao | Học né vùng vồ, đánh kề, thủ thế để hồi chân nguyên. Thắng trận chọn tuyến và cân nhắc hồi sức hay lấy thêm cách đánh. | Giữ Nguyệt Quang. Đề xuất cho **Ngọc Bì Cổ** cạnh tranh với một lựa chọn thưởng trước màn hai. |
+| Khe đá Hoang Nha | Lối hẹp và vách che buộc chọn giữa giữ tầm bắn và đi vòng. Thử vách chặn đường bắn rồi cân lại tầm Nguyệt Quang. | Có thể chọn một lá **Sinh Cơ Diệp** để mang vào hang trùm hoặc hồi phục ngay tại chỗ. |
+| Lối săn tinh anh | Tinh anh luân phiên vồ vùng quanh mục tiêu và lao một hàng. Có khoảng đổi vị trí giữa hai lần nặng. Giữ phần thưởng nhỉnh hơn tuyến khe đá. | Thử giá trị che chắn của Ngọc Bì khi vừa phải né vừa phải giữ chân nguyên. Mở rộng Nguyên Hải tiếp tục nằm trong nhóm thưởng riêng của tuyến. |
+| Điểm nghỉ trước hang | Thử một lượt chọn ngắn giữa hấp thụ nguyên thạch, chuẩn bị lá trị thương hoặc đổi Cổ đang mang. Cho xem lượng hồi và đồ phải dùng trước khi xác nhận. | Sinh Cơ Diệp là vật phẩm tiêu hao. Cổ đã luyện giữ tác dụng trong lượt chơi. |
+| Hang Cuồng Điện Lang | Hai đòn báo trước bằng hình khác nhau, vồ vùng và quét hành lang. Dưới một nửa sinh lực, trùm đổi thứ tự đòn và có nhịp hồi sau đòn nặng để người chơi phản công. | Chiến thắng ghi nhận bí phương Nhị chuyển để mở chương sau. |
+| Chương tiếp theo | Thử địch cận chiến kết hợp địch đánh xa ở sân lớn hơn. Dùng hai Cổ ở hai vai trò khác nhau và có một điểm hợp luyện. | **Nguyệt Mang Cổ** cho nhánh công, **Bạch Ngọc Cổ** cho nhánh thủ sau mốc Nhị chuyển. **Địa Thính Nhục Nhĩ Thảo** dành cho lượt khám phá có phục kích. |
+
+## Luật để thử
+
+- Trong lượt chơi, giữ **hai khe Cổ**, gồm một khe công và một khe tùy chọn cho bản cân bằng đầu. Có một khe vật phẩm tiêu hao. Thủ thế, di chuyển và tay không là hành động cơ bản.
+- Đề xuất **Ngọc Bì** tốn 1 chân nguyên, dùng một hành động để chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Tác dụng còn lại hiện rõ trên HUD. Nếu vừa thủ thế vừa có lớp ngọc, áp dụng thủ thế trước rồi trừ lớp ngọc, mỗi bước hiển thị trong phần xem trước.
+- Đề xuất **Sinh Cơ Diệp** hồi 12 sinh lực tối đa đến trần và tiêu hao lá khi dùng. Dược thảo hồi giữa màn, còn lá để dành cho lúc nước sôi lửa bỏng trong trận. Tính lượng hồi và đòn đáp trả trên cùng phần xem trước.
+- Cảnh giới mở cùng chương, tư chất quyết định dung lượng chân nguyên. Sau khi hồi sinh, trang bị, vật phẩm và hiệu ứng của lượt cũ được đặt lại. Bỏ qua Khai Khiếu lấy lại hồ sơ nhân vật và tư chất trước đó.
+- Nền, ô chặn, đòn trùm và thưởng đã chọn cần khôi phục đúng sau khi tải lại. Mỗi bản đồ phải có đường đi hợp lệ và ít nhất một cách tránh đòn được báo. Kiểm Đinh đẳng với 0 chân nguyên tại màn hai, cả khi chọn hồi phục lẫn lấy Cổ.
+
+Các con số, cách nhận đồ và hành vi địch ở trên là thiết kế game đề xuất. Trong truyện, Ngọc Bì là Cổ phòng ngự Nhất chuyển, Bạch Ngọc và Nguyệt Mang là Nhị chuyển, còn Sinh Cơ Diệp là lá trị thương do Cửu Diệp Sinh Cơ Thảo sinh ra. Địa Thính Nhục Nhĩ Thảo dùng để nghe động tĩnh. [Chương 98](https://truyenfull.live/co-chan-nhan/chuong-98/) · [Chương 102](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-102) · [Chương 130](https://truyenfull.live/co-chan-nhan/chuong-130/)
+
+## Thứ tự triển khai
+
+1. Luyện trận dùng cùng bộ luật với Vượt Thanh Mao và tách bản lưu. Đây là nơi thử từng Cổ và cách đánh trùm.
+2. Codex dựng Ngọc Bì và Sinh Cơ Diệp trong Luyện trận, rồi nối vào gói thưởng chương đầu khi đã đọc được tác dụng và khung va chạm. Gemini làm nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh asset riêng.
+3. Codex thêm vách che ở Khe đá, đòn lao một hàng của tinh anh và điểm nghỉ ngắn. Gemini làm viền vách/ô chặn và hình báo đòn sau khi chốt mặt bằng. Duyệt một màn tại một thời điểm.
+4. Chốt hai đòn và nhịp hồi của Cuồng Điện Lang. Cân lại phần thưởng hai tuyến rồi chơi toàn chương ở bốn bậc tư chất. Sau đó mới thiết kế thử chương Nhị chuyển và hợp luyện.
+
+<details>
+<summary>Kế hoạch của bản thử thú triều trước đây</summary>
 
 Tài liệu này ghi kế hoạch của bản thử thú triều. Hướng web hiện hành là [roguelike theo lượt](../README.md), dùng lại Đại điển Khai Khiếu làm phần mở đầu.
 
@@ -27,3 +59,5 @@ Kịch bản mở đầu nối lễ Khai Khiếu sang thú triều bằng một 
 - Nối kết quả Đại điển vào hồ sơ nhân vật và hiện tác dụng cụ thể trên thanh chân nguyên. Chốt danh sách Cổ nhất chuyển từ dữ liệu dự án trước khi gắn chỉ số.
 - Nối cảnh Khai Khiếu với điểm xuất phát trên map hiện có. Chèn báo động và mục tiêu gặp đồng đội làm tín hiệu chuyển cảnh.
 - Thử hai giới tính, mỗi Cổ khởi đầu, chơi lại và thử lại trận trên máy tính và điện thoại trước khi dựng các cảnh tiếp theo.
+
+</details>

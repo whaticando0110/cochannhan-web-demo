@@ -8,6 +8,9 @@ const REU = preload("res://assets/ao-reu-selection.png")
 const GOLD := Color("#f1d89f")
 const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
+const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2]]
+const TRAINING_ROOMS := [0, 1, 1, 2]
+const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
 var ceremony_limit := 0
@@ -17,6 +20,8 @@ var menu: Control
 var headline := SystemFont.new()
 var status: Label
 var save_problem := false
+var training_return: Callable
+var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4}
 
 
 func _ready() -> void:
@@ -119,6 +124,7 @@ func show_entry() -> void:
 	menu = make_menu()
 	switch_to(menu)
 	text(menu, "CỔ CHÂN NHÂN    /    THANH MAO SƠN", Rect2(94, 48, 980, 43), 20, GREEN)
+	button(menu, "Luyện trận", Rect2(919, 53, 185, 44), open_training.bind(show_entry))
 	var reborn := run != null and run.phase == "death"
 	text(menu, "Hồi sinh" if reborn else "Đại điển Khai Khiếu", Rect2(92, 96, 1000, 83), 58, GOLD, true)
 	var lead := "Chọn nhân vật để qua hang Nguyệt Lan. Tư chất quyết định sức chứa chân nguyên khi xuất trận."
@@ -173,6 +179,7 @@ func show_run() -> void:
 	next.configure(run)
 	next.action_committed.connect(persist)
 	next.battle_finished.connect(show_result)
+	next.training_requested.connect(open_training.bind(show_run))
 	switch_to(next)
 	if save_problem:
 		next.hint_label.text = "Không ghi được bản lưu. Lượt chơi vẫn tiếp tục."
@@ -183,6 +190,7 @@ func show_result() -> void:
 	switch_to(menu)
 	text(menu, "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()],
 		Rect2(96, 60, 1000, 41), 19, GREEN)
+	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.stage_at(run.floor)
 	var title: String
 	var description: String
@@ -291,3 +299,72 @@ func reward_delta(id: String, preview: Dictionary) -> String:
 		"expand":
 			return "Sức chứa %d → %d" % [run.battle.max_qi, preview.max_qi]
 	return ""
+
+
+func open_training(return_to: Callable) -> void:
+	training_return = return_to
+	show_training_setup()
+
+
+func dropdown(parent: Control, id: String, title: String, items: Array, selected: int, bounds: Rect2) -> OptionButton:
+	text(parent, title, Rect2(bounds.position, Vector2(bounds.size.x, 34)), 18)
+	var select := OptionButton.new()
+	select.name = id
+	select.position = bounds.position + Vector2(0, 42)
+	select.size = bounds.size
+	select.add_theme_font_size_override("font_size", 20)
+	for item in items:
+		select.add_item(item)
+	select.select(selected)
+	parent.add_child(select)
+	return select
+
+
+func show_training_setup() -> void:
+	menu = make_menu()
+	menu.name = "TrainingSetup"
+	switch_to(menu)
+	text(menu, "Luyện trận", Rect2(94, 75, 990, 95), 57, GOLD, true)
+	text(menu, "Chọn đối thủ và lượng chân nguyên để thử các cách đánh trên cùng luật với Vượt Thanh Mao.",
+		Rect2(96, 174, 1006, 56), 22)
+	var card := panel(menu, Rect2(96, 252, 1008, 284), Color("#1a2b25"), Color("#586c54"))
+	var opponent_items: Array = []
+	for stage in TRAINING_STAGES:
+		opponent_items.append(stage.enemy + " · " + stage.name)
+	var opponent := dropdown(card, "training_opponent", "Đối thủ", opponent_items, training_options.opponent, Rect2(28, 27, 452, 48))
+	var hero := dropdown(card, "training_hero", "Nhân vật", ["Huyền bào", "Áo rêu"], training_options.hero, Rect2(525, 27, 452, 48))
+	var grades := dropdown(card, "training_grade", "Tư chất", TRAINING_GRADES, training_options.grade, Rect2(28, 147, 452, 48))
+	text(card, "Chân nguyên ban đầu", Rect2(525, 147, 452, 34), 18)
+	var qi := SpinBox.new()
+	qi.name = "training_qi"
+	qi.position = Vector2(525, 189)
+	qi.size = Vector2(204, 48)
+	qi.min_value = 0
+	qi.max_value = training_options.grade + 4
+	qi.value = training_options.qi
+	qi.suffix = "/ %d" % int(qi.max_value)
+	qi.get_line_edit().add_theme_font_size_override("font_size", 20)
+	card.add_child(qi)
+	grades.item_selected.connect(func(index: int):
+		var was_full := qi.value == qi.max_value
+		qi.max_value = index + 4
+		qi.suffix = "/ %d" % int(qi.max_value)
+		if was_full:
+			qi.value = qi.max_value)
+	var back := button(menu, "Quay lại", Rect2(96, 565, 220, 52), training_return)
+	back.name = "training_back"
+	var begin := button(menu, "Bắt đầu luyện", Rect2(807, 565, 297, 52), func():
+		training_options = {"opponent": opponent.selected, "grade": grades.selected, "hero": hero.selected, "qi": int(qi.value)}
+		show_training_battle())
+	begin.name = "training_begin"
+
+
+func show_training_battle() -> void:
+	var next := BattleScene.instantiate()
+	var grade_index: int = training_options.grade
+	var opponent: int = training_options.opponent
+	next.configure_training({"stage": TRAINING_STAGES[opponent], "room": TRAINING_ROOMS[opponent],
+		"hero": "ao-reu" if training_options.hero == 1 else "huyen-bao",
+		"grade": TRAINING_GRADES[grade_index], "max_qi": grade_index + 4, "qi": training_options.qi})
+	next.training_setup_requested.connect(show_training_setup)
+	switch_to(next)

@@ -19,6 +19,8 @@ Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi the
 
 Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Thẻ tuyến cho biết sinh lực địch, sát thương và mức hồi phục sau chiến thắng. Mỗi thẻ chiến lợi phẩm hiện chỉ số trước và sau khi nhận. Nguyên thạch hồi chân nguyên. Tuyến tinh anh có thêm **Mở rộng Nguyên Hải** để tăng sức chứa. Hai tuyến đều dẫn tới Hang Cuồng Điện Lang và ghi lại chiến lợi phẩm ở màn kết quả.
 
+**Luyện trận** mở được từ màn chọn nhân vật, giữa các lượt chiến đấu và ở màn chọn thưởng. Chọn đối thủ, skin, tư chất và chân nguyên ban đầu. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện tách riêng tiến độ. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+
 Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ, chọn tuyến và nhận chiến lợi phẩm. Lượt cũ tiếp tục theo luật thưởng lúc bắt đầu. Lượt mới dùng ngã rẽ và luật thưởng mới. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
