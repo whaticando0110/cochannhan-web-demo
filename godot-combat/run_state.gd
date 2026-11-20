@@ -16,6 +16,7 @@ const ROUTES := {
 	"elite": {"name": "Lối săn tinh anh", "enemy": "Điện Lang tinh anh", "damage": 17, "bite": 11, "hp": 62,
 		"heavy": "Vồ xuyên khe", "pace": 2, "rooms": [[5, 12, 26, 36], [3, 10, 29, 38], [2, 11, 26, 35]]},
 }
+const RAVINE_COVERS := [[4, 11, 20, 30], [5, 12, 19, 37], [2, 13, 18, 35]]
 const LEGACY_REWARDS := {
 	"medicine": ["Dược thảo", "Hồi tối đa 24 sinh lực"],
 	"stone": ["Nguyên thạch", "+1 sức chứa và hồi đầy chân nguyên"],
@@ -26,7 +27,10 @@ const REWARD_NAMES := {
 	"stone": "Nguyên thạch",
 	"refine": "Luyện Nguyệt Quang",
 	"expand": "Mở rộng Nguyên Hải",
+	"jade_skin": "Ngọc Bì Cổ",
+	"vital_leaf": "Sinh Cơ Diệp",
 }
+const REST_OPTIONS := {"rest_hp": "Băng bó", "rest_qi": "Tĩnh tọa", "rest_skip": "Đi tiếp"}
 const NORMAL_HEAL := 18
 const NORMAL_QI := 3
 const ELITE_HEAL := 22
@@ -44,7 +48,7 @@ var battle: Rules
 var journal: Array = []
 
 
-func _init(awakened: Dictionary, run_seed: int, save_version: int = 2) -> void:
+func _init(awakened: Dictionary, run_seed: int, save_version: int = 3) -> void:
 	profile = awakened
 	seed = run_seed
 	version = save_version
@@ -52,21 +56,27 @@ func _init(awakened: Dictionary, run_seed: int, save_version: int = 2) -> void:
 
 
 func stage_at(index: int) -> Dictionary:
-	if index == 1 and version == 2 and ROUTES.has(route):
+	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
 
 
-func encounter(hp: int, qi: int, max_qi: int) -> Rules:
+func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules:
 	var stage := stage_at(floor)
 	var variant := floori(seed / pow(3, floor)) % 3
-	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus)
+	var tactic := ""
+	if version >= 3:
+		tactic = route if floor == 1 else "king" if floor == 2 else ""
+	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic)
 
 
-static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi: int, bonus: int = 0) -> Rules:
+static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi: int, bonus: int = 0,
+		arsenal: Dictionary = {}, tactic: String = "") -> Rules:
 	return Rules.new({"hp": hp, "qi": qi, "max_qi": max_qi, "wolf_hp": stage.hp,
-		"rocks": stage.rooms[variant], "heavy": stage.heavy, "damage": stage.damage,
-		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus})
+		"rocks": RAVINE_COVERS[variant] if tactic == "ravine" else stage.rooms[variant],
+		"heavy": stage.heavy, "damage": stage.damage,
+		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
+		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0)})
 
 
 func perform(action: String, target: int = -1) -> Dictionary:
@@ -82,7 +92,7 @@ func perform(action: String, target: int = -1) -> Dictionary:
 		if floor == FLOORS.size() - 1:
 			phase = "victory"
 		else:
-			phase = "route" if floor == 0 and version == 2 else "reward"
+			phase = "route" if floor == 0 and version >= 2 else "reward"
 	return exchange
 
 
@@ -111,13 +121,19 @@ func reward_options() -> Dictionary:
 		options.refine = [REWARD_NAMES.refine, "Nguyệt Quang mạnh hơn trong lượt chơi này."]
 	if elite_reward:
 		options.expand = [REWARD_NAMES.expand, "Thêm 1 sức chứa. Lượng chân nguyên giữ nguyên."]
+	if version >= 3:
+		if floor == 0:
+			options.jade_skin = [REWARD_NAMES.jade_skin, "Học tạo lớp ngọc chặn một đòn."]
+		elif route == "ravine":
+			options.vital_leaf = [REWARD_NAMES.vital_leaf, "Mang một lá trị thương vào hang."]
 	return options
 
 
 func reward_preview(id: String) -> Dictionary:
 	if not reward_options().has(id):
 		return {}
-	var outcome := {"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi, "moon_bonus": moon_bonus}
+	var outcome := {"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi, "moon_bonus": moon_bonus,
+		"jade_skin": battle.jade_skin, "leaves": battle.leaves}
 	var elite_reward := floor == 1 and route == "elite"
 	match id:
 		"medicine":
@@ -133,6 +149,10 @@ func reward_preview(id: String) -> Dictionary:
 			outcome.moon_bonus += REFINE_BONUS
 		"expand":
 			outcome.max_qi += 1
+		"jade_skin":
+			outcome.jade_skin = true
+		"vital_leaf":
+			outcome.leaves += 1
 	return outcome
 
 
@@ -142,8 +162,28 @@ func reward(id: String) -> bool:
 		return false
 	moon_bonus = outcome.moon_bonus
 	floor += 1
+	phase = "rest" if floor == 2 and version >= 3 else "battle"
+	battle = encounter(outcome.hp, outcome.qi, outcome.max_qi, outcome)
+	journal.append([id])
+	return true
+
+
+func rest_preview(id: String) -> Dictionary:
+	if phase != "rest" or not REST_OPTIONS.has(id):
+		return {}
+	return {
+		"hp": mini(Rules.MAX_HP, battle.hp + (8 if id == "rest_hp" else 0)),
+		"qi": mini(battle.max_qi, battle.qi + (1 if id == "rest_qi" else 0)),
+	}
+
+
+func rest(id: String) -> bool:
+	var outcome := rest_preview(id)
+	if outcome.is_empty():
+		return false
+	battle.hp = outcome.hp
+	battle.qi = outcome.qi
 	phase = "battle"
-	battle = encounter(outcome.hp, outcome.qi, outcome.max_qi)
 	journal.append([id])
 	return true
 
@@ -161,7 +201,7 @@ func snapshot() -> Dictionary:
 
 
 static func restore(saved: Variant) -> RefCounted:
-	if not saved is Dictionary or not finite_integer(saved.get("version"), 1, 2) or not saved.get("journal") is Array:
+	if not saved is Dictionary or not finite_integer(saved.get("version"), 1, 3) or not saved.get("journal") is Array:
 		return null
 	if not saved.get("hero") is String or not finite_integer(saved.get("depth"), 12, 49):
 		return null
@@ -175,7 +215,14 @@ static func restore(saved: Variant) -> RefCounted:
 		if not command is Array or command.is_empty() or not command[0] is String:
 			return null
 		if command.size() == 1:
-			var committed: bool = run.choose_route(command[0]) if run.phase == "route" else run.reward(command[0])
+			var committed: bool
+			match run.phase:
+				"route":
+					committed = run.choose_route(command[0])
+				"rest":
+					committed = run.rest(command[0])
+				_:
+					committed = run.reward(command[0])
 			if not committed:
 				return null
 		elif command.size() != 2 or not finite_integer(command[1], -1, 39) or run.perform(command[0], int(command[1])).has("error"):

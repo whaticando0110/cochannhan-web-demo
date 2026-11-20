@@ -17,11 +17,13 @@ Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard rồi bấm **F5**
 
 Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi theo biển hoa để mở Không Khiếu. Dùng **WASD**, phím mũi tên hoặc bấm một ô để tới. Trong ba trận theo lượt, dùng **1–4**. Sau khi chọn Di chuyển, bấm ô hoặc dùng **phím mũi tên + Enter**. Ô xanh né được đòn đã báo. Ô hổ phách đi được và vẫn nằm trong vùng đánh. Rê chuột hoặc dùng Tab vào lệnh để xem sát thương và chân nguyên dự kiến. Qua mỗi màn đầu chọn một chiến lợi phẩm để mang sang màn sau.
 
-Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Thẻ tuyến cho biết sinh lực địch, sát thương và mức hồi phục sau chiến thắng. Mỗi thẻ chiến lợi phẩm hiện chỉ số trước và sau khi nhận. Nguyên thạch hồi chân nguyên. Tuyến tinh anh có thêm **Mở rộng Nguyên Hải** để tăng sức chứa. Hai tuyến đều dẫn tới Hang Cuồng Điện Lang và ghi lại chiến lợi phẩm ở màn kết quả.
+Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Vách đá ở Khe đá chặn Nguyệt Quang. Tinh anh luân phiên vồ và lao xuyên một hàng. Mũi tên đánh dấu hàng sắp bị quét. Thắng màn hai, chọn chiến lợi phẩm rồi dừng chân để hồi sinh lực, hồi chân nguyên hoặc đi thẳng vào hang. Cuồng Điện Lang luân phiên vồ và quét hành lang, nghỉ một lượt sau đòn nặng và đổi nhịp dưới nửa sinh lực.
 
-**Luyện trận** mở được từ màn chọn nhân vật, giữa các lượt chiến đấu và ở màn chọn thưởng. Chọn đối thủ, skin, tư chất và chân nguyên ban đầu. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện tách riêng tiến độ. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+**Ngọc Bì Cổ** là một lựa chọn thưởng sau màn đầu. Dùng phím **5** để tốn 1 chân nguyên và tạo lớp ngọc chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Có thể nhận **Sinh Cơ Diệp** sau trận Khe đá. Dùng phím **6** để tiêu một lá và hồi tối đa 12 sinh lực trước đòn đáp trả. Luyện Nguyệt Quang, hồi phục và Mở rộng Nguyên Hải vẫn có tác dụng như ghi trên thẻ thưởng.
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ, chọn tuyến và nhận chiến lợi phẩm. Lượt cũ tiếp tục theo luật thưởng lúc bắt đầu. Lượt mới dùng ngã rẽ và luật thưởng mới. Phạm vi kiểm hiện tại là Windows.
+**Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ, chọn tuyến, nhận chiến lợi phẩm hoặc chọn cách nghỉ. Lượt cũ tiếp tục theo phiên bản luật lúc bắt đầu. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

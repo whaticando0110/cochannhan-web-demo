@@ -1,6 +1,7 @@
 extends Control
 
 const Run = preload("res://run_state.gd")
+const Rules = preload("res://battle_rules.gd")
 const Ceremony = preload("res://ceremony.gd")
 const BattleScene = preload("res://combat_preview.tscn")
 const HUYEN = preload("res://assets/huyen-bao-selection.png")
@@ -10,6 +11,7 @@ const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
 const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2]]
 const TRAINING_ROOMS := [0, 1, 1, 2]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king"]
 const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
@@ -21,7 +23,7 @@ var headline := SystemFont.new()
 var status: Label
 var save_problem := false
 var training_return: Callable
-var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4}
+var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Rules.MAX_HP, "jade_skin": false, "leaves": 0}
 
 
 func _ready() -> void:
@@ -201,6 +203,9 @@ func show_result() -> void:
 		"reward":
 			title = "Chọn chiến lợi phẩm"
 			description = "Đã hạ %s. Chọn một món trước khi tới %s." % [floor.enemy, run.stage_at(run.floor + 1).name]
+		"rest":
+			title = "Dừng chân trước cửa hang"
+			description = "Còn một khoảng yên tĩnh trước khi vào hang. Chọn một việc để chuẩn bị."
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
@@ -213,6 +218,8 @@ func show_result() -> void:
 		draw_routes()
 	elif run.phase == "reward":
 		draw_rewards()
+	elif run.phase == "rest":
+		draw_rest()
 	else:
 		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
 			Rect2(96, 480 if run.phase == "victory" else 335, 316, 54), show_entry)
@@ -240,9 +247,37 @@ func choose_route(id: String) -> void:
 		show_result()
 
 
+func draw_rest() -> void:
+	var i := 0
+	for id in Run.REST_OPTIONS:
+		var preview: Dictionary = run.rest_preview(id)
+		var card := panel(menu, Rect2(96 + i * 341, 316, 326, 208), Color("#1a2b25"), Color("#586c54"))
+		text(card, Run.REST_OPTIONS[id], Rect2(18, 18, 290, 42), 28, GOLD, true)
+		var delta := "Giữ nguyên sinh lực và chân nguyên."
+		if id == "rest_hp":
+			delta = "Sinh lực %d → %d" % [run.battle.hp, preview.hp]
+		elif id == "rest_qi":
+			delta = "Chân nguyên %d/%d → %d/%d" % [run.battle.qi, run.battle.max_qi, preview.qi, run.battle.max_qi]
+		text(card, delta, Rect2(18, 68, 290, 54), 19, GREEN)
+		var choice := button(card, "Chọn", Rect2(18, 146, 290, 44), choose_rest.bind(id))
+		choice.name = id
+		i += 1
+	draw_vitals(546)
+
+
+func choose_rest(id: String) -> void:
+	if run.rest(id):
+		persist()
+		show_run()
+
+
 func draw_vitals(y: float) -> void:
-	text(menu, "Sinh lực %d / 48     ·     Chân nguyên %d / %d" % [run.battle.hp, run.battle.qi, run.battle.max_qi],
-		Rect2(96, y, 980, 40), 20, GREEN)
+	var vitals := "Sinh lực %d / %d     ·     Chân nguyên %d / %d" % [run.battle.hp, Rules.MAX_HP, run.battle.qi, run.battle.max_qi]
+	if run.battle.jade_skin:
+		vitals += "     ·     Ngọc Bì"
+	if run.battle.leaves > 0:
+		vitals += "     ·     Sinh Cơ ×%d" % run.battle.leaves
+	text(menu, vitals, Rect2(96, y, 980, 40), 20, GREEN)
 
 
 func draw_routes() -> void:
@@ -255,12 +290,17 @@ func draw_routes() -> void:
 		var card := panel(menu, Rect2(96 + i * 516, 307, 490, 295), fill, edge)
 		text(card, stage.name, Rect2(23, 22, 444, 45), 34, GOLD, true)
 		text(card, "%s  ·  %d sinh lực" % [stage.enemy, stage.hp], Rect2(24, 88, 441, 31), 22)
-		text(card, "%s  ·  %d sát thương" % [stage.heavy, stage.damage], Rect2(24, 122, 441, 28), 18)
+		var danger := "%s  ·  %d sát thương" % [stage.heavy, stage.damage]
+		if run.version >= 3:
+			danger = "Vồ và lao xuyên hàng  ·  %d sát thương" % stage.damage if elite else "Vách đá chặn Nguyệt Quang"
+		text(card, danger, Rect2(24, 122, 441, 28), 18)
 		var heal := Run.ELITE_HEAL if elite else Run.NORMAL_HEAL
 		var energy := Run.ELITE_QI if elite else Run.NORMAL_QI
 		var benefit := "Hồi %d sinh lực hoặc %d chân nguyên" % [heal, energy]
 		if elite:
 			benefit += "\nCó món tăng sức chứa chân nguyên."
+		elif run.version >= 3:
+			benefit += "\nCó thể nhận Sinh Cơ Diệp sau trận."
 		text(card, benefit, Rect2(24, 164, 441, 57), 18, GREEN if not elite else GOLD)
 		var choose := button(card, "Chọn tuyến tinh anh" if elite else "Đi qua khe đá",
 			Rect2(23, 231, 444, 45), choose_route.bind(id))
@@ -298,6 +338,10 @@ func reward_delta(id: String, preview: Dictionary) -> String:
 			return "Sát thương %d → %d" % [run.battle.moon_damage, run.battle.moon_damage - run.moon_bonus + preview.moon_bonus]
 		"expand":
 			return "Sức chứa %d → %d" % [run.battle.max_qi, preview.max_qi]
+		"jade_skin":
+			return "Mở lệnh Ngọc Bì cho lượt chơi"
+		"vital_leaf":
+			return "Số lá %d → %d" % [run.battle.leaves, preview.leaves]
 	return ""
 
 
@@ -325,9 +369,9 @@ func show_training_setup() -> void:
 	menu.name = "TrainingSetup"
 	switch_to(menu)
 	text(menu, "Luyện trận", Rect2(94, 75, 990, 95), 57, GOLD, true)
-	text(menu, "Chọn đối thủ và lượng chân nguyên để thử các cách đánh trên cùng luật với Vượt Thanh Mao.",
+	text(menu, "Chọn đối thủ, sinh lực và Cổ để tập với cùng luật của Vượt Thanh Mao.",
 		Rect2(96, 174, 1006, 56), 22)
-	var card := panel(menu, Rect2(96, 252, 1008, 284), Color("#1a2b25"), Color("#586c54"))
+	var card := panel(menu, Rect2(96, 252, 1008, 355), Color("#1a2b25"), Color("#586c54"))
 	var opponent_items: Array = []
 	for stage in TRAINING_STAGES:
 		opponent_items.append(stage.enemy + " · " + stage.name)
@@ -335,28 +379,50 @@ func show_training_setup() -> void:
 	var hero := dropdown(card, "training_hero", "Nhân vật", ["Huyền bào", "Áo rêu"], training_options.hero, Rect2(525, 27, 452, 48))
 	var grades := dropdown(card, "training_grade", "Tư chất", TRAINING_GRADES, training_options.grade, Rect2(28, 147, 452, 48))
 	text(card, "Chân nguyên ban đầu", Rect2(525, 147, 452, 34), 18)
-	var qi := SpinBox.new()
-	qi.name = "training_qi"
-	qi.position = Vector2(525, 189)
-	qi.size = Vector2(204, 48)
-	qi.min_value = 0
-	qi.max_value = training_options.grade + 4
-	qi.value = training_options.qi
-	qi.suffix = "/ %d" % int(qi.max_value)
-	qi.get_line_edit().add_theme_font_size_override("font_size", 20)
-	card.add_child(qi)
+	var qi := starting_value(card, "training_qi", Vector2(525, 189), 0, training_options.grade + 4, training_options.qi)
+	text(card, "Sinh lực ban đầu", Rect2(757, 147, 220, 34), 18)
+	var hp := starting_value(card, "training_hp", Vector2(757, 189), 1, Rules.MAX_HP, training_options.hp)
+	var jade := training_check(card, "training_jade", "Ngọc Bì Cổ", Vector2(28, 268), training_options.jade_skin)
+	var leaf := training_check(card, "training_leaf", "Mang một Sinh Cơ Diệp", Vector2(525, 268), training_options.leaves > 0)
 	grades.item_selected.connect(func(index: int):
 		var was_full := qi.value == qi.max_value
 		qi.max_value = index + 4
 		qi.suffix = "/ %d" % int(qi.max_value)
 		if was_full:
 			qi.value = qi.max_value)
-	var back := button(menu, "Quay lại", Rect2(96, 565, 220, 52), training_return)
+	var back := button(menu, "Quay lại", Rect2(96, 631, 220, 52), training_return)
 	back.name = "training_back"
-	var begin := button(menu, "Bắt đầu luyện", Rect2(807, 565, 297, 52), func():
-		training_options = {"opponent": opponent.selected, "grade": grades.selected, "hero": hero.selected, "qi": int(qi.value)}
+	var begin := button(menu, "Bắt đầu luyện", Rect2(807, 631, 297, 52), func():
+		training_options = {"opponent": opponent.selected, "grade": grades.selected, "hero": hero.selected,
+			"qi": int(qi.value), "hp": int(hp.value), "jade_skin": jade.button_pressed, "leaves": int(leaf.button_pressed)}
 		show_training_battle())
 	begin.name = "training_begin"
+
+
+func starting_value(parent: Control, id: String, at: Vector2, minimum: int, maximum: int, value: int) -> SpinBox:
+	var input := SpinBox.new()
+	input.name = id
+	input.position = at
+	input.size = Vector2(204, 48)
+	input.min_value = minimum
+	input.max_value = maximum
+	input.value = value
+	input.suffix = "/ %d" % maximum
+	input.get_line_edit().add_theme_font_size_override("font_size", 20)
+	parent.add_child(input)
+	return input
+
+
+func training_check(parent: Control, id: String, title: String, at: Vector2, enabled: bool) -> CheckBox:
+	var check := CheckBox.new()
+	check.name = id
+	check.text = title
+	check.position = at
+	check.size = Vector2(450, 45)
+	check.button_pressed = enabled
+	check.add_theme_font_size_override("font_size", 20)
+	parent.add_child(check)
+	return check
 
 
 func show_training_battle() -> void:
@@ -364,6 +430,8 @@ func show_training_battle() -> void:
 	var grade_index: int = training_options.grade
 	var opponent: int = training_options.opponent
 	next.configure_training({"stage": TRAINING_STAGES[opponent], "room": TRAINING_ROOMS[opponent],
+		"tactic": TRAINING_TACTICS[opponent], "hp": training_options.hp,
+		"jade_skin": training_options.jade_skin, "leaves": training_options.leaves,
 		"hero": "ao-reu" if training_options.hero == 1 else "huyen-bao",
 		"grade": TRAINING_GRADES[grade_index], "max_qi": grade_index + 4, "qi": training_options.qi})
 	next.training_setup_requested.connect(show_training_setup)

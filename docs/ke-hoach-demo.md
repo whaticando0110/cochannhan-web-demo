@@ -5,11 +5,11 @@ Ba trận của chương đầu luyện ba kỹ năng theo thứ tự. Đọc v�
 | Màn | Thử thách và quyết định | Cổ hoặc vật phẩm xuất hiện |
 | --- | --- | --- |
 | Đại điển Khai Khiếu | Đi qua sông và biển Nguyệt Lan, nhận tư chất và sức chứa chân nguyên. Sau khi gục có thể giữ kết quả cũ để vào lượt mới. | Hy Vọng Cổ xuất hiện trong nghi lễ. Nguyệt Quang là Cổ đánh đầu tiên sau Đại điển. |
-| Rìa rừng Thanh Mao | Học né vùng vồ, đánh kề, thủ thế để hồi chân nguyên. Thắng trận chọn tuyến và cân nhắc hồi sức hay lấy thêm cách đánh. | Giữ Nguyệt Quang. Đề xuất cho **Ngọc Bì Cổ** cạnh tranh với một lựa chọn thưởng trước màn hai. |
-| Khe đá Hoang Nha | Lối hẹp và vách che buộc chọn giữa giữ tầm bắn và đi vòng. Thử vách chặn đường bắn rồi cân lại tầm Nguyệt Quang. | Có thể chọn một lá **Sinh Cơ Diệp** để mang vào hang trùm hoặc hồi phục ngay tại chỗ. |
-| Lối săn tinh anh | Tinh anh luân phiên vồ vùng quanh mục tiêu và lao một hàng. Có khoảng đổi vị trí giữa hai lần nặng. Giữ phần thưởng nhỉnh hơn tuyến khe đá. | Thử giá trị che chắn của Ngọc Bì khi vừa phải né vừa phải giữ chân nguyên. Mở rộng Nguyên Hải tiếp tục nằm trong nhóm thưởng riêng của tuyến. |
-| Điểm nghỉ trước hang | Thử một lượt chọn ngắn giữa hấp thụ nguyên thạch, chuẩn bị lá trị thương hoặc đổi Cổ đang mang. Cho xem lượng hồi và đồ phải dùng trước khi xác nhận. | Sinh Cơ Diệp là vật phẩm tiêu hao. Cổ đã luyện giữ tác dụng trong lượt chơi. |
-| Hang Cuồng Điện Lang | Hai đòn báo trước bằng hình khác nhau, vồ vùng và quét hành lang. Dưới một nửa sinh lực, trùm đổi thứ tự đòn và có nhịp hồi sau đòn nặng để người chơi phản công. | Chiến thắng ghi nhận bí phương Nhị chuyển để mở chương sau. |
+| Rìa rừng Thanh Mao | Học né vùng vồ, đánh kề, thủ thế để hồi chân nguyên. Thắng trận chọn tuyến và cân nhắc hồi sức hay lấy thêm cách đánh. | Nguyệt Quang có từ đầu. **Ngọc Bì Cổ** là một lựa chọn thưởng trước màn hai. |
+| Khe đá Hoang Nha | Tìm góc bắn vì vách đá chặn Nguyệt Quang. Ba bố cục đặt vách ở ba vị trí khác nhau trên đường bắn ban đầu. | Chọn một lá **Sinh Cơ Diệp** mang vào hang hoặc chọn phần thưởng hồi phục giữa màn. |
+| Lối săn tinh anh | Tinh anh luân phiên vồ vùng quanh mục tiêu và lao một hàng. Có lượt đổi vị trí giữa hai đòn nặng. | Mở rộng Nguyên Hải nằm trong nhóm thưởng riêng của tuyến. |
+| Điểm nghỉ trước hang | Chọn hồi tối đa 8 sinh lực, hồi 1 chân nguyên hoặc đi tiếp. Mỗi lượt chơi chỉ chọn một lần, có xem trước chỉ số. | Sinh Cơ Diệp dùng trong trận. Ngọc Bì Cổ giữ quyền sử dụng qua các màn, lớp ngọc hết khi chuyển trận. |
+| Hang Cuồng Điện Lang | Vồ vùng và quét hành lang dùng dấu khác nhau. Trùm hồi thế sau mỗi đòn nặng. Dưới nửa sinh lực, nó đổi thứ tự đòn và có thể ra đòn nặng ngay khi hết hồi thế. | Màn kết quả ghi đường đi, chiến lợi phẩm và tài nguyên còn lại. |
 | Chương tiếp theo | Thử địch cận chiến kết hợp địch đánh xa ở sân lớn hơn. Dùng hai Cổ ở hai vai trò khác nhau và có một điểm hợp luyện. | **Nguyệt Mang Cổ** cho nhánh công, **Bạch Ngọc Cổ** cho nhánh thủ sau mốc Nhị chuyển. **Địa Thính Nhục Nhĩ Thảo** dành cho lượt khám phá có phục kích. |
 
 ## Luật để thử
@@ -25,9 +25,10 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 ## Thứ tự triển khai
 
 1. Luyện trận dùng cùng bộ luật với Vượt Thanh Mao và tách bản lưu. Đây là nơi thử từng Cổ và cách đánh trùm.
-2. Codex dựng Ngọc Bì và Sinh Cơ Diệp trong Luyện trận, rồi nối vào gói thưởng chương đầu khi đã đọc được tác dụng và khung va chạm. Gemini làm nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh asset riêng.
-3. Codex thêm vách che ở Khe đá, đòn lao một hàng của tinh anh và điểm nghỉ ngắn. Gemini làm viền vách/ô chặn và hình báo đòn sau khi chốt mặt bằng. Duyệt một màn tại một thời điểm.
-4. Chốt hai đòn và nhịp hồi của Cuồng Điện Lang. Cân lại phần thưởng hai tuyến rồi chơi toàn chương ở bốn bậc tư chất. Sau đó mới thiết kế thử chương Nhị chuyển và hợp luyện.
+2. Luyện trận và phần thưởng đã dùng chung luật Ngọc Bì Cổ và Sinh Cơ Diệp. Gemini phụ trách nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh riêng. Bản Godot hiện dùng hiệu ứng dựng bằng mã.
+3. Ba bố cục vách che, đòn lao theo hàng và điểm nghỉ đã vào luật lưu v3. Gemini phụ trách viền vách và hình báo đòn ở đúng cỡ chơi. Các lượt đang chơi ở v1/v2 giữ luật đã dùng khi bắt đầu.
+4. Hai đòn và nhịp hồi của Cuồng Điện Lang đã có trong lượt chính và Luyện trận. Kết quả dò đường thắng là mốc kiểm bố cục. Duyệt nhịp di chuyển, báo đòn và hiệu ứng trong Godot trước khi chốt cân bằng.
+5. Thử chương Nhị chuyển bằng một màn ngắn cho người chơi chọn một hướng. **Bạch Ngọc Cổ** nối nhánh phòng thủ từ Ngọc Bì. **Nguyệt Mang Cổ** nối nhánh tấn công từ Nguyệt Quang. Dùng một lựa chọn bí phương sau trùm làm điểm vào thử. Giữ tên và chức năng theo nguồn tiếng Việt ở trên. Nguyên liệu, chỉ số và cách hợp luyện cần chốt cùng brief chương hai.
 
 <details>
 <summary>Kế hoạch của bản thử thú triều trước đây</summary>

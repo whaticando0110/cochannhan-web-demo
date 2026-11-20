@@ -12,6 +12,10 @@ const MOON_RANGE := 4
 const MOON_COST := 2
 const STRIKE_DAMAGE := 14
 const GUARD_REDUCTION := .7
+const JADE_COST := 1
+const JADE_ABSORB := 5
+const JADE_TURNS := 2
+const LEAF_HEAL := 12
 
 var turn := 1
 var hero := 17
@@ -29,6 +33,12 @@ var heavy_damage := 12
 var bite_damage := 8
 var pace := 1
 var moon_damage := 26
+var jade_skin := false
+var jade_turns := 0
+var leaves := 0
+var tactic := ""
+var heavy_count := 0
+var recovering := false
 
 
 func _init(options: Dictionary = {}) -> void:
@@ -43,6 +53,9 @@ func _init(options: Dictionary = {}) -> void:
 	bite_damage = options.get("bite", bite_damage)
 	pace = options.get("pace", pace)
 	moon_damage += int(options.get("moon_bonus", 0))
+	jade_skin = options.get("jade_skin", false)
+	leaves = options.get("leaves", 0)
+	tactic = options.get("tactic", "")
 	forecast()
 
 
@@ -92,9 +105,48 @@ func move_targets() -> Array:
 	return [] if not result.is_empty() else reach(hero, MOVE_RANGE, wolf).keys()
 
 
+func ray_blocker(from: int, to: int) -> int:
+	var point := grid(from)
+	var end := grid(to)
+	var delta := end - point
+	var step := delta.sign()
+	var span := delta.abs()
+	var crossed := Vector2i.ZERO
+	# Exact corner crossings enter the diagonal cell. Grazing a corner does not hit it.
+	while point != end:
+		var decision := (2 * crossed.x + 1) * span.y - (2 * crossed.y + 1) * span.x
+		if decision <= 0:
+			point.x += step.x
+			crossed.x += 1
+		if decision >= 0:
+			point.y += step.y
+			crossed.y += 1
+		var cell := point.y * COLUMNS + point.x
+		if point != end and cell in rocks:
+			return cell
+	return -1
+
+
 func forecast() -> void:
 	var gap := distance(hero, wolf)
-	if (turn - 1) % 2 == 0 and gap <= 5:
+	var enraged := enraged_phase()
+	var heavy_turn := (turn - 1) % 2 == 0 or enraged
+	if recovering:
+		intent = {"kind": "recover", "name": "Hồi thế", "cells": [], "damage": 0}
+	elif heavy_turn and gap <= 5:
+		var is_charge := (tactic == "elite" and heavy_count % 2 == 1) or (
+			tactic == "king" and (heavy_count % 2 == 0) == enraged)
+		if is_charge:
+			var cells: Array[int] = []
+			var row := grid(hero).y
+			for column in range(COLUMNS):
+				var cell := row * COLUMNS + column
+				if cell not in rocks:
+					cells.append(cell)
+			intent = {"kind": "heavy", "name": "Quét hành lang" if tactic == "king" else "Lao xuyên hàng",
+				"cells": cells, "damage": heavy_damage, "pattern": "row", "row": row,
+				"direction": 1 if grid(wolf).x <= grid(hero).x else -1}
+			return
 		var cells: Array[int] = [hero]
 		for cell in neighbors(hero):
 			if cell not in rocks:
@@ -104,6 +156,10 @@ func forecast() -> void:
 		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
 	else:
 		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
+
+
+func enraged_phase() -> bool:
+	return tactic == "king" and wolf_hp * 2 < wolf_max
 
 
 func unavailable(action: String) -> String:
@@ -121,8 +177,24 @@ func unavailable(action: String) -> String:
 				return "Cần %d chân nguyên để phóng Nguyệt Quang." % MOON_COST
 			if distance(hero, wolf) > MOON_RANGE:
 				return "Đối thủ ở ngoài tầm %d ô." % MOON_RANGE
+			if tactic == "ravine":
+				var cover := ray_blocker(hero, wolf)
+				if cover >= 0:
+					return "Vách đá ở %s chặn Nguyệt Quang." % cell_name(cover)
 		"guard":
 			pass
+		"jade_skin":
+			if not jade_skin:
+				return "Bạn chưa có Ngọc Bì Cổ."
+			if jade_turns > 0:
+				return "Lớp ngọc vẫn còn hiệu lực."
+			if qi < JADE_COST:
+				return "Cần %d chân nguyên để dùng Ngọc Bì Cổ." % JADE_COST
+		"vital_leaf":
+			if leaves <= 0:
+				return "Đã hết Sinh Cơ Diệp."
+			if hp >= MAX_HP:
+				return "Sinh lực đang đầy."
 		_:
 			return "Hành động không hợp lệ."
 	return ""
@@ -158,6 +230,8 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var position_after := target if action == "move" else hero
 	var dealt := 0
 	var qi_after := qi
+	var healed := 0
+	var ward := jade_turns
 	match action:
 		"strike":
 			dealt = mini(wolf_hp, STRIKE_DAMAGE)
@@ -167,13 +241,23 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			qi_after = qi - MOON_COST
 		"guard":
 			qi_after = mini(max_qi, qi + 1)
+		"jade_skin":
+			qi_after -= JADE_COST
+			ward = JADE_TURNS
+		"vital_leaf":
+			healed = mini(LEAF_HEAL, MAX_HP - hp)
 	var receives := 0
+	var absorbed := 0
 	if dealt < wolf_hp and position_after in intent.cells:
 		var damage: int = intent.damage
 		if action == "guard":
 			damage = ceili(damage * (1.0 - GUARD_REDUCTION))
-		receives = mini(hp, damage)
-	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path}
+		if ward > 0:
+			absorbed = mini(JADE_ABSORB, damage)
+			ward = 0
+		receives = mini(hp + healed, damage - absorbed)
+	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
+		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if dealt < wolf_hp else 0}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -182,10 +266,12 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		return preview
 
 	var exchange := {"action": action, "hero_from": hero, "wolf_from": wolf,
-		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path}
+		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path,
+		"healed": preview.healed, "absorbed": preview.absorbed, "enemy_intent": intent}
 	var notes: Array = exchange.notes
 	var previous_qi := qi
 	qi = preview.qi
+	jade_turns = preview.jade_turns
 	match action:
 		"move":
 			hero = target
@@ -198,10 +284,18 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("%s gây %d sát thương." % [name, damage])
 		"guard":
 			notes.append("Thủ thế và hồi 1 chân nguyên." if qi > previous_qi else "Bạn vào thế thủ.")
+		"jade_skin":
+			notes.append("Ngọc Bì Cổ tạo một lớp bảo hộ.")
+		"vital_leaf":
+			leaves -= 1
+			hp += int(preview.healed)
+			notes.append("Sinh Cơ Diệp hồi %d sinh lực." % preview.healed)
 
 	if wolf_hp <= 0:
 		result = VICTORY
 		notes.append("Đối thủ đã gục.")
+	elif intent.kind == "recover":
+		notes.append("Đối thủ hồi thế. Bạn có một lượt an toàn.")
 	elif intent.kind == "advance":
 		wolf = wolf_step()
 		if wolf != exchange.wolf_from:
@@ -218,6 +312,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("Đỡ %s, còn chịu %d sát thương." % [str(intent.name).to_lower(), damage])
 		else:
 			notes.append("%s trúng bạn, mất %d sinh lực." % [intent.name, damage])
+		if preview.absorbed > 0:
+			notes.append("Lớp ngọc chặn %d sát thương." % preview.absorbed)
 		if hp <= 0:
 			result = DEFEAT
 	else:
@@ -225,8 +321,12 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		notes.append("Bạn né được %s." % str(intent.name).to_lower())
 
 	if result.is_empty():
+		if intent.kind == "heavy":
+			heavy_count += 1
+		recovering = intent.kind == "heavy" and tactic == "king"
 		turn += 1
 		forecast()
 	else:
-		intent.clear()
+		intent = {}
+		jade_turns = 0
 	return exchange

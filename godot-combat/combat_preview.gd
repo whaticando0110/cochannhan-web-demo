@@ -35,6 +35,7 @@ var intent_name: Label
 var intent_copy: Label
 var report_label: Label
 var hint_label: Label
+var wards_label: Label
 var hp_bar: ProgressBar
 var qi_bar: ProgressBar
 var wolf_bar: ProgressBar
@@ -46,6 +47,7 @@ var headline := SystemFont.new()
 var busy := false
 var selecting := false
 var target_cell := -1
+var hp_at_contact := -1
 
 
 func _ready() -> void:
@@ -68,6 +70,11 @@ func configure(current_run: RunData) -> void:
 func configure_training(settings: Dictionary) -> void:
 	training = settings.duplicate()
 	configure_identity(training.stage, training.room, training.hero, training.grade)
+	state = training_battle()
+
+
+func training_battle() -> Rules:
+	return RunData.battle_for(training.stage, 0, training.hp, training.qi, training.max_qi, 0, training, training.tactic)
 
 
 func configure_identity(stage: Dictionary, arena_room: int, chosen_skin: String, starting_grade: String) -> void:
@@ -150,6 +157,8 @@ func build_hud() -> void:
 	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
 	turn_label = label("", 678, 105, 160, 33, 20, GOLD, true)
 	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	wards_label = label("", 860, 105, 306, 33, 15, GREEN)
+	wards_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	reset_button = button("Chơi lại trận", 1006, 44, 160, 46)
 	reset_button.visible = run == null
 	reset_button.pressed.connect(reset_battle)
@@ -205,24 +214,32 @@ func build_hud() -> void:
 	var descriptions := [
 		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
 		["strike", "2   Tay không\n%d sát thương · +1 CN" % Rules.STRIKE_DAMAGE],
-		["moon", "3   Nguyệt Quang\nTầm %d ô · −%d chân nguyên" % [Rules.MOON_RANGE, Rules.MOON_COST]],
-		["guard", "4   Thủ thế\nGiảm %d%% · +1 chân nguyên" % roundi(Rules.GUARD_REDUCTION * 100)],
+		["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]],
+		["guard", "4   Thủ thế\nGiảm %d%% · +1 CN" % roundi(Rules.GUARD_REDUCTION * 100)],
 	]
+	if state.jade_skin:
+		descriptions.append(["jade_skin", "5   Ngọc Bì Cổ\nChặn %d · −%d CN" % [Rules.JADE_ABSORB, Rules.JADE_COST]])
+	if state.leaves > 0:
+		descriptions.append(["vital_leaf", "6   Sinh Cơ Diệp\nHồi tối đa %d sinh lực" % Rules.LEAF_HEAL])
+	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
 	for index in range(descriptions.size()):
 		var row: Array = descriptions[index]
 		var action: String = row[0]
-		var node := button(row[1], 34 + index * 286, 648, 274, 67)
+		var node := button(row[1], 34 + index * (width + 12), 648, width, 67)
+		if descriptions.size() > 5:
+			node.add_theme_font_size_override("font_size", 15)
 		node.pressed.connect(func(): choose(action))
 		node.mouse_entered.connect(inspect_action.bind(action))
 		node.focus_entered.connect(inspect_action.bind(action))
 		node.mouse_exited.connect(show_hint)
+		node.focus_exited.connect(show_hint)
 		actions[action] = node
 	hint_label = label("", 35, 728, 1125, 25, 15, MUTE)
 
 
-func update_hero_hp() -> void:
-	hp_label.text = "%d / %d" % [state.hp, Rules.MAX_HP]
-	hp_bar.value = state.hp
+func update_hero_hp(value: int) -> void:
+	hp_label.text = "%d / %d" % [value, Rules.MAX_HP]
+	hp_bar.value = value
 
 
 func update_player_contact() -> void:
@@ -233,8 +250,14 @@ func update_player_contact() -> void:
 
 
 func update_hud() -> void:
-	update_hero_hp()
+	update_hero_hp(state.hp)
 	update_player_contact()
+	var supplies: PackedStringArray = []
+	if state.jade_turns > 0:
+		supplies.append("Lớp ngọc · còn %d lượt" % state.jade_turns)
+	if actions.has("vital_leaf"):
+		supplies.append("Sinh Cơ ×%d" % state.leaves)
+	wards_label.text = "    ".join(supplies)
 	turn_label.text = "Lượt %02d" % state.turn
 	match state.result:
 		Rules.VICTORY:
@@ -245,7 +268,13 @@ func update_hud() -> void:
 			intent_copy.text = "Chọn Chơi lại trận hoặc nhấn R." if run == null else "Lượt chơi đã kết thúc."
 		_:
 			intent_name.text = state.intent.name
-			if state.intent.damage > 0:
+			if state.enraged_phase():
+				intent_name.text += " · Cuồng nộ"
+			if state.intent.get("pattern") == "row":
+				intent_copy.text = "Hàng %d · %d sát thương. Rời hàng để né." % [int(state.intent.row) + 1, state.intent.damage]
+			elif state.intent.kind == "recover":
+				intent_copy.text = "Đối thủ hồi thế trong lượt này."
+			elif state.intent.damage > 0:
 				intent_copy.text = "Gây %d sát thương ở vùng gạch đỏ sau hành động của bạn." % state.intent.damage
 			else:
 				intent_copy.text = "%s sẽ tiến về phía bạn." % enemy_name
@@ -263,7 +292,7 @@ func reset_battle() -> void:
 	if training.is_empty():
 		state = Rules.new()
 	else:
-		state = RunData.battle_for(training.stage, 0, Rules.MAX_HP, training.qi, training.max_qi)
+		state = training_battle()
 	if is_instance_valid(qi_bar):
 		qi_bar.max_value = state.max_qi
 		wolf_bar.max_value = state.wolf_max
@@ -283,12 +312,13 @@ func show_battle() -> void:
 
 
 func show_hint() -> void:
+	field.show_cover_ray(false)
 	if busy or not state.result.is_empty():
 		return
 	if selecting:
 		hint_label.text = "Ô xanh né được đòn. Ô hổ phách vẫn đi được nhưng nằm trong vùng đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
 	else:
-		hint_label.text = "Địch đáp trả sau hành động của bạn. Rê chuột lên lệnh hoặc chọn lệnh bằng Tab để xem kết quả dự kiến."
+		hint_label.text = "Vách đá chặn Nguyệt Quang. Chọn lệnh để xem kết quả dự kiến." if state.tactic == "ravine" else "Địch đáp trả sau hành động của bạn. Chọn lệnh để xem kết quả dự kiến."
 
 
 func show_exchange(cue: String) -> void:
@@ -297,15 +327,17 @@ func show_exchange(cue: String) -> void:
 			hint_label.text = "Bạn đang hành động…"
 		"player_contact":
 			update_player_contact()
+			update_hero_hp(hp_at_contact)
 		"enemy":
 			hint_label.text = "%s đang đáp trả…" % enemy_name
 		"enemy_contact":
-			update_hero_hp()
+			update_hero_hp(state.hp)
 
 
 func inspect_action(action: String) -> void:
 	if busy or not state.result.is_empty():
 		return
+	field.show_cover_ray(action == "moon")
 	if action == "move":
 		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % Rules.MOVE_RANGE
 		return
@@ -316,12 +348,20 @@ func inspect_action(action: String) -> void:
 	var pieces: PackedStringArray = []
 	if result.dealt > 0:
 		pieces.append("Gây %d sát thương" % result.dealt)
+	if result.healed > 0:
+		pieces.append("Hồi %d sinh lực" % result.healed)
+	if result.absorbed > 0:
+		pieces.append("Lớp ngọc chặn %d" % result.absorbed)
+	elif result.jade_turns > 0:
+		pieces.append("Lớp ngọc còn %d lượt" % result.jade_turns)
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
 	elif result.dealt >= state.wolf_hp:
 		pieces.append("Kết liễu đối thủ trước khi địch đáp trả")
-	else:
+	elif result.healed == 0 and result.absorbed == 0:
 		pieces.append("Lượt này giữ nguyên sinh lực")
+	if result.healed > 0 or result.absorbed > 0:
+		pieces.append("Sinh lực còn %d/%d" % [state.hp + result.healed - result.receives, Rules.MAX_HP])
 	pieces.append("Chân nguyên còn %d/%d" % [result.qi, state.max_qi])
 	hint_label.text = "  ·  ".join(pieces)
 
@@ -339,7 +379,9 @@ func inspect_cell(cell: int) -> void:
 		hint_label.text = "%s · %s" % [name, "Ô có đá chặn." if cell in state.rocks else "Ô này ngoài tầm hoặc đang bị chiếm."]
 		return
 	var outcome: String
-	if preview.receives > 0:
+	if preview.absorbed > 0:
+		outcome = "Lớp ngọc chặn %d · còn chịu %d sát thương" % [preview.absorbed, preview.receives]
+	elif preview.receives > 0:
 		outcome = "Vẫn nằm trong vùng đánh · chịu %d sát thương" % preview.receives
 	elif not state.intent.cells.is_empty():
 		outcome = "Ra khỏi vùng đánh · né được đòn"
@@ -353,6 +395,7 @@ func choose(action: String) -> void:
 		return
 	var reason := state.unavailable(action)
 	if not reason.is_empty():
+		field.show_cover_ray(action == "moon")
 		hint_label.text = reason
 		return
 	if action == "move":
@@ -379,6 +422,8 @@ func resolve(action: String, cell: int = -1) -> void:
 	if exchange.has("error"):
 		hint_label.text = exchange.error
 		return
+	hp_at_contact = state.hp + int(exchange.hero_damage)
+	field.show_cover_ray(false)
 	busy = true
 	action_committed.emit()
 	selecting = false
@@ -408,7 +453,7 @@ func resolve(action: String, cell: int = -1) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: "moon", KEY_4: "guard"}
+	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: "moon", KEY_4: "guard", KEY_5: "jade_skin", KEY_6: "vital_leaf"}
 	if key_actions.has(event.keycode):
 		choose(key_actions[event.keycode])
 	elif event.keycode == KEY_R and run == null:

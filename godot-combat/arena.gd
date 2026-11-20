@@ -44,7 +44,12 @@ var shock_damage := 0
 var shock_progress := 1.0
 var shock_cold := true
 var shock_guarded := false
+var shock_caption := ""
 var shock_tween: Tween
+var ward_visible := false
+var warned_row := -1
+var charge_direction := 1
+var cover_ray := false
 
 
 func _ready() -> void:
@@ -65,6 +70,9 @@ func set_state(state: Rules) -> void:
 		wolf_frame = 8 if rules.wolf_hp == 0 else 0
 	available = rules.move_targets()
 	threatened = rules.intent.get("cells", []).duplicate()
+	ward_visible = rules.jade_turns > 0
+	warned_row = rules.intent.get("row", -1)
+	charge_direction = rules.intent.get("direction", 1)
 	queue_redraw()
 
 
@@ -72,6 +80,11 @@ func set_selecting(value: bool) -> void:
 	selecting = value
 	if not value:
 		mouse_cell = -1
+	queue_redraw()
+
+
+func show_cover_ray(value: bool) -> void:
+	cover_ray = value
 	queue_redraw()
 
 
@@ -137,9 +150,19 @@ func paint_tiles() -> void:
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rules != null and cell in rules.rocks:
 			draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
+			if rules.tactic == "ravine":
+				draw_rect(rect.grow(-3), Color("#b8cfe064"), false, 1.5)
 		var danger := cell in threatened
 		var accessible := selecting and cell in available
-		if danger:
+		if danger and point.y == warned_row:
+			paint_marker(rect, Color("#ffc29a") if accessible else Color("#f6a36c"), false, accessible)
+			var middle := rect.get_center()
+			for x in [-25, 0, 25]:
+				var tip := middle + Vector2(x + 5 * charge_direction, 0)
+				var tail := -10 * charge_direction
+				draw_polyline(PackedVector2Array([tip + Vector2(tail, -9), tip, tip + Vector2(tail, 9)]),
+					Color("#ffe3adab"), 2.0, true)
+		elif danger:
 			paint_marker(rect, Color("#ffc29a") if accessible else Color("#fb816a"), true, accessible)
 		elif accessible:
 			paint_marker(rect, GREEN, false, true)
@@ -180,7 +203,15 @@ func _draw() -> void:
 		return
 	var direction := 1 if hero_point.x <= wolf_point.x else -1
 	actor_ring(hero_point, GREEN)
+	if ward_visible:
+		draw_arc(hero_point + Vector2(0, -17), 29.0, PI * .92, PI * 2.08, 24, Color("#a2efd1bd"), 2.0, true)
 	actor_ring(wolf_point, AMBER)
+	if cover_ray and rules.tactic == "ravine":
+		var blocker := rules.ray_blocker(rules.hero, rules.wolf)
+		if blocker >= 0 and Rules.distance(rules.hero, rules.wolf) <= Rules.MOON_RANGE:
+			var stop := cell_center(blocker)
+			draw_dashed_line(hero_point, stop, Color("#c5f7ffb0"), 2.0, 7.0, true, true)
+			draw_arc(stop, 10, 0, TAU, 20, Color("#ffc49c"), 2.0, true)
 	var hero_tint := Color("#7f8b86") if rules.result == Rules.DEFEAT and hero_art == "ready" else Color.WHITE
 	var female := skin == "ao-reu"
 	if hero_art == "cast":
@@ -207,7 +238,7 @@ func _draw() -> void:
 		var tone := Color("#f8d68c") if shock_guarded else Color("#c5f7ff") if shock_cold else Color("#ffb994")
 		var alpha := 1.0 - shock_progress
 		draw_arc(shock_point, 6 + shock_progress * 26, 0, TAU, 24, Color(tone, alpha * 0.8), 2.0, true)
-		var marker := "Đỡ  −%d" % shock_damage if shock_guarded else "−%d" % shock_damage
+		var marker := shock_caption if not shock_caption.is_empty() else ("Đỡ  −%d" % shock_damage if shock_guarded else "−%d" % shock_damage)
 		draw_string(ThemeDB.fallback_font, shock_point + Vector2(-12, -10 - 26 * shock_progress), marker,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(tone, alpha))
 
@@ -222,11 +253,12 @@ func set_wolf_frame(frame: float) -> void:
 	queue_redraw()
 
 
-func impact(point: Vector2, damage: int, cold: bool, guarded: bool = false) -> void:
+func impact(point: Vector2, damage: int, cold: bool, guarded: bool = false, caption: String = "") -> void:
 	shock_point = point
 	shock_damage = damage
 	shock_cold = cold
 	shock_guarded = guarded
+	shock_caption = caption
 	if shock_tween != null and shock_tween.is_valid():
 		shock_tween.kill()
 	shock_tween = create_tween()
@@ -289,6 +321,13 @@ func play_exchange(exchange: Dictionary) -> void:
 		var brace := create_tween()
 		brace.tween_method(set_hero_frame, 6.0, 13.0, .23)
 		await brace.finished
+	elif exchange.action == "jade_skin":
+		ward_visible = true
+		impact(hero_point + Vector2(0, -16), 0, true, false, "Ngọc Bì")
+		await get_tree().create_timer(.28).timeout
+	elif exchange.action == "vital_leaf":
+		impact(hero_point + Vector2(0, -16), 0, false, true, "+%d" % exchange.healed)
+		await get_tree().create_timer(.38).timeout
 	if not guarding:
 		hero_art = "ready"
 	exchange_cue.emit("player_contact")
@@ -310,10 +349,21 @@ func play_exchange(exchange: Dictionary) -> void:
 		var target := cell_center(rules.hero) if exchange.reaction != "miss" else cell_center(exchange.hero_from)
 		var vector := target - start
 		var landing := target - vector.normalized() * minf(47, vector.length() * .42)
+		var row: int = exchange.enemy_intent.get("row", -1)
+		var charge_start := start
+		var charge_end := landing
+		if row >= 0:
+			var first := cell_center(row * Rules.COLUMNS)
+			var last := cell_center(row * Rules.COLUMNS + Rules.COLUMNS - 1)
+			var rightward: bool = exchange.enemy_intent.direction > 0
+			charge_start = first if rightward else last
+			charge_end = last if rightward else first
+			landing = Vector2(clampf(target.x, first.x, last.x), first.y)
 		var windup := create_tween().set_parallel()
 		var coil := 14.0 if room == 2 else 8.0
 		windup.tween_method(set_wolf_frame, coil, coil, .20)
-		windup.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), start, start - vector.normalized() * 10, .20)
+		var windup_end := charge_start if row >= 0 else start - vector.normalized() * 10
+		windup.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), start, windup_end, .20)
 		await windup.finished
 		var attack := create_tween().set_parallel()
 		attack.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), wolf_point, landing, .17)
@@ -321,15 +371,22 @@ func play_exchange(exchange: Dictionary) -> void:
 		attack.tween_method(set_wolf_frame, strike_start, strike_start + (1.0 if room == 2 else 2.0), .17)
 		await attack.finished
 		exchange_cue.emit("enemy_contact")
+		if exchange.absorbed > 0:
+			ward_visible = false
 		if exchange.hero_damage > 0:
-			impact(hero_point + (Vector2(0, -9) if guarding else Vector2.ZERO), exchange.hero_damage, false, guarding)
+			var caption := "Ngọc Bì %d  /  −%d" % [exchange.absorbed, exchange.hero_damage] if exchange.absorbed > 0 else ""
+			impact(hero_point + (Vector2(0, -9) if guarding else Vector2.ZERO), exchange.hero_damage, false, guarding, caption)
 			if guarding:
 				hero_frame = 14
 			else:
 				hero_art = "cast"
 				hero_frame = 9
+		elif exchange.absorbed > 0:
+			impact(hero_point + Vector2(0, -9), 0, true, false, "Chặn %d" % exchange.absorbed)
 		var recover := create_tween()
-		recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), wolf_point, start, .17)
+		if row >= 0 and not landing.is_equal_approx(charge_end):
+			recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), landing, charge_end, .18)
+		recover.tween_method(func(p: Vector2): wolf_point = p; queue_redraw(), charge_end if row >= 0 else landing, start, .17)
 		await recover.finished
 	if guarding:
 		var lower := create_tween()

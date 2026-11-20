@@ -2,6 +2,7 @@ extends SceneTree
 
 const Scene = preload("res://run_flow.tscn")
 const Run = preload("res://run_state.gd")
+const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 
 var failed := false
@@ -85,6 +86,105 @@ func play_commands(commands: Array) -> void:
 		await shoot(command[0], command[1] if command.size() == 2 else -1)
 
 
+func check_gu_and_tactics() -> void:
+	var ward := Rules.new({"jade_skin": true})
+	var peek := ward.preview_action("jade_skin")
+	check(peek.absorbed == 5 and peek.receives == 7 and peek.qi == 3
+		and ward.turn == 1 and ward.hp == 48 and ward.jade_turns == 0, "Ngọc Bì forecast mutated or misread the exchange")
+	check(ward.take_turn("jade_skin").absorbed == 5 and ward.hp == 41 and ward.jade_turns == 0, "First hit did not spend the ward")
+	ward.intent = {"kind": "advance", "cells": [], "damage": 0}
+	ward.take_turn("jade_skin")
+	check(ward.jade_turns == 1 and ward.take_turn("jade_skin").has("error"), "An active ward may not be replaced")
+	ward.intent = {"kind": "heavy", "name": "Vồ mồi", "cells": [ward.hero], "damage": 12}
+	peek = ward.preview_action("guard")
+	check(peek.absorbed == 4 and peek.receives == 0, "Guard should reduce damage before Ngọc Bì")
+	ward.take_turn("guard")
+	check(ward.jade_turns == 0 and ward.hp == 41, "Guard plus ward changed the wrong HP")
+
+	var missed := Rules.new({"jade_skin": true})
+	missed.intent = {"kind": "advance", "cells": [], "damage": 0}
+	missed.take_turn("jade_skin")
+	missed.intent = {"kind": "advance", "cells": [], "damage": 0}
+	missed.take_turn("guard")
+	check(missed.jade_turns == 0, "Ward must expire after two enemy responses even without contact")
+
+	var herbs := Rules.new({"hp": 44, "leaves": 1})
+	peek = herbs.preview_action("vital_leaf")
+	check(peek.healed == 4 and peek.receives == 12 and herbs.leaves == 1, "Leaf forecast did not cap healing")
+	herbs.take_turn("vital_leaf")
+	check(herbs.hp == 36 and herbs.leaves == 0 and herbs.qi == 4, "Leaf must heal before retaliation and spend exactly one leaf")
+	check(herbs.take_turn("vital_leaf").has("error") and herbs.turn == 2, "Empty inventory spent a turn")
+	var full := Rules.new({"leaves": 1})
+	check(full.take_turn("vital_leaf").has("error") and full.leaves == 1, "Leaf was spent at full health")
+
+	var ravine := Run.battle_for(Run.ROUTES.ravine, 0, 48, 4, 4, 0, {}, "ravine")
+	check(ravine.ray_blocker(17, 21) == 20 and ravine.ray_blocker(21, 17) == 20, "Cover must block both directions")
+	check(ravine.take_turn("moon").has("error") and ravine.qi == 4 and ravine.turn == 1, "Blocked shot spent resources")
+	ravine.hero = 13
+	check(ravine.ray_blocker(13, 21) == -1 and ravine.preview_action("moon").dealt == 26, "An open firing line was rejected")
+	var elite := Run.battle_for(Run.ROUTES.elite, 0, 48, 4, 4, 0, {}, "elite")
+	elite.take_turn("move", 10)
+	elite.take_turn("guard")
+	check(elite.intent.pattern == "row" and elite.intent.row == 1 and 12 not in elite.intent.cells, "Elite did not lock the expected row")
+	peek = elite.preview_action("move", 2)
+	check(peek.receives == 0, "Changing rows should avoid the charge")
+	check(elite.take_turn("move", 2).reaction == "miss", "Averted charge did not resolve as a miss")
+	var king := Run.battle_for(Run.FLOORS[2], 0, 48, 7, 7, 0, {}, "king")
+	check(king.intent.get("pattern") == null, "The king begins with a pounce")
+	king.take_turn("moon")
+	check(king.intent.kind == "recover", "The king must recover after a heavy")
+	king.take_turn("guard")
+	check(king.intent.get("pattern") == "row", "The king must switch to a sweep")
+	king.take_turn("moon")
+	check(king.enraged_phase() and king.intent.kind == "recover", "Crossing the threshold must preserve the recovery window")
+	king.take_turn("guard")
+	check(king.intent.get("pattern") == "row", "Enraged cadence must change the next committed pattern")
+
+
+func check_third_save() -> void:
+	var current_run := Run.new(Awakening.profile_for("huyen-bao", 40), 5)
+	current_run.perform("moon")
+	current_run.perform("moon")
+	check(current_run.choose_route("ravine") and current_run.reward("jade_skin"), "Run did not award Ngọc Bì")
+	check(current_run.battle.jade_skin and current_run.battle.jade_turns == 0, "Ngọc Bì did not travel into room two")
+	check(not current_run.perform("jade_skin").has("error"), "Unlocked Ngọc Bì could not be used")
+	var young: RefCounted = Run.restore(current_run.snapshot())
+	check(young != null and young.battle.qi == current_run.battle.qi
+		and young.battle.hp == current_run.battle.hp and young.battle.jade_turns == current_run.battle.jade_turns,
+		"Reload changed the ward exchange")
+	var fresh := Run.new(current_run.profile, 5)
+	check(not fresh.battle.jade_skin and fresh.battle.leaves == 0, "A new run inherited Gu")
+
+
+func play_rest_and_leaf() -> void:
+	var starting := {"version": 3, "hero": "huyen-bao", "depth": 12, "seed": 0,
+		"journal": [["moon", -1], ["moon", -1], ["ravine"], ["refine"], ["move", 19], ["move", 28],
+			["strike", -1], ["strike", -1], ["moon", -1]]}
+	flow.run = Run.restore(starting)
+	check(flow.run != null and flow.run.phase == "reward", "v3 did not reach the Khe đá reward")
+	if flow.run == null:
+		return
+	flow.show_run()
+	await click_button("vital_leaf")
+	check(flow.run.phase == "rest" and flow.run.battle.leaves == 1, "Leaf reward did not lead to rest")
+	await launch()
+	check(flow.run.phase == "rest" and flow.run.battle.leaves == 1, "Reload lost the rest choice or leaf")
+	await capture("godot-v3-diem-nghi.png")
+	var rest_copy: RefCounted = Run.restore(flow.run.snapshot())
+	var hp_before: int = rest_copy.battle.hp
+	check(rest_copy.rest("rest_hp") and rest_copy.battle.hp == mini(48, hp_before + 8)
+		and not rest_copy.rest("rest_qi"), "Rest healing must cap and can only happen once")
+	var qi_before: int = flow.run.battle.qi
+	await click_button("rest_qi")
+	check(flow.run.phase == "battle" and flow.run.battle.qi == mini(4, qi_before + 1), "Rest did not move to the boss")
+	await play_commands([[KEY_1, 24], [KEY_4], [KEY_6]])
+	check(flow.run.battle.leaves == 0, "Could not use the carried leaf in the boss room")
+	await launch()
+	check(flow.run.battle.leaves == 0 and not flow.current.actions.has("vital_leaf"), "Reload replenished a consumed leaf")
+	await play_commands([[KEY_3], [KEY_1, 16], [KEY_2], [KEY_2], [KEY_3]])
+	check(flow.run.phase == "victory" and flow.run.battle.hp == 2, "v3 victory line no longer resolves correctly")
+
+
 func training_detour() -> void:
 	var save_before := FileAccess.get_file_as_string(path)
 	var snapshot_before: Dictionary = flow.run.snapshot().duplicate(true)
@@ -118,6 +218,31 @@ func training_detour() -> void:
 	open = flow.current.training_button
 	click(open.get_global_rect().get_center())
 	await process_frame
+	var hp := flow.find_child("training_hp", true, false) as SpinBox
+	var jade := flow.find_child("training_jade", true, false) as CheckBox
+	var leaf := flow.find_child("training_leaf", true, false) as CheckBox
+	check(hp != null and jade != null and leaf != null, "Training loadout is missing")
+	if hp != null and jade != null and leaf != null:
+		hp.value = 28
+		jade.button_pressed = true
+		leaf.button_pressed = true
+		(flow.find_child("training_qi", true, false) as SpinBox).value = 3
+		await click_button("training_begin")
+		flow.current.inspect_action("vital_leaf")
+		check("Hồi 12" in flow.current.hint_label.text and "23 sát thương" in flow.current.hint_label.text,
+			"Leaf tooltip must show healing and the expected counter")
+		await capture("godot-luyen-hai-co.png")
+		await shoot(KEY_6)
+		check(flow.current.state.hp == 17 and flow.current.state.leaves == 0 and flow.current.actions.vital_leaf.disabled,
+			"Training key did not consume the leaf exactly once")
+		await shoot(KEY_5)
+		check(flow.current.state.jade_turns == 1 and flow.current.state.qi == 2, "Recovery did not allow an unbroken ward")
+		key(KEY_R)
+		check(flow.current.state.hp == 28 and flow.current.state.leaves == 1 and flow.current.state.jade_turns == 0,
+			"Training retry did not refill loadout")
+		open = flow.current.training_button
+		click(open.get_global_rect().get_center())
+		await process_frame
 	await click_button("training_back")
 	check(flow.run.snapshot() == snapshot_before and FileAccess.get_file_as_string(path) == save_before
 		and flow.current.state == flow.run.battle, "Training modified the campaign or did not restore its battle")
@@ -125,7 +250,7 @@ func training_detour() -> void:
 
 func play_route(id: String, second_room: Array, boss: Array) -> void:
 	var elite := id == "elite"
-	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5)
+	flow.run = Run.new(Awakening.profile_for("huyen-bao", 12), 5, 2)
 	flow.show_run()
 	await play_commands([[KEY_1, 10], [KEY_3], [KEY_3]])
 	check(flow.run.phase == "route" and flow.run.floor == 0, "First victory must open the fork")
@@ -177,6 +302,8 @@ func exercise() -> void:
 	var data := ProjectSettings.globalize_path("res://build")
 	DirAccess.make_dir_recursive_absolute(data)
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
+	check_gu_and_tactics()
+	check_third_save()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -267,7 +394,8 @@ func exercise() -> void:
 		[[KEY_1, 10], [KEY_3], [KEY_1, 1], [KEY_3], [KEY_1, 8], [KEY_4], [KEY_1, 24], [KEY_4], [KEY_3]])
 	await play_route("elite", [[KEY_4], [KEY_4], [KEY_4], [KEY_3], [KEY_4], [KEY_3]],
 		[[KEY_1, 10], [KEY_3], [KEY_4], [KEY_3], [KEY_1, 1], [KEY_4], [KEY_3]])
+	await play_rest_and_leaf()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: ceremony, rebirth, legacy restore, fork reload, both routes, reward previews and full victory")
+		print("Godot run passed: ceremony, rebirth, v1/v2 restore, v3 Gu forecasts, training, rest/leaf reload and victory")
 	quit(1 if failed else 0)
