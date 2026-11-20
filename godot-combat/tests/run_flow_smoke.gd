@@ -4,6 +4,7 @@ const Scene = preload("res://run_flow.tscn")
 const Run = preload("res://run_state.gd")
 const Rules = preload("res://battle_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
 const Awakening = preload("res://awakening_rules.gd")
 
 var failed := false
@@ -206,7 +207,7 @@ func check_rank_two_gu() -> void:
 func play_rank_two() -> void:
 	check(flow.run.version == 3 and flow.run.can_begin_chapter(), "v3 victory did not expose rank two")
 	await click_button("chapter_two")
-	check(flow.run.version == 6 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
+	check(flow.run.version == Run.CURRENT_VERSION and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
 	await launch()
 	check(flow.run.phase == "refinement" and not flow.run.equip_build("wrong", "moon"), "Reload lost the workshop or accepted an unknown Gu")
 	await capture("godot-rank2-bo-co.png")
@@ -245,6 +246,7 @@ func play_rank_two() -> void:
 	check(flow.run.phase == "complete" and flow.find_child("new_run", true, false) != null, "The successful combo did not end Chapter II")
 	await launch()
 	check(flow.run.phase == "complete" and flow.run.battle.hp == 4, "Chapter II victory did not replay")
+	var current_save: Dictionary = flow.run.snapshot().duplicate(true)
 	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
 	legacy.version = 4
 	flow.run = Run.restore(legacy)
@@ -299,6 +301,79 @@ func play_rank_two() -> void:
 	await shoot(KEY_1, 21)
 	check(flow.run.battle.hero == 21 and flow.run.battle.movement_range() == 2 and flow.run.battle.hp == 28,
 		"The four-step move did not consume the bonus or avoid the old target cells")
+	await play_waypoints(current_save)
+
+
+func play_waypoints(ridge_save: Dictionary) -> void:
+	flow.run = Run.restore(ridge_save)
+	flow.show_run()
+	check(flow.run.stones == Goods.RIDGE_STONES, "Winning the ridge must pay once")
+	await click_button("cross_ford")
+	check(flow.run.phase == "waypoint" and flow.find_child("salvage", true, false) != null, "The ford's detour screen is missing")
+	await capture("godot-v7-diem-dung-suoi.png")
+	var base: Dictionary = flow.run.workshop_vitals()
+	var danger: Dictionary = flow.run.waypoint_preview("salvage")
+	check(danger.hp == base.hp - Goods.CACHE_COST and danger.stones == Goods.RIDGE_STONES + Goods.CACHE_STONES,
+		"Salvage preview did not expose its trade-off")
+	var other: RefCounted = Run.restore(flow.run.snapshot())
+	check(other.choose_waypoint("salvage") and other.workshop_vitals().hp == danger.hp and other.stones == danger.stones
+		and not other.choose_waypoint("salvage"), "Salvage may grant its price and reward only once")
+	other = Run.restore(flow.run.snapshot())
+	check(other.choose_waypoint("camp") and other.workshop_vitals().hp == mini(Rules.MAX_HP, base.hp + Goods.CAMP_HEAL),
+		"Camp healing must be capped and show up in the workshop")
+	await click_button("merchant")
+	check(flow.run.phase == "shop" and flow.run.shop_relic() == "reed_boots", "The shop offer did not follow the run seed")
+	var cheap: RefCounted = Run.restore(flow.run.snapshot())
+	check(cheap.buy("buy_leaf") and not cheap.buy("buy_leaf") and not cheap.buy("buy_relic")
+		and cheap.workshop_vitals().leaves == base.leaves + 1, "Shop allowed a repeat sale or purchase without enough stones")
+	await capture("godot-v7-quay-doi-do.png")
+	await click_button("buy_relic")
+	await launch()
+	check(flow.run.phase == "shop" and flow.run.relic == "reed_boots" and flow.run.stones == 0
+		and not flow.run.buy("buy_relic"), "Reload changed the purchased item or wallet")
+	await click_button("leave_shop")
+	await select_kit("four_flavors", "brew")
+	check(flow.run.battle.movement_range() == 3 and flow.run.battle.relic_ready, "Boots did not enter the ford battle")
+	await play_commands([[KEY_3], [KEY_7], [KEY_1, 19]])
+	check(flow.run.battle.movement_range() == 2 and not flow.run.battle.relic_ready, "Boots must spend their charge on a committed move")
+	await play_commands([[KEY_1, 21], [KEY_2], [KEY_2], [KEY_1, 14], [KEY_2], [KEY_2]])
+	check(flow.run.can_enter_pass() and flow.run.stones == Goods.FORD_STONES, "Victory did not carry the wallet to the second stop")
+	await click_button("enter_pass")
+	check(flow.run.phase == "waypoint" and flow.find_child("spring", true, false) != null, "The pass's event is missing")
+	var swap: RefCounted = Run.restore(flow.run.snapshot())
+	check(swap.choose_waypoint("merchant") and swap.shop_relic() == "jade_token"
+		and swap.shop_price("buy_relic") == Goods.RELIC_TRADE_PRICE and swap.buy("buy_relic")
+		and swap.relic == "jade_token" and swap.stones == 0, "Shop did not swap the carried relic at the advertised price")
+	var spring: Dictionary = flow.run.waypoint_preview("spring")
+	await click_button("spring")
+	await launch()
+	check(flow.run.phase == "ambush_workshop" and flow.run.workshop_vitals().leaves == spring.leaves
+		and flow.run.workshop_vitals().qi == spring.qi and flow.run.relic == "reed_boots",
+		"Reload changed the spring trade or the carried relic")
+	await select_kit("scale_veil", "stone_veil")
+	check(flow.run.battle.leaves == spring.leaves and flow.run.battle.qi == spring.qi and flow.run.battle.relic_ready,
+		"Supplies must be applied once and the relic must reset for the new fight")
+
+
+func check_relic_rules() -> void:
+	var boot := Rules.new({"relic": "reed_boots"})
+	check(boot.movement_range() == 3 and boot.preview_action("move", 20).steps == 3 and boot.relic_ready,
+		"Forecast consumed the boots or lost the third step")
+	check(boot.take_turn("move", 20).action == "move" and not boot.relic_ready and boot.movement_range() == 2,
+		"Boots did not expire after the actual move")
+	var token := Rules.new({"relic": "jade_token"})
+	var guard := token.preview_action("guard")
+	check(guard.relic_block == 3 and guard.receives == 1 and token.relic_ready,
+		"Ngọc bài must reduce damage after guard without mutating preview")
+	token.take_turn("guard")
+	check(token.hp == 47 and not token.relic_ready, "The token did not absorb once")
+	var jade := Rules.new({"relic": "jade_token", "jade_skin": true})
+	jade.intent = {"kind": "strike", "name": "Cắn xé", "cells": [jade.hero], "damage": 4}
+	check(jade.preview_action("jade_skin").relic_block == 0, "A fully blocked hit cannot spend the token")
+	jade.take_turn("jade_skin")
+	check(jade.relic_ready, "A fully blocked hit consumed the token")
+	check(Rules.new({"relic": "essence_pin", "qi": 2}).qi == 3
+		and Rules.new({"relic": "essence_pin", "qi": 4}).qi == 4, "Trâm tụ nguyên must grant capped starting Qi")
 
 
 func check_ambush_kit() -> void:
@@ -518,6 +593,7 @@ func exercise() -> void:
 	check_rank_two_gu()
 	check_ford_gu()
 	check_ambush_kit()
+	check_relic_rules()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -612,5 +688,5 @@ func exercise() -> void:
 	await play_rank_two()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy saves, four Gu families, ford and pass migration, targeting, concealment and four-step movement")
+		print("Godot run passed: legacy saves, Gu loadouts, route choices, merchants, one-use relics and waypoint replay")
 	quit(1 if failed else 0)

@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
 
 const COLUMNS := 8
 const ROWS := 5
@@ -56,6 +57,8 @@ var strong_strikes := 0
 var cracks: Array = []
 var steps_bonus := 0
 var veil_turns := 0
+var relic := ""
+var relic_ready := false
 
 
 func _init(options: Dictionary = {}) -> void:
@@ -85,6 +88,10 @@ func _init(options: Dictionary = {}) -> void:
 	water = options.get("water", [])
 	cracks = options.get("cracks", [])
 	brew_left = Gu.BREW_CHARGES if starter_gu == "brew" else 0
+	relic = options.get("relic", "")
+	relic_ready = relic in ["reed_boots", "jade_token"]
+	if relic == "essence_pin":
+		qi = mini(max_qi, qi + 1)
 	forecast()
 
 
@@ -135,7 +142,7 @@ func move_targets() -> Array:
 
 
 func movement_range() -> int:
-	return MOVE_RANGE + steps_bonus
+	return MOVE_RANGE + steps_bonus + int(relic_ready and relic == "reed_boots")
 
 
 func can_extend_veil() -> bool:
@@ -364,10 +371,13 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var boosted := strong_strikes
 	var extra_steps := steps_bonus
 	var concealment := veil_turns
+	var ready_relic := relic_ready
 	var set_trigger := false
 	match action:
 		"move":
 			extra_steps = 0
+			if relic == "reed_boots":
+				ready_relic = false
 		"strike":
 			set_trigger = counter_ready or boosted > 0
 			var bonus := counter_bonus() if counter_ready else Gu.BREW_STRIKE_BONUS if boosted > 0 else 0
@@ -416,6 +426,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			healed = mini(LEAF_HEAL, MAX_HP - hp)
 	var receives := 0
 	var absorbed := 0
+	var relic_block := 0
 	var hit: bool = dealt < wolf_hp and position_after in intent.cells
 	var evaded := hit and concealment > 0 and aim_can_be_lost()
 	if evaded:
@@ -429,12 +440,16 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			ward = 0
 			if absorbed > 0 and build_family == "ward" and protection >= white_jade_absorb():
 				counter = true
-		receives = mini(hp + healed, damage - absorbed)
+		if relic == "jade_token" and ready_relic and damage > absorbed:
+			relic_block = mini(Goods.TOKEN_BLOCK, damage - absorbed)
+			ready_relic = false
+		receives = mini(hp + healed, damage - absorbed - relic_block)
 	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
 		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if dealt < wolf_hp else 0,
 		"ward_strength": protection, "moon_mark": mark and dealt < wolf_hp, "set_trigger": set_trigger,
 		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
-		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded}
+		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
+		"relic_ready": ready_relic, "relic_block": relic_block}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -459,10 +474,14 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	strong_strikes = preview.strong_strikes
 	steps_bonus = preview.steps_bonus
 	veil_turns = preview.veil_turns
+	var used_relic: bool = relic_ready and not preview.relic_ready
+	relic_ready = preview.relic_ready
 	match action:
 		"move":
 			hero = target
 			notes.append("Bạn di chuyển đến %s." % cell_name(hero))
+			if used_relic:
+				notes.append("Giày cỏ lau đã hỗ trợ bước đầu.")
 		"strike", "moon", "moon_edge":
 			var damage: int = preview.dealt
 			wolf_hp -= damage
@@ -523,6 +542,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("%s trúng bạn, mất %d sinh lực." % [intent.name, damage])
 		if preview.absorbed > 0:
 			notes.append("Lớp ngọc chặn %d sát thương." % preview.absorbed)
+		if preview.relic_block > 0:
+			notes.append("Ngọc bài chặn thêm %d sát thương." % preview.relic_block)
 		if counter_ready and (not had_counter or action == "strike"):
 			notes.append("Phản đòn đã sẵn sàng.")
 		if hp <= 0:

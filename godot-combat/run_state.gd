@@ -3,7 +3,8 @@ extends RefCounted
 const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
-const CURRENT_VERSION := 6
+const Goods = preload("res://waypoint_goods.gd")
+const CURRENT_VERSION := 7
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -66,6 +67,10 @@ var moon_bonus := 0
 var phase := "battle"
 var battle: Rules
 var journal: Array = []
+var stones := 0
+var relic := ""
+var stop := {}
+var visited_shop := {}
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -118,7 +123,7 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
 		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
 		"refined_gu": arsenal.get("refined_gu", ""), "starter_gu": arsenal.get("starter_gu", ""),
-		"revised_ward": revised_ward})
+		"revised_ward": revised_ward, "relic": arsenal.get("relic", "")})
 
 
 func perform(action: String, target: int = -1) -> Dictionary:
@@ -133,6 +138,12 @@ func perform(action: String, target: int = -1) -> Dictionary:
 	elif battle.result == Rules.VICTORY:
 		if floor >= FLOORS.size():
 			phase = "complete"
+			if version >= 7:
+				match floor:
+					RIDGE_FLOOR:
+						stones += Goods.RIDGE_STONES
+					FORD_FLOOR:
+						stones += Goods.FORD_STONES
 		elif floor == FLOORS.size() - 1:
 			phase = "victory"
 		else:
@@ -247,11 +258,21 @@ func begin_chapter() -> bool:
 
 
 func workshop_vitals() -> Dictionary:
-	var heal := FORD_HEAL if phase == "ford_workshop" else CHAPTER_HEAL
-	if phase == "ambush_workshop":
-		heal = AMBUSH_HEAL
+	if not stop.is_empty():
+		return stop.duplicate()
+	var heal := CHAPTER_HEAL
+	if phase != "refinement":
+		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
 	return {"hp": mini(Rules.MAX_HP, battle.hp + heal),
-		"qi": mini(battle.max_qi, battle.qi + CHAPTER_QI)}
+		"qi": mini(battle.max_qi, battle.qi + CHAPTER_QI), "leaves": battle.leaves}
+
+
+func departure_qi() -> int:
+	return starting_qi(workshop_vitals().qi)
+
+
+func starting_qi(qi: int) -> int:
+	return mini(battle.max_qi, qi + int(relic == "essence_pin"))
 
 
 func revised_ward_rules() -> bool:
@@ -265,7 +286,7 @@ func can_cross_ford() -> bool:
 func cross_ford() -> bool:
 	if not can_cross_ford():
 		return false
-	phase = "ford_workshop"
+	enter_waypoint("ford_workshop")
 	journal.append(["cross_ford"])
 	return true
 
@@ -277,7 +298,7 @@ func can_enter_pass() -> bool:
 func enter_pass() -> bool:
 	if not can_enter_pass():
 		return false
-	phase = "ambush_workshop"
+	enter_waypoint("ambush_workshop")
 	journal.append(["enter_pass"])
 	return true
 
@@ -288,6 +309,105 @@ func workshop_size() -> int:
 	return 3 if revised_ward_rules() else 2
 
 
+func enter_waypoint(next_workshop: String) -> void:
+	if version >= 7:
+		phase = "waypoint"
+		stop = workshop_vitals()
+	else:
+		phase = next_workshop
+
+
+func waypoint_options() -> Array:
+	return ["camp", "merchant", "salvage" if floor == RIDGE_FLOOR else "spring"] if phase == "waypoint" else []
+
+
+func waypoint_preview(id: String) -> Dictionary:
+	if id not in waypoint_options():
+		return {}
+	var next := stop.duplicate()
+	next.stones = stones
+	next.reason = ""
+	match id:
+		"camp":
+			next.hp = mini(Rules.MAX_HP, next.hp + Goods.CAMP_HEAL)
+		"salvage":
+			if next.hp <= Goods.CACHE_COST:
+				next.reason = "Cần hơn %d sinh lực." % Goods.CACHE_COST
+			next.hp -= Goods.CACHE_COST
+			next.stones += Goods.CACHE_STONES
+		"spring":
+			if next.qi < Goods.SPRING_COST:
+				next.reason = "Cần %d chân nguyên." % Goods.SPRING_COST
+			next.qi -= Goods.SPRING_COST
+			next.leaves += 1
+	next.departure_qi = starting_qi(next.qi)
+	return next
+
+
+func choose_waypoint(id: String) -> bool:
+	var next := waypoint_preview(id)
+	if next.is_empty() or not next.reason.is_empty():
+		return false
+	stones = next.stones
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	if id == "merchant":
+		phase = "shop"
+	else:
+		leave_waypoint()
+	journal.append([id])
+	return true
+
+
+func shop_relic() -> String:
+	var index := (seed + floor - RIDGE_FLOOR) % Goods.RELIC_ORDER.size()
+	return Goods.RELIC_ORDER[index]
+
+
+func shop_price(id: String) -> int:
+	if id == "buy_leaf":
+		return Goods.LEAF_PRICE
+	return Goods.RELIC_TRADE_PRICE if not relic.is_empty() and relic != shop_relic() else Goods.RELIC_PRICE
+
+
+func shop_unavailable(id: String) -> String:
+	if phase != "shop" or id not in ["buy_leaf", "buy_relic"]:
+		return "Món hàng không còn được bán."
+	if visited_shop.has(id):
+		return "Đã mua món này tại quầy."
+	if id == "buy_relic" and relic == shop_relic():
+		return "Bạn đang mang bảo vật này."
+	var price := shop_price(id)
+	if stones < price:
+		return "Cần %d nguyên thạch." % price
+	return ""
+
+
+func buy(id: String) -> bool:
+	if not shop_unavailable(id).is_empty():
+		return false
+	stones -= shop_price(id)
+	visited_shop[id] = true
+	if id == "buy_leaf":
+		stop.leaves += 1
+	else:
+		relic = shop_relic()
+	journal.append([id])
+	return true
+
+
+func leave_shop() -> bool:
+	if phase != "shop":
+		return false
+	leave_waypoint()
+	visited_shop.clear()
+	journal.append(["leave_shop"])
+	return true
+
+
+func leave_waypoint() -> void:
+	phase = "ford_workshop" if floor == RIDGE_FLOOR else "ambush_workshop"
+
+
 func equip_build(recipe: String, starter: String) -> bool:
 	if phase not in ["refinement", "ford_workshop", "ambush_workshop"]:
 		return false
@@ -296,7 +416,7 @@ func equip_build(recipe: String, starter: String) -> bool:
 		return false
 	var vitals := workshop_vitals()
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
-		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": battle.leaves}
+		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves, "relic": relic}
 	match phase:
 		"ford_workshop":
 			floor = FORD_FLOOR
@@ -305,6 +425,7 @@ func equip_build(recipe: String, starter: String) -> bool:
 		_:
 			floor = RIDGE_FLOOR
 	battle = encounter(vitals.hp, vitals.qi, battle.max_qi, arsenal)
+	stop.clear()
 	phase = "battle"
 	journal.append(["equip", recipe, starter])
 	return true
@@ -322,7 +443,7 @@ func snapshot() -> Dictionary:
 	var saved := {"version": version, "hero": profile.hero, "depth": profile.depth, "seed": seed, "journal": journal}
 	var schema := version
 	if phase == "ambush_workshop" or floor >= AMBUSH_FLOOR:
-		schema = 6
+		schema = maxi(schema, 6)
 	elif version == 4 and (phase == "ford_workshop" or floor >= FORD_FLOOR):
 		schema = 5
 	if schema != version:
@@ -343,7 +464,7 @@ static func restore(saved: Variant) -> RefCounted:
 		return null
 	var rules_version := int(saved.version)
 	if saved.has("chapter_rules"):
-		if saved.version < 5 or not finite_integer(saved.chapter_rules, 4, int(saved.version) - 1):
+		if saved.version < 5 or saved.version > 6 or not finite_integer(saved.chapter_rules, 4, int(saved.version) - 1):
 			return null
 		rules_version = int(saved.chapter_rules)
 	var run = load("res://run_state.gd").new(profile_data, int(saved.seed), rules_version)
@@ -360,6 +481,10 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = run.choose_route(command[0])
 				"rest":
 					committed = run.rest(command[0])
+				"waypoint":
+					committed = run.choose_waypoint(command[0])
+				"shop":
+					committed = run.leave_shop() if command[0] == "leave_shop" else run.buy(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

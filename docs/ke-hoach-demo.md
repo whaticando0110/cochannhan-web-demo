@@ -33,6 +33,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 5. Chọn bộ Nhị chuyển sau khi thắng Cuồng Điện Lang. Chín cặp dùng được trong lượt mới và Luyện trận. Gemini làm atlas Nguyệt Mang và Bạch Ngọc trên nhánh asset riêng.
 6. Nối Bãi Đá Suối Sấm, cho đổi bộ giữa hai màn và thêm hệ Tửu. Lượt v4 tiếp tục giữ luật cũ ở Sườn đá Mù Sương và nhận luật mới ở Suối Sấm. Gemini phụ trách atlas Tửu Trùng, Tứ Vị Tửu Trùng và ô nước nông có dấu nhiễm điện.
 7. Nối Hẻm Đá Phục Kích và hệ Ẩn. Lượt v4/v5 giữ luật đã áp dụng trong hai màn trước khi tiếp tục vào hẻm. Gemini làm hiệu ứng hai Cổ hệ Ẩn và mẫu ô nứt/đá rơi trên nhánh asset riêng.
+8. Thêm điểm dừng, nguyên thạch trong túi, thương nhân và bảo vật cho lượt v7. Xem chi phí và kết quả dự kiến ở mức sinh lực, chân nguyên và số lá thực tế trước khi xác nhận.
 
 ## Bộ Cổ ở Nhị chuyển
 
@@ -57,6 +58,25 @@ Kiểm thử v5 đi hết hai màn Nhị chuyển với 108 tổ hợp gồm ch�
 Kiểm thử v6 tìm được đường thắng ở Hẻm Đá cho 192 tổ hợp gồm 16 cặp, bốn bậc tư chất và ba bố cục. Trong phép tìm đường thắng sớm, bộ Nguyệt thuần thắng sau 4–6 lượt và có trường hợp chỉ còn 4 sinh lực. Ba bộ thuần còn lại thắng sau 9 lượt, thấp nhất 7 sinh lực. Phép thử Đinh đẳng ưu tiên bảo toàn sinh lực trong 13 lượt tìm được đường dùng Ẩn Lân giữ nguyên sinh lực ở cả ba bố cục. Mười sáu cặp cũng qua cả ba màn Nhị chuyển ở một lượt Đinh đẳng cố định.
 
 Khi thêm hệ mới, chuẩn bị ít nhất hai Cổ có vai trò bổ sung và một lựa chọn phối hệ. Chốt tương tác trong Luyện trận trước khi đưa cả bộ vào chiến lợi phẩm. Địa Thính Nhục Nhĩ Thảo phù hợp một nhánh do thám khi đã có màn phục kích và đường đi để người chơi tận dụng.
+
+## Điểm dừng roguelike
+
+*Slay the Spire* cho chọn đường an toàn hay rủi ro và mang di vật theo lượt. Vượt Thanh Mao áp dụng quyết định đó ở hai điểm dừng giữa ba trận, với một ô bảo vật để dễ đọc ảnh hưởng của món đang mang. [Slay the Spire · Mega Crit](https://store.steampowered.com/app/646570/Slay_the_Spire/)
+
+*Wildfrost* kết hợp chọn đường và bùa hỗ trợ đội hình. Trong Vượt Thanh Mao, bảo vật bổ sung lựa chọn cho cả bộ thuần và phối hệ. Chúng tác động vào lần di chuyển đầu, đòn trúng đầu hoặc chân nguyên lúc vào trận. [Wildfrost · Deadpan Games và Gaziter](https://store.steampowered.com/app/1811990/Wildfrost/)
+
+*Into the Breach* cho thấy ý định địch trước lượt. Vượt Thanh Mao dùng cùng nguyên tắc cung cấp thông tin cho hai điểm dừng, hiển thị giá, tài nguyên trước và sau khi chọn, cùng cảnh báo địa hình của trận kế tiếp. [Into the Breach · Subset Games](https://store.steampowered.com/app/590380/Into_the_Breach/)
+
+| Lựa chọn | Hiệu ứng ở lượt v7 |
+| --- | --- |
+| Lều nghỉ | Hồi thêm tối đa 6 sinh lực sau phần hồi lúc chuyển màn. |
+| Túi bên bờ đá | Có sau Sườn đá Mù Sương. Mất 8 sinh lực để nhận 3 nguyên thạch. |
+| Mạch nước trong khe | Có sau Suối Sấm. Tốn 2 chân nguyên để lấy một Sinh Cơ Diệp. |
+| Quầy đổi đồ | Một Sinh Cơ Diệp giá 3 và một bảo vật giá 4 nguyên thạch. Đổi bảo vật đang mang tốn 2. Mỗi món mua tối đa một lần tại mỗi quầy. Hàng bảo vật theo mã lượt và đổi khi sang điểm dừng thứ hai. |
+
+Thắng Sườn đá Mù Sương nhận 4 nguyên thạch. Thắng Suối Sấm nhận 2. Mua bảo vật mới thay món đang mang. Giày cỏ lau thêm một ô cho lần Di chuyển đầu mỗi trận, có thể cộng với bước ẩn. Ngọc bài hộ thân chặn tối đa 3 sát thương còn lại của đòn đầu còn gây sát thương sau Thủ thế và lớp ngọc. Trâm tụ nguyên thêm 1 chân nguyên đầu trận đến mức sức chứa. Túi nguyên thạch và bảo vật thuộc lượt hiện tại.
+
+Kiểm 48 lượt v7 gồm bốn bộ thuần, ba mã lượt và bốn cách kết hợp điểm dừng. Có đường thắng khi nghỉ cả hai lần, nhặt nguyên thạch rồi mua cả hai món ở quầy, mua bảo vật rồi đổi chân nguyên lấy lá, hoặc đổi bảo vật giữa hai trận. Khi tải lại, cửa hàng giữ đúng món đã mua và chi phí đã trả.
 
 <details>
 <summary>Kế hoạch của bản thử thú triều trước đây</summary>

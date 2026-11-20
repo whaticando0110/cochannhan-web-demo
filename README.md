@@ -25,9 +25,11 @@ Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một C
 
 **7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể dùng Bạch Ngọc để tăng sức chặn và mở Phản đòn. Bộ Tửu hồi chân nguyên rồi cường hóa hai cú Tay không. Bộ Ẩn dùng Ẩn Thạch chuẩn bị bước đi xa và Ẩn Lân để làm địch mất dấu. Dùng hai Cổ hệ Ẩn nối tiếp giúp lần Di chuyển kế tiếp đi tối đa bốn ô. Có 16 cặp giữa bốn hệ. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
 
+Ở lượt mới, sau Sườn đá Mù Sương và Suối Sấm có thể chọn **Lều nghỉ**, **Quầy đổi đồ** hoặc **Biến cố**. Xem mức hồi, chi phí sinh lực hoặc chân nguyên trước khi chọn. Thắng hai trận này nhận nguyên thạch vào túi để mua Sinh Cơ Diệp hoặc một bảo vật. Hàng ở quầy theo mã lượt chơi. Bảo vật dùng chung với mọi bộ Cổ và đi theo bạn sang trận kế tiếp.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Lượt v3 mở luật mới khi vào Nhị chuyển. Lượt v4/v5 giữ các luật đã dùng ở màn cũ và mở hệ Ẩn khi vào Hẻm Đá. Phạm vi kiểm hiện tại là Windows.
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ, kể cả chọn điểm dừng và mua hàng. Điểm dừng theo luật v7 mở ở lượt mới. Lượt v4/v5/v6 tiếp tục theo luật đã lưu. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

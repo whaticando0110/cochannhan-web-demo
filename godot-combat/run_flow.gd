@@ -3,6 +3,7 @@ extends Control
 const Run = preload("res://run_state.gd")
 const Rules = preload("res://battle_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
 const Ceremony = preload("res://ceremony.gd")
 const BattleScene = preload("res://combat_preview.tscn")
 const HUYEN = preload("res://assets/huyen-bao-selection.png")
@@ -196,7 +197,7 @@ func show_result() -> void:
 	var section := "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()]
 	if run.floor >= Run.RIDGE_FLOOR or run.phase == "refinement":
 		var stage_number := maxi(1, run.floor - Run.RIDGE_FLOOR + 1)
-		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop"])
+		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop", "waypoint", "shop"])
 		section = "NHỊ CHUYỂN    /    %d TRÊN 3" % stage_number
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
@@ -223,6 +224,12 @@ func show_result() -> void:
 		"ambush_workshop":
 			title = "Chuẩn bị vào Hẻm Đá"
 			description = "Nghỉ ở chân hẻm và chọn bộ trước trận phục kích."
+		"waypoint":
+			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
+			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
+		"shop":
+			title = "Quầy đổi đồ"
+			description = "Mỗi món mua được một lần tại quầy. Bảo vật mới thay món đang mang."
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
@@ -247,6 +254,10 @@ func show_result() -> void:
 		draw_rest()
 	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop"]:
 		draw_workshop()
+	elif run.phase == "waypoint":
+		draw_waypoint()
+	elif run.phase == "shop":
+		draw_shop()
 	else:
 		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
 			Rect2(96, 480 if run.phase in ["victory", "complete"] else 335, 316, 54), show_entry)
@@ -332,6 +343,93 @@ func enter_pass() -> void:
 		show_result()
 
 
+func draw_waypoint() -> void:
+	var entries := {
+		"camp": ["Lều nghỉ", "Băng bó trước khi đi. Hồi tối đa %d sinh lực." % Goods.CAMP_HEAL],
+		"merchant": ["Quầy đổi đồ", "Xem Sinh Cơ Diệp và %s." % Goods.RELICS[run.shop_relic()][0]],
+		"salvage": ["Túi bên bờ đá", "Băng qua đá sắc để nhặt thêm nguyên thạch."],
+		"spring": ["Mạch nước trong khe", "Dùng chân nguyên lấy một lá Sinh Cơ Diệp."],
+	}
+	var vitals: Dictionary = run.workshop_vitals()
+	var i := 0
+	for id in run.waypoint_options():
+		var next: Dictionary = run.waypoint_preview(id)
+		var card := panel(menu, Rect2(96 + i * 342, 308, 324, 258), Color("#1a2b25"), Color("#586c54"))
+		var inner := 288.0
+		text(card, entries[id][0], Rect2(18, 14, inner, 62), 28, GOLD, true)
+		text(card, entries[id][1], Rect2(18, 82, inner, 63), 17)
+		var detail: String
+		match id:
+			"camp":
+				detail = "Sinh lực %d → %d" % [vitals.hp, next.hp]
+			"salvage":
+				detail = "Sinh lực %d → %d\nNguyên thạch %d → %d" % [vitals.hp, next.hp, run.stones, next.stones]
+			"spring":
+				detail = "Chân nguyên %d → %d\nSố lá %d → %d" % [run.departure_qi(), next.departure_qi, vitals.leaves, next.leaves]
+			_:
+				detail = "Giá lá %d · Bảo vật %d nguyên thạch." % [run.shop_price("buy_leaf"), run.shop_price("buy_relic")]
+		if not next.reason.is_empty():
+			detail = next.reason
+		text(card, detail, Rect2(18, 145, inner, 57), 17, GREEN)
+		var select := button(card, "Chọn", Rect2(18, 201, inner, 43), choose_waypoint.bind(id))
+		select.name = id
+		select.disabled = not next.reason.is_empty()
+		i += 1
+	draw_waypoint_vitals(584)
+	var encounter_hint := "Suối Sấm · Nước tím báo dẫn lôi." if run.floor == Run.RIDGE_FLOOR else "Hẻm Đá · Ô nứt sáng báo đá rơi."
+	text(menu, encounter_hint, Rect2(96, 628, 1008, 32), 18, GOLD)
+
+
+func draw_shop() -> void:
+	var for_sale: Array = Goods.RELICS[run.shop_relic()]
+	var offers := [
+		["buy_leaf", "Sinh Cơ Diệp", "Hồi tối đa %d sinh lực khi dùng một lá trong trận." % Rules.LEAF_HEAL],
+		["buy_relic", for_sale[0], for_sale[1]],
+	]
+	for i in range(offers.size()):
+		var offer: Array = offers[i]
+		var id: String = offer[0]
+		var card := panel(menu, Rect2(96 + i * 513, 308, 495, 218), Color("#1a2b25"), Color("#586c54"))
+		text(card, offer[1], Rect2(18, 15, 459, 42), 28, GOLD, true)
+		text(card, offer[2], Rect2(18, 69, 459, 58), 18)
+		var reason := run.shop_unavailable(id)
+		var price := "Giá %d nguyên thạch" % run.shop_price(id)
+		text(card, price if reason.is_empty() else reason, Rect2(18, 125, 459, 28), 17, GREEN)
+		var exchange := id == "buy_relic" and run.shop_price(id) == Goods.RELIC_TRADE_PRICE
+		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(18, 159, 459, 43), buy_waypoint_item.bind(id))
+		purchase.name = id
+		purchase.disabled = not reason.is_empty()
+	draw_waypoint_vitals(541)
+	var exit_shop := button(menu, "Rời quầy", Rect2(844, 607, 260, 49), leave_waypoint_shop)
+	exit_shop.name = "leave_shop"
+
+
+func draw_waypoint_vitals(y: float) -> void:
+	var now: Dictionary = run.workshop_vitals()
+	var trinket: String = Goods.RELICS[run.relic][0] if not run.relic.is_empty() else "Ô bảo vật trống"
+	var summary := "Sinh lực %d/%d   ·   Chân nguyên %d/%d   ·   Số lá %d   ·   Túi %d nguyên thạch   ·   %s"
+	text(menu, summary % [now.hp, Rules.MAX_HP, run.departure_qi(), run.battle.max_qi, now.leaves, run.stones, trinket],
+		Rect2(96, y, 1008, 44), 18, GREEN)
+
+
+func choose_waypoint(id: String) -> void:
+	if run.choose_waypoint(id):
+		persist()
+		show_result()
+
+
+func buy_waypoint_item(id: String) -> void:
+	if run.buy(id):
+		persist()
+		show_result()
+
+
+func leave_waypoint_shop() -> void:
+	if run.leave_shop():
+		persist()
+		show_result()
+
+
 func draw_workshop() -> void:
 	var revised := run.revised_ward_rules()
 	var count := run.workshop_size()
@@ -365,7 +463,7 @@ func draw_workshop() -> void:
 	fight.name = "equip_confirm"
 	var vitals: Dictionary = run.workshop_vitals()
 	text(menu, "Khi vào trận  ·  Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d  ·  Giữ Sinh Cơ Diệp ×%d" %
-		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, vitals.qi, run.battle.max_qi, run.battle.leaves],
+		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, run.departure_qi(), run.battle.max_qi, vitals.leaves],
 		Rect2(96, 644, 1008, 39), 18, GREEN)
 
 
@@ -393,6 +491,8 @@ func draw_vitals(y: float) -> void:
 		vitals += "     ·     Ngọc Bì"
 	if run.battle.leaves > 0:
 		vitals += "     ·     Sinh Cơ ×%d" % run.battle.leaves
+	if run.version >= 7 and run.floor >= Run.RIDGE_FLOOR:
+		vitals += "     ·     %d nguyên thạch" % run.stones
 	text(menu, vitals, Rect2(96, y, 980, 40), 20, GREEN)
 
 

@@ -7,6 +7,7 @@ signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
 const Arena = preload("res://arena.gd")
 const RunData = preload("res://run_state.gd")
 const PORTRAIT = preload("res://assets/huyen-bao-selection.png")
@@ -37,6 +38,7 @@ var intent_copy: Label
 var report_label: Label
 var hint_label: Label
 var wards_label: Label
+var relic_label: Label
 var hp_bar: ProgressBar
 var qi_bar: ProgressBar
 var wolf_bar: ProgressBar
@@ -149,6 +151,11 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 func build_hud() -> void:
 	label("CỔ CHÂN NHÂN  /  THANH MAO SƠN", 36, 22, 600, 30, 17, GREEN)
+	if Goods.RELICS.has(state.relic):
+		relic_label = label("", 655, 10, 333, 31, 15, GOLD)
+		relic_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		relic_label.mouse_filter = Control.MOUSE_FILTER_PASS
+		relic_label.tooltip_text = Goods.RELICS[state.relic][1]
 	label(room_title, 34, 48, 790, 60, 54, GOLD, true)
 	var mode := "Trận theo lượt"
 	if run != null:
@@ -288,6 +295,11 @@ func update_hud() -> void:
 	if actions.has("vital_leaf"):
 		supplies.append("Sinh Cơ ×%d" % state.leaves)
 	wards_label.text = "    ".join(supplies)
+	if is_instance_valid(relic_label):
+		var status := " · Sẵn sàng" if state.relic_ready else " · Đã dùng"
+		if state.relic == "essence_pin":
+			status = ""
+		relic_label.text = str(Goods.RELICS[state.relic][0]) + status
 	turn_label.text = "Lượt %02d" % state.turn
 	match state.result:
 		Rules.VICTORY:
@@ -417,13 +429,15 @@ func inspect_action(action: String) -> void:
 		pieces.append("Lớp ngọc chặn %d" % result.absorbed)
 	elif result.jade_turns > 0:
 		pieces.append("Lớp ngọc %d · còn %d lượt" % [result.ward_strength, result.jade_turns])
+	if result.relic_block > 0:
+		pieces.append("Ngọc bài chặn %d" % result.relic_block)
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
 	elif result.dealt >= state.wolf_hp:
 		pieces.append("Kết liễu đối thủ trước khi địch đáp trả")
-	elif result.healed == 0 and result.absorbed == 0:
+	elif result.healed == 0 and result.absorbed == 0 and result.relic_block == 0:
 		pieces.append("Lượt này giữ nguyên sinh lực")
-	if result.healed > 0 or result.absorbed > 0:
+	if result.healed > 0 or result.absorbed > 0 or result.relic_block > 0:
 		pieces.append("Sinh lực còn %d/%d" % [state.hp + result.healed - result.receives, Rules.MAX_HP])
 	if action == "brew" and result.brew_ready:
 		pieces.append("Chuẩn bị bộ Tửu")
@@ -456,6 +470,8 @@ func inspect_cell(cell: int) -> void:
 		outcome = "Ẩn Lân làm đối thủ mất dấu"
 	elif preview.absorbed > 0:
 		outcome = "Lớp ngọc chặn %d · còn chịu %d sát thương" % [preview.absorbed, preview.receives]
+	elif preview.relic_block > 0:
+		outcome = "Ngọc bài chặn %d · còn chịu %d sát thương" % [preview.relic_block, preview.receives]
 	elif preview.receives > 0:
 		outcome = "Vẫn nằm trong vùng đánh · chịu %d sát thương" % preview.receives
 	elif not state.intent.cells.is_empty():
