@@ -11,6 +11,37 @@ Chạy `npm run preview` trong repo và mở [demo local](http://127.0.0.1:4173)
 
 `dist/roguelike.mjs` quản lý chu kỳ màn, chiến lợi phẩm và hồ sơ Khai Khiếu. Luật chiến đấu dùng chung từ `dist/combat.mjs`. Bản lưu lưu mã ngẫu nhiên và các hành động đã chốt để khôi phục bàn, đối thủ và tài nguyên.
 
+## Bản Godot
+
+Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard rồi bấm **F5**, hoặc chạy `godot --path godot-combat` từ thư mục repo. **F6** với cảnh `combat_preview.tscn` vẫn mở trận Điện Lang độc lập.
+
+Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi theo biển hoa để mở Không Khiếu. Dùng **WASD**, phím mũi tên hoặc bấm một ô để tới. Trong ba trận theo lượt, dùng **1–4**. Sau khi chọn Di chuyển, bấm ô hoặc dùng **phím mũi tên + Enter**. Ô xanh né được đòn đã báo. Ô hổ phách đi được và vẫn nằm trong vùng đánh. Rê chuột hoặc dùng Tab vào lệnh để xem sát thương và chân nguyên dự kiến. Qua mỗi màn đầu chọn một chiến lợi phẩm để mang sang màn sau.
+
+Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Vách đá ở Khe đá chặn Nguyệt Quang. Tinh anh luân phiên vồ và lao xuyên một hàng. Mũi tên đánh dấu hàng sắp bị quét. Thắng màn hai, chọn chiến lợi phẩm rồi dừng chân để hồi sinh lực, hồi chân nguyên hoặc đi thẳng vào hang. Cuồng Điện Lang luân phiên vồ và quét hành lang, nghỉ một lượt sau đòn nặng và đổi nhịp dưới nửa sinh lực.
+
+**Ngọc Bì Cổ** là một lựa chọn thưởng sau màn đầu. Dùng phím **5** để tốn 1 chân nguyên và tạo lớp ngọc chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Có thể nhận **Sinh Cơ Diệp** sau trận Khe đá. Dùng phím **6** để tiêu một lá và hồi tối đa 12 sinh lực trước đòn đáp trả. Luyện Nguyệt Quang, hồi phục và Mở rộng Nguyên Hải vẫn có tác dụng như ghi trên thẻ thưởng.
+
+Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một Cổ Nhất chuyển với một Cổ Nhị chuyển rồi lần lượt đi qua **Sườn đá Mù Sương**, **Bãi Đá Suối Sấm** và **Hẻm Đá Phục Kích**. Có thể đổi bộ ở điểm nghỉ. Tại Suối Sấm, nước tím báo trước đòn dẫn lôi. Tại Hẻm Đá, ô nứt màu hổ phách báo trước đá rơi. Cả hai bên cần đường bắn thoáng để phóng đòn.
+
+**7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể dùng Bạch Ngọc để tăng sức chặn và mở Phản đòn. Bộ Tửu hồi chân nguyên rồi cường hóa hai cú Tay không. Bộ Ẩn dùng Ẩn Thạch chuẩn bị bước đi xa và Ẩn Lân để làm địch mất dấu. Dùng hai Cổ hệ Ẩn nối tiếp giúp lần Di chuyển kế tiếp đi tối đa bốn ô. Có 16 cặp giữa bốn hệ. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
+
+Ở lượt mới, sau Sườn đá Mù Sương và Suối Sấm có thể chọn **Lều nghỉ**, **Quầy đổi đồ** hoặc **Biến cố**. Xem mức hồi, chi phí sinh lực hoặc chân nguyên trước khi chọn. Thắng hai trận này nhận nguyên thạch vào túi để mua Sinh Cơ Diệp hoặc một bảo vật. Hàng ở quầy theo mã lượt chơi. Bảo vật dùng chung với mọi bộ Cổ và đi theo bạn sang trận kế tiếp.
+
+Sau Suối Sấm, **Săn tinh anh** dẫn vào **Ổ Điện Lang** thay cho một điểm dừng thường. Điện Lang đầu đàn luân phiên vồ vùng và lao xuyên hàng, với một lượt hồi thế sau đòn lớn. Thắng trận, chọn **Nanh Tinh Anh** để cộng 8 sát thương cho đòn đầu tiên gây sát thương mỗi trận, hoặc **Túi dược của thợ săn** để mang thêm một Sinh Cơ Diệp, hồi thêm sinh lực và giữ bảo vật đang mang. Cả hai lựa chọn dẫn về Hẻm Đá.
+
+**Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+
+Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ, kể cả chọn điểm dừng và nhận chiến lợi phẩm tinh anh. Ổ Điện Lang mở ở lượt v8. Lượt v4–v7 tiếp tục theo luật đã lưu. Phạm vi kiểm hiện tại là Windows.
+
+```sh
+godot --headless --path godot-combat --import
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/preview_smoke.gd
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/run_flow_smoke.gd
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/art_smoke.gd
+```
+
 <details>
 <summary>Tài liệu bản thử thú triều trước khi chuyển sang roguelike</summary>
 
