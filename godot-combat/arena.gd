@@ -346,7 +346,8 @@ func _draw() -> void:
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
-		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), 118, -direction, wolf_tint)
+		var wolf_size := 142 if rules.tactic == "den" else 118
+		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, -direction, wolf_tint)
 	if not ward_kind.is_empty():
 		draw_effect(Art.LOOPS[ward_kind], loop_time, hero_point, 112, direction, true)
 	if brew_stacks > 0:

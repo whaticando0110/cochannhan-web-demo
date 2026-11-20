@@ -89,7 +89,7 @@ func _init(options: Dictionary = {}) -> void:
 	cracks = options.get("cracks", [])
 	brew_left = Gu.BREW_CHARGES if starter_gu == "brew" else 0
 	relic = options.get("relic", "")
-	relic_ready = relic in ["reed_boots", "jade_token"]
+	relic_ready = relic in ["reed_boots", "jade_token", "elite_fang"]
 	if relic == "essence_pin":
 		qi = mini(max_qi, qi + 1)
 	forecast()
@@ -192,7 +192,7 @@ func forecast() -> void:
 		else:
 			intent = {"kind": "shot", "name": "Hồ quang", "cells": [hero], "damage": heavy_damage, "pattern": "bolt"}
 	elif not ranged and heavy_turn and gap <= 5:
-		var is_charge := (tactic == "elite" and heavy_count % 2 == 1) or (
+		var is_charge := (tactic in ["elite", "den"] and heavy_count % 2 == 1) or (
 			tactic == "king" and (heavy_count % 2 == 0) == enraged)
 		if is_charge:
 			var cells: Array[int] = []
@@ -225,7 +225,7 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den"]
 
 
 func aim_can_be_lost() -> bool:
@@ -424,6 +424,11 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 				extra_steps = 2
 		"vital_leaf":
 			healed = mini(LEAF_HEAL, MAX_HP - hp)
+	var relic_damage := 0
+	if relic == "elite_fang" and ready_relic and dealt > 0:
+		relic_damage = mini(Goods.FANG_BONUS, wolf_hp - dealt)
+		dealt += relic_damage
+		ready_relic = false
 	var receives := 0
 	var absorbed := 0
 	var relic_block := 0
@@ -449,7 +454,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		"ward_strength": protection, "moon_mark": mark and dealt < wolf_hp, "set_trigger": set_trigger,
 		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
 		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
-		"relic_ready": ready_relic, "relic_block": relic_block}
+		"relic_ready": ready_relic, "relic_block": relic_block, "relic_damage": relic_damage}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -488,6 +493,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			exchange.wolf_damage = damage
 			var name: String = Gu.GU[action].name if Gu.GU.has(action) else "Tay không"
 			notes.append("%s gây %d sát thương." % [name, damage])
+			if preview.relic_damage > 0:
+				notes.append("Nanh Tinh Anh cộng %d sát thương." % preview.relic_damage)
 			if action == "moon_edge" and preview.set_trigger:
 				notes.append("Nguyệt Mang kích phát Nguyệt Ấn.")
 			elif action == "strike" and preview.set_trigger:
@@ -555,7 +562,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	if result.is_empty():
 		if intent.kind in ["heavy", "shot", "flood", "ambush", "fall"]:
 			heavy_count += 1
-		recovering = (intent.kind == "heavy" and tactic == "king") or intent.kind in ["shot", "flood", "ambush", "fall"]
+		recovering = (intent.kind == "heavy" and tactic in ["king", "den"]) or intent.kind in ["shot", "flood", "ambush", "fall"]
 		turn += 1
 		forecast()
 	else:

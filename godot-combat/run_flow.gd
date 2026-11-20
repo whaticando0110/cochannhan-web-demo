@@ -199,9 +199,11 @@ func show_result() -> void:
 		var stage_number := maxi(1, run.floor - Run.RIDGE_FLOOR + 1)
 		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop", "waypoint", "shop"])
 		section = "NHỊ CHUYỂN    /    %d TRÊN 3" % stage_number
+	if run.elite_room or run.phase == "elite_workshop":
+		section = "NHỊ CHUYỂN    /    NHÁNH TINH ANH"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
-	var floor: Dictionary = run.stage_at(run.floor)
+	var floor: Dictionary = run.current_stage()
 	var title: String
 	var description: String
 	match run.phase:
@@ -223,7 +225,14 @@ func show_result() -> void:
 				Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name]
 		"ambush_workshop":
 			title = "Chuẩn bị vào Hẻm Đá"
-			description = "Nghỉ ở chân hẻm và chọn bộ trước trận phục kích."
+			description = "Nghỉ ở chân hẻm và chọn bộ trước trận phục kích." if run.elite_award.is_empty() else (
+				"Đã hạ đầu đàn và nhận %s. Chọn bộ Cổ trước khi vào Hẻm Đá." % Goods.ELITE_REWARDS[run.elite_award])
+		"elite_workshop":
+			title = Run.ELITE_DEN.name
+			description = "Điện Lang đầu đàn có %d sinh lực, luân phiên vồ vùng và lao xuyên hàng. Có một lượt hồi thế sau mỗi đòn lớn." % Run.ELITE_DEN.hp
+		"elite_reward":
+			title = "Chiến lợi phẩm tinh anh"
+			description = "Chọn một món trước khi trở lại đường chính. Cả hai lựa chọn đều hồi tối đa %d sinh lực và %d chân nguyên." % [Goods.DEN_HEAL, Goods.DEN_QI]
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -252,8 +261,10 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop"]:
 		draw_workshop()
+	elif run.phase == "elite_reward":
+		draw_elite_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -349,14 +360,18 @@ func draw_waypoint() -> void:
 		"merchant": ["Quầy đổi đồ", "Xem Sinh Cơ Diệp và %s." % Goods.RELICS[run.shop_relic()][0]],
 		"salvage": ["Túi bên bờ đá", "Băng qua đá sắc để nhặt thêm nguyên thạch."],
 		"spring": ["Mạch nước trong khe", "Dùng chân nguyên lấy một lá Sinh Cơ Diệp."],
+		"elite_detour": [Run.ELITE_DEN.name, "Đấu Điện Lang đầu đàn · %d sinh lực." % Run.ELITE_DEN.hp],
 	}
 	var vitals: Dictionary = run.workshop_vitals()
+	var options := run.waypoint_options()
+	var width := (1008.0 - 18 * (options.size() - 1)) / options.size()
 	var i := 0
-	for id in run.waypoint_options():
+	for id in options:
 		var next: Dictionary = run.waypoint_preview(id)
-		var card := panel(menu, Rect2(96 + i * 342, 308, 324, 258), Color("#1a2b25"), Color("#586c54"))
-		var inner := 288.0
-		text(card, entries[id][0], Rect2(18, 14, inner, 62), 28, GOLD, true)
+		var border := Color("#b0925d") if id == "elite_detour" else Color("#586c54")
+		var card := panel(menu, Rect2(96 + i * (width + 18), 308, width, 258), Color("#1a2b25"), border)
+		var inner := width - 36
+		text(card, entries[id][0], Rect2(18, 14, inner, 62), 25 if options.size() == 4 else 28, GOLD, true)
 		text(card, entries[id][1], Rect2(18, 82, inner, 63), 17)
 		var detail: String
 		match id:
@@ -366,18 +381,45 @@ func draw_waypoint() -> void:
 				detail = "Sinh lực %d → %d\nNguyên thạch %d → %d" % [vitals.hp, next.hp, run.stones, next.stones]
 			"spring":
 				detail = "Chân nguyên %d → %d\nSố lá %d → %d" % [run.departure_qi(), next.departure_qi, vitals.leaves, next.leaves]
+			"elite_detour":
+				detail = "Nhánh tự chọn\nNanh hoặc túi dược"
 			_:
 				detail = "Giá lá %d · Bảo vật %d nguyên thạch." % [run.shop_price("buy_leaf"), run.shop_price("buy_relic")]
 		if not next.reason.is_empty():
 			detail = next.reason
 		text(card, detail, Rect2(18, 145, inner, 57), 17, GREEN)
-		var select := button(card, "Chọn", Rect2(18, 201, inner, 43), choose_waypoint.bind(id))
+		var select := button(card, "Săn tinh anh" if id == "elite_detour" else "Chọn",
+			Rect2(18, 201, inner, 43), choose_waypoint.bind(id))
 		select.name = id
 		select.disabled = not next.reason.is_empty()
 		i += 1
 	draw_waypoint_vitals(584)
 	var encounter_hint := "Suối Sấm · Nước tím báo dẫn lôi." if run.floor == Run.RIDGE_FLOOR else "Hẻm Đá · Ô nứt sáng báo đá rơi."
 	text(menu, encounter_hint, Rect2(96, 628, 1008, 32), 18, GOLD)
+
+
+func draw_elite_rewards() -> void:
+	var held := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"elite_fang": Goods.RELICS.elite_fang[1] + "\n" + held,
+		"elite_remedy": "Hồi thêm tối đa %d sinh lực và nhận một Sinh Cơ Diệp. Giữ bảo vật đang mang." % Goods.REMEDY_HEAL}
+	var i := 0
+	for id in Goods.ELITE_REWARDS:
+		var next: Dictionary = run.elite_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 312, 494, 288), Color("#1a2b25"), Color("#b0925d"))
+		text(card, Goods.ELITE_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 76, 452, 90), 19)
+		text(card, "Sinh lực %d → %d    ·    Chân nguyên %d → %d\nSinh Cơ Diệp %d → %d" %
+			[run.battle.hp, next.hp, run.battle.qi, next.qi, run.battle.leaves, next.leaves],
+			Rect2(20, 175, 452, 51), 17, GREEN)
+		var claim := button(card, "Nhận và tới Hẻm Đá", Rect2(20, 234, 454, 41), claim_elite_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_elite_reward(id: String) -> void:
+	if run.claim_elite_reward(id):
+		persist()
+		show_result()
 
 
 func draw_shop() -> void:

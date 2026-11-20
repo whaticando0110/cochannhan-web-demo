@@ -34,6 +34,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 6. Nối Bãi Đá Suối Sấm, cho đổi bộ giữa hai màn và thêm hệ Tửu. Lượt v4 tiếp tục giữ luật cũ ở Sườn đá Mù Sương và nhận luật mới ở Suối Sấm. Gemini phụ trách atlas Tửu Trùng, Tứ Vị Tửu Trùng và ô nước nông có dấu nhiễm điện.
 7. Nối Hẻm Đá Phục Kích và hệ Ẩn. Lượt v4/v5 giữ luật đã áp dụng trong hai màn trước khi tiếp tục vào hẻm. Gemini làm hiệu ứng hai Cổ hệ Ẩn và mẫu ô nứt/đá rơi trên nhánh asset riêng.
 8. Thêm điểm dừng, nguyên thạch trong túi, thương nhân và bảo vật cho lượt v7. Xem chi phí và kết quả dự kiến ở mức sinh lực, chân nguyên và số lá thực tế trước khi xác nhận.
+9. Thêm Ổ Điện Lang vào điểm dừng sau Suối Sấm ở lượt v8. Thắng trận phụ mở một lựa chọn chiến lợi phẩm rồi đưa người chơi về Hẻm Đá.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -78,6 +79,25 @@ Khi thêm hệ mới, chuẩn bị ít nhất hai Cổ có vai trò bổ sung v�
 Thắng Sườn đá Mù Sương nhận 4 nguyên thạch. Thắng Suối Sấm nhận 2. Mua bảo vật mới thay món đang mang. Giày cỏ lau thêm một ô cho lần Di chuyển đầu mỗi trận, có thể cộng với bước ẩn. Ngọc bài hộ thân chặn tối đa 3 sát thương còn lại của đòn đầu còn gây sát thương sau Thủ thế và lớp ngọc. Trâm tụ nguyên thêm 1 chân nguyên đầu trận đến mức sức chứa. Túi nguyên thạch và bảo vật thuộc lượt hiện tại.
 
 Kiểm 48 lượt v7 gồm bốn bộ thuần, ba mã lượt và bốn cách kết hợp điểm dừng. Có đường thắng khi nghỉ cả hai lần, nhặt nguyên thạch rồi mua cả hai món ở quầy, mua bảo vật rồi đổi chân nguyên lấy lá, hoặc đổi bảo vật giữa hai trận. Khi tải lại, cửa hàng giữ đúng món đã mua và chi phí đã trả.
+
+## Ổ Điện Lang
+
+Sau Bãi Đá Suối Sấm, chọn săn tinh anh thay cho lều nghỉ, quầy đổi đồ hoặc mạch nước. Ổ Điện Lang có ba bố cục đá chặn theo mã lượt. Điện Lang đầu đàn có 96 sinh lực, cắn 12 sát thương và luân phiên vồ vùng hoặc lao xuyên hàng với 21 sát thương. Sau mỗi đòn lớn, đầu đàn đứng hồi thế một lượt để người chơi có cơ hội đổi vị trí hoặc phản công.
+
+Thắng trận hồi tối đa 16 sinh lực và 3 chân nguyên, sau đó chọn một trong hai món. **Nanh Tinh Anh** chiếm ô bảo vật và thêm 8 sát thương cho đòn Tay không, Nguyệt Quang hoặc Nguyệt Mang đầu tiên gây sát thương mỗi trận. **Túi dược của thợ săn** giữ bảo vật đang mang, hồi thêm tối đa 10 sinh lực và thêm một Sinh Cơ Diệp. Sinh lực, chân nguyên và vật phẩm sau khi nhận được hiển thị trên từng thẻ. Có thể đổi bộ trước khi vào Hẻm Đá.
+
+Việc chọn nhánh, đánh tinh anh và nhận thưởng đều lưu trong nhật ký. Phát lại nhật ký kiểm tra hành động theo đúng pha, gồm quyền nhận thưởng một lần và thua trận khi gục trong ổ.
+
+Phép tìm đường thắng ưu tiên kết thúc sớm kiểm 192 tổ hợp từ cùng điểm dừng, gồm 16 cặp Cổ, bốn tư chất và ba bố cục. Cả 192 tổ hợp có đường thắng ở Hẻm Đá khi đi qua lều nghỉ, và cũng có đường hạ tinh anh rồi qua Hẻm Đá với từng phần thưởng. Ổ Điện Lang mất 6–17 lượt, trung bình 11,6. Lối qua lều mất 6–9 lượt, trung bình 8,0, để thắng Hẻm Đá.
+
+| Bộ thuần | Lượt để hạ tinh anh | Sinh lực còn lại |
+| --- | --- | --- |
+| Nguyệt | 6–9 | 18–41 |
+| Hộ thể | 11–13 | 3–23 |
+| Tửu | 11–15 | 2–44 |
+| Ẩn | 13–17 | 4–32 |
+
+Nanh giúp kết thúc Hẻm Đá sớm hơn lối qua lều trong 76/192 tổ hợp. Túi dược cho sinh lực vào Hẻm Đá cao hơn Nanh trong 164/192 tổ hợp và cho sinh lực thấp nhất sau Hẻm Đá là 7, so với 1 khi chọn Nanh. Các số này mô tả đường thắng tìm được, phụ thuộc tài nguyên ở điểm dừng và cách chọn hành động.
 
 ## Đồ họa trong trận
 

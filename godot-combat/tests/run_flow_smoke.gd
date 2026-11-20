@@ -374,6 +374,71 @@ func check_relic_rules() -> void:
 	check(jade.relic_ready, "A fully blocked hit consumed the token")
 	check(Rules.new({"relic": "essence_pin", "qi": 2}).qi == 3
 		and Rules.new({"relic": "essence_pin", "qi": 4}).qi == 4, "Trâm tụ nguyên must grant capped starting Qi")
+	var fang := Rules.new({"relic": "elite_fang"})
+	check(fang.preview_action("moon").relic_damage == Goods.FANG_BONUS and fang.relic_ready,
+		"Fang preview must show the bonus without consuming it")
+	fang.take_turn("guard")
+	check(fang.relic_ready and fang.take_turn("moon").wolf_damage == fang.moon_damage + Goods.FANG_BONUS
+		and not fang.relic_ready and fang.preview_action("moon").relic_damage == 0, "Fang must boost only the first damaging attack")
+	var finisher := Rules.new({"relic": "elite_fang", "wolf_hp": Rules.STRIKE_DAMAGE + 1, "wolf_cell": 18})
+	var blow := finisher.take_turn("strike")
+	check(blow.wolf_damage == Rules.STRIKE_DAMAGE + 1 and blow.hero_damage == 0 and finisher.result == Rules.VICTORY,
+		"Fang bonus must cap at the target HP and prevent the defeated enemy's reply")
+
+
+func play_elite_detour() -> void:
+	var checkpoint := {"version": Run.CURRENT_VERSION, "hero": "huyen-bao", "depth": 12, "seed": 0, "journal": [
+		["moon", -1], ["moon", -1], ["elite"], ["refine"], ["move", 10], ["guard", -1], ["guard", -1],
+		["moon", -1], ["strike", -1], ["strike", -1], ["moon", -1], ["stone"], ["rest_qi"],
+		["move", 19], ["moon", -1], ["move", 12], ["moon", -1], ["move", 20], ["strike", -1], ["strike", -1],
+		["chapter_two"], ["equip", "moon_edge", "moon"], ["move", 18], ["moon", -1], ["guard", -1], ["moon_edge", -1],
+		["cross_ford"], ["merchant"], ["leave_shop"], ["equip", "moon_edge", "moon"],
+		["moon_edge", -1], ["move", 19], ["move", 21], ["strike", -1], ["strike", -1], ["moon", -1], ["enter_pass"]]}
+	var old := checkpoint.duplicate(true)
+	old.version = 7
+	var legacy: RefCounted = Run.restore(old)
+	check(legacy != null and legacy.waypoint_options().size() == 3 and not legacy.choose_waypoint("elite_detour"),
+		"v7 saves must retain the old waypoint choices")
+	flow.run = Run.restore(checkpoint)
+	flow.show_run()
+	check(flow.run.phase == "waypoint" and not flow.run.claim_elite_reward("elite_fang"), "Reward must be locked before the elite fight")
+	await capture("godot-v8-nhanh-tinh-anh.png")
+	var stones: int = flow.run.stones
+	await click_button("elite_detour")
+	await launch()
+	check(flow.run.phase == "elite_workshop", "Reload lost the chosen elite detour")
+	await select_kit("moon_edge", "moon")
+	check(flow.current.room_title == Run.ELITE_DEN.name and flow.run.battle.tactic == "den",
+		"The optional room must have its own stage and opponent")
+	await capture("godot-v8-o-dien-lang.png")
+	var doomed: RefCounted = Run.restore(flow.run.snapshot())
+	for i in range(20):
+		if doomed.phase == "battle":
+			doomed.perform("guard")
+	check(doomed.phase == "death" and not doomed.claim_elite_reward("elite_fang")
+		and Run.restore(doomed.snapshot()).phase == "death", "Dying to the elite must end the run without a reward")
+	await shoot(KEY_4)
+	check(flow.run.battle.intent.kind == "recover", "Pounce must have a recovery turn")
+	var before_recovery: int = flow.run.battle.hp
+	await shoot(KEY_3)
+	check(flow.run.battle.hp == before_recovery, "The recovery turn must allow a safe counterattack")
+	await launch()
+	check(flow.run.elite_room and flow.run.battle.intent.get("pattern") == "row", "Reload lost the telegraphed charge")
+	await play_commands([[KEY_4], [KEY_3], [KEY_4], [KEY_3]])
+	check(flow.run.phase == "elite_reward" and flow.run.stones == stones, "Elite victory must grant only its own reward")
+	await launch()
+	await capture("godot-v8-chien-loi-pham.png")
+	var prize: Dictionary = flow.run.elite_reward_preview("elite_fang")
+	var remedy: RefCounted = Run.restore(flow.run.snapshot())
+	check(remedy.claim_elite_reward("elite_remedy") and remedy.workshop_vitals().hp == mini(Rules.MAX_HP, prize.hp + Goods.REMEDY_HEAL)
+		and remedy.workshop_vitals().leaves == prize.leaves + 1 and remedy.relic.is_empty(), "Remedy must grant HP and one leaf instead of a relic")
+	await click_button("elite_fang")
+	await launch()
+	check(flow.run.phase == "ambush_workshop" and not flow.run.elite_room and flow.run.elite_award == "elite_fang"
+		and not flow.run.claim_elite_reward("elite_remedy"), "Elite reward must survive reload and be claimed just once")
+	await select_kit("moon_edge", "moon")
+	check(flow.run.floor == Run.AMBUSH_FLOOR and flow.run.battle.hp == prize.hp and flow.run.battle.qi == prize.qi
+		and flow.run.battle.relic == "elite_fang" and flow.run.battle.relic_ready, "The elite prize must carry into the main route")
 
 
 func check_ambush_kit() -> void:
@@ -686,7 +751,8 @@ func exercise() -> void:
 		[[KEY_1, 10], [KEY_3], [KEY_4], [KEY_3], [KEY_1, 1], [KEY_4], [KEY_3]])
 	await play_rest_and_leaf()
 	await play_rank_two()
+	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy saves, Gu loadouts, route choices, merchants, one-use relics and waypoint replay")
+		print("Godot run passed: legacy saves, Gu loadouts, waypoints, optional elite, exclusive rewards and replay")
 	quit(1 if failed else 0)

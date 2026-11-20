@@ -66,9 +66,9 @@ func _ready() -> void:
 func configure(current_run: RunData) -> void:
 	run = current_run
 	state = run.battle
-	var floor_data: Dictionary = run.stage_at(run.floor)
+	var floor_data: Dictionary = run.current_stage()
 	var known_grade := "%s · Nguyên Hải %d%%" % [run.profile.grade, run.profile.sea_pct]
-	configure_identity(floor_data, run.floor, run.profile.hero, known_grade)
+	configure_identity(floor_data, 1 if run.elite_room else run.floor, run.profile.hero, known_grade)
 
 
 func configure_training(settings: Dictionary) -> void:
@@ -159,7 +159,9 @@ func build_hud() -> void:
 		relic_label.tooltip_text = Goods.RELICS[state.relic][1]
 	label(room_title, 34, 48, 790, 60, 54, GOLD, true)
 	var mode := "Trận theo lượt"
-	if run != null:
+	if run != null and run.elite_room:
+		mode = "Nhánh tinh anh"
+	elif run != null:
 		mode = "Nhị chuyển · %d/3" % (run.floor - RunData.RIDGE_FLOOR + 1) if run.floor >= RunData.RIDGE_FLOOR else "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 	elif not training.is_empty():
 		mode = "Luyện trận"
@@ -437,6 +439,8 @@ func inspect_action(action: String) -> void:
 		pieces.append("Lớp ngọc %d · còn %d lượt" % [result.ward_strength, result.jade_turns])
 	if result.relic_block > 0:
 		pieces.append("Ngọc bài chặn %d" % result.relic_block)
+	if result.relic_damage > 0:
+		pieces.append("Nanh Tinh Anh +%d" % result.relic_damage)
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
 	elif result.dealt >= state.wolf_hp:

@@ -4,7 +4,7 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 7
+const CURRENT_VERSION := 8
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -34,6 +34,9 @@ const AMBUSH_PASS := {"name": "Hẻm Đá Phục Kích", "enemy": "Điện Lang 
 	"bite": 10, "hp": 82, "heavy": "Vồ phục kích", "pace": 2, "wolf_cell": 22,
 	"rooms": [[4, 11, 13, 26, 35], [3, 12, 27, 29, 36], [2, 10, 14, 25, 34]],
 	"cracks": [[19, 20, 21, 27, 28], [18, 19, 20, 21, 28], [18, 19, 20, 21, 28, 29]]}
+const ELITE_DEN := {"name": "Ổ Điện Lang", "enemy": "Điện Lang đầu đàn", "damage": 21,
+	"bite": 12, "hp": 96, "heavy": "Vồ giữ ổ", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 11, 22, 27, 35], [5, 12, 19, 26, 38], [3, 13, 20, 29, 34]]}
 const CHAPTER_HEAL := 18
 const CHAPTER_QI := 3
 const FORD_HEAL := 20
@@ -71,6 +74,8 @@ var stones := 0
 var relic := ""
 var stop := {}
 var visited_shop := {}
+var elite_room := false
+var elite_award := ""
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -93,7 +98,14 @@ func stage_at(index: int) -> Dictionary:
 	return FLOORS[index]
 
 
+func current_stage() -> Dictionary:
+	return ELITE_DEN if elite_room else stage_at(floor)
+
+
 func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules:
+	if elite_room:
+		var den_variant := floori(seed / pow(3, AMBUSH_FLOOR)) % 3
+		return battle_for(ELITE_DEN, den_variant, hp, qi, max_qi, moon_bonus, arsenal, "den", true)
 	var stage := stage_at(floor)
 	var variant := floori(seed / pow(3, floor)) % 3
 	var tactic := ""
@@ -136,7 +148,9 @@ func perform(action: String, target: int = -1) -> Dictionary:
 	if battle.result == Rules.DEFEAT:
 		phase = "death"
 	elif battle.result == Rules.VICTORY:
-		if floor >= FLOORS.size():
+		if elite_room:
+			phase = "elite_reward"
+		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
 				match floor:
@@ -318,7 +332,14 @@ func enter_waypoint(next_workshop: String) -> void:
 
 
 func waypoint_options() -> Array:
-	return ["camp", "merchant", "salvage" if floor == RIDGE_FLOOR else "spring"] if phase == "waypoint" else []
+	if phase != "waypoint":
+		return []
+	if floor == RIDGE_FLOOR:
+		return ["camp", "merchant", "salvage"]
+	var options := ["camp", "merchant", "spring"]
+	if version >= 8:
+		options.append("elite_detour")
+	return options
 
 
 func waypoint_preview(id: String) -> Dictionary:
@@ -350,10 +371,35 @@ func choose_waypoint(id: String) -> bool:
 		return false
 	stones = next.stones
 	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
-	if id == "merchant":
-		phase = "shop"
-	else:
-		leave_waypoint()
+	match id:
+		"merchant":
+			phase = "shop"
+		"elite_detour":
+			phase = "elite_workshop"
+		_:
+			leave_waypoint()
+	journal.append([id])
+	return true
+
+
+func elite_reward_preview(id: String) -> Dictionary:
+	if phase != "elite_reward" or not Goods.ELITE_REWARDS.has(id):
+		return {}
+	var remedy := id == "elite_remedy"
+	return {"hp": mini(Rules.MAX_HP, battle.hp + Goods.DEN_HEAL + (Goods.REMEDY_HEAL if remedy else 0)),
+		"qi": mini(battle.max_qi, battle.qi + Goods.DEN_QI),
+		"leaves": battle.leaves + int(remedy), "relic": relic if remedy else "elite_fang"}
+
+
+func claim_elite_reward(id: String) -> bool:
+	var next := elite_reward_preview(id)
+	if next.is_empty():
+		return false
+	relic = next.relic
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	elite_award = id
+	elite_room = false
+	phase = "ambush_workshop"
 	journal.append([id])
 	return true
 
@@ -409,7 +455,7 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
@@ -422,6 +468,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = FORD_FLOOR
 		"ambush_workshop":
 			floor = AMBUSH_FLOOR
+		"elite_workshop":
+			elite_room = true
 		_:
 			floor = RIDGE_FLOOR
 	battle = encounter(vitals.hp, vitals.qi, battle.max_qi, arsenal)
@@ -485,6 +533,8 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = run.choose_waypoint(command[0])
 				"shop":
 					committed = run.leave_shop() if command[0] == "leave_shop" else run.buy(command[0])
+				"elite_reward":
+					committed = run.claim_elite_reward(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":
