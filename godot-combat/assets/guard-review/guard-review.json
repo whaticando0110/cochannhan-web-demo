@@ -1,0 +1,313 @@
+{
+  "name": "Huyền Bào Thủ Thế & Đỡ Đòn Điện Lang (Godot Thanh Mao Sample)",
+  "id": "huyen-bao-guard-sample",
+  "atlasFile": "res://assets/guard-review/huyen-bao-guard.png",
+  "editableSource": "res://assets/guard-review/huyen-bao-guard.aseprite",
+  "previewGif": "res://assets/guard-review/guard-exchange-play-scale.gif",
+  "comparisonBoard": "res://assets/guard-review/guard-comparison-strip.png",
+  "width": 1024,
+  "height": 256,
+  "cellSize": [
+    128,
+    128
+  ],
+  "macroPixelGrid": [
+    2,
+    2
+  ],
+  "grid": [
+    8,
+    2
+  ],
+  "footAnchor128": [
+    64,
+    120
+  ],
+  "facing": "right",
+  "godotRender": {
+    "tileSize": [
+      91,
+      82
+    ],
+    "heroSpan": 112,
+    "wolfSpan": 118,
+    "wolfYOffset": 11,
+    "pivotRatio": [
+      -0.5,
+      -0.77
+    ],
+    "sleeveBlockPoint128": [
+      88,
+      76
+    ],
+    "sleeveBlockOffsetAtSpan112": [
+      21,
+      -19.7
+    ]
+  },
+  "sequenceTiming": {
+    "totalDurationMs": 930,
+    "contactMs": 520,
+    "contactHeroFrame": 4,
+    "contactWardFxFrame": 12,
+    "contactWolfFrame": 10,
+    "phases": [
+      {
+        "id": "brace",
+        "title": "1. Huyền bào thủ thế",
+        "startMs": 0,
+        "endMs": 240,
+        "heroFrames": [
+          0,
+          1,
+          2
+        ],
+        "wardFxFrames": [
+          8,
+          9,
+          10
+        ],
+        "wolfFrame": 0
+      },
+      {
+        "id": "wolf_lunge",
+        "title": "2. Điện Lang lấy đà và vồ",
+        "startMs": 240,
+        "endMs": 520,
+        "heroFrames": [
+          3
+        ],
+        "wardFxFrames": [
+          11
+        ],
+        "wolfKeyframes": [
+          {
+            "atMs": 240,
+            "durationMs": 160,
+            "frame": 8,
+            "role": "coil",
+            "offsetRatioFromStart": -0.11
+          },
+          {
+            "atMs": 400,
+            "durationMs": 120,
+            "frame": 9,
+            "role": "leap",
+            "offsetRatioToTarget": 0.58
+          }
+        ]
+      },
+      {
+        "id": "block_impact",
+        "title": "3. Người đỡ phản lực tại khung chạm",
+        "startMs": 520,
+        "endMs": 730,
+        "contactMs": 520,
+        "heroFrames": [
+          4,
+          5
+        ],
+        "wardFxFrames": [
+          12,
+          13
+        ],
+        "wolfFrames": [
+          10,
+          11
+        ],
+        "sleeveBlockPoint128": [
+          88,
+          76
+        ]
+      },
+      {
+        "id": "recover",
+        "title": "4. Cả hai thu thế",
+        "startMs": 730,
+        "endMs": 930,
+        "heroFrames": [
+          6,
+          7
+        ],
+        "wardFxFrames": [
+          14,
+          15
+        ],
+        "wolfFrames": [
+          11,
+          0
+        ]
+      }
+    ]
+  },
+  "frames": [
+    {
+      "index": 0,
+      "wardFxIndex": 8,
+      "phase": "brace",
+      "startMs": 0,
+      "durationMs": 70,
+      "endMs": 70,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 36,
+        "y0": 48,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 76,
+        "y0": 116,
+        "x1": 81,
+        "y1": 121
+      }
+    },
+    {
+      "index": 1,
+      "wardFxIndex": 9,
+      "phase": "brace",
+      "startMs": 70,
+      "durationMs": 80,
+      "endMs": 150,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 36,
+        "y0": 46,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 84,
+        "y0": 74,
+        "x1": 93,
+        "y1": 97
+      }
+    },
+    {
+      "index": 2,
+      "wardFxIndex": 10,
+      "phase": "brace",
+      "startMs": 150,
+      "durationMs": 90,
+      "endMs": 240,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 44,
+        "y0": 50,
+        "x1": 89,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 84,
+        "y0": 60,
+        "x1": 95,
+        "y1": 93
+      }
+    },
+    {
+      "index": 3,
+      "wardFxIndex": 11,
+      "phase": "hold",
+      "startMs": 240,
+      "durationMs": 280,
+      "endMs": 520,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 32,
+        "y0": 48,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 44,
+        "y0": 58,
+        "x1": 95,
+        "y1": 121
+      }
+    },
+    {
+      "index": 4,
+      "wardFxIndex": 12,
+      "phase": "block_impact",
+      "startMs": 520,
+      "durationMs": 95,
+      "endMs": 615,
+      "isContactFrame": true,
+      "actorBBox128": {
+        "x0": 28,
+        "y0": 52,
+        "x1": 87,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 30,
+        "y0": 52,
+        "x1": 105,
+        "y1": 121
+      }
+    },
+    {
+      "index": 5,
+      "wardFxIndex": 13,
+      "phase": "block_impact",
+      "startMs": 615,
+      "durationMs": 115,
+      "endMs": 730,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 30,
+        "y0": 50,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 34,
+        "y0": 50,
+        "x1": 113,
+        "y1": 119
+      }
+    },
+    {
+      "index": 6,
+      "wardFxIndex": 14,
+      "phase": "recover",
+      "startMs": 730,
+      "durationMs": 100,
+      "endMs": 830,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 30,
+        "y0": 50,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 82,
+        "y0": 62,
+        "x1": 103,
+        "y1": 91
+      }
+    },
+    {
+      "index": 7,
+      "wardFxIndex": 15,
+      "phase": "recover",
+      "startMs": 830,
+      "durationMs": 100,
+      "endMs": 930,
+      "isContactFrame": false,
+      "actorBBox128": {
+        "x0": 36,
+        "y0": 48,
+        "x1": 91,
+        "y1": 121
+      },
+      "wardFxBBox128": {
+        "x0": 88,
+        "y0": 72,
+        "x1": 93,
+        "y1": 77
+      }
+    }
+  ]
+}
