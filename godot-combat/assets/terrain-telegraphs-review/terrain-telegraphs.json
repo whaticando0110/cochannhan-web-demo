@@ -1,0 +1,201 @@
+{
+  "name": "Nét Viền Vách Che & Báo Đòn Theo Hàng (Khe Đá · Lối Săn Tinh Anh · Hang Cuồng Điện Lang)",
+  "atlasFile": "res://assets/terrain-telegraphs-review/terrain-telegraphs.png",
+  "editableSource": "res://assets/terrain-telegraphs-review/terrain-telegraphs.aseprite",
+  "width": 364,
+  "height": 328,
+  "grid": [
+    4,
+    4
+  ],
+  "tileSize": [
+    91,
+    82
+  ],
+  "boardSize": [
+    803,
+    477
+  ],
+  "origin": [
+    39,
+    35
+  ],
+  "drawOrderPerTile": [
+    "1. ground (mulch / stone / trail)",
+    "2. grid_border (#a0ad793b)",
+    "3. cover_tile_rim / cover_tile_targeted (if cell in rules.rocks)",
+    "4. ROCK (rock-ridge.png)",
+    "5. row_telegraph (elite_row_charge OR boss_corridor_sweep — SKIP if cell in rules.rocks, optionally draw charge_lane_rock_skip ticks on edges)",
+    "6. shot_line_blocked (cells on ray before rock) & shot_stop_marker (on first blocking rock face)",
+    "7. safe_dodge_cell / charge_reachable_amber (destination markers)",
+    "8. actor_ring -> Hero / Enemy sprites"
+  ],
+  "tiles": {
+    "cover_tile_rim": {
+      "row": 0,
+      "col": 0,
+      "region": [
+        0,
+        0,
+        91,
+        82
+      ]
+    },
+    "cover_tile_targeted": {
+      "row": 0,
+      "col": 1,
+      "region": [
+        91,
+        0,
+        91,
+        82
+      ]
+    },
+    "shot_line_blocked": {
+      "row": 0,
+      "col": 2,
+      "region": [
+        182,
+        0,
+        91,
+        82
+      ]
+    },
+    "shot_stop_marker": {
+      "row": 0,
+      "col": 3,
+      "region": [
+        273,
+        0,
+        91,
+        82
+      ]
+    },
+    "charge_lane_origin": {
+      "row": 1,
+      "col": 0,
+      "region": [
+        0,
+        82,
+        91,
+        82
+      ]
+    },
+    "charge_lane_mid": {
+      "row": 1,
+      "col": 1,
+      "region": [
+        91,
+        82,
+        91,
+        82
+      ]
+    },
+    "charge_lane_end": {
+      "row": 1,
+      "col": 2,
+      "region": [
+        182,
+        82,
+        91,
+        82
+      ]
+    },
+    "charge_lane_rock_skip": {
+      "row": 1,
+      "col": 3,
+      "region": [
+        273,
+        82,
+        91,
+        82
+      ]
+    },
+    "boss_sweep_origin": {
+      "row": 2,
+      "col": 0,
+      "region": [
+        0,
+        164,
+        91,
+        82
+      ]
+    },
+    "boss_sweep_mid": {
+      "row": 2,
+      "col": 1,
+      "region": [
+        91,
+        164,
+        91,
+        82
+      ]
+    },
+    "boss_sweep_end": {
+      "row": 2,
+      "col": 2,
+      "region": [
+        182,
+        164,
+        91,
+        82
+      ]
+    },
+    "boss_sweep_badge": {
+      "row": 2,
+      "col": 3,
+      "region": [
+        273,
+        164,
+        91,
+        82
+      ]
+    },
+    "pounce_diagonal_ref": {
+      "row": 3,
+      "col": 0,
+      "region": [
+        0,
+        246,
+        91,
+        82
+      ]
+    },
+    "safe_dodge_cell": {
+      "row": 3,
+      "col": 1,
+      "region": [
+        91,
+        246,
+        91,
+        82
+      ]
+    },
+    "charge_reachable_amber": {
+      "row": 3,
+      "col": 2,
+      "region": [
+        182,
+        246,
+        91,
+        82
+      ]
+    },
+    "cover_safe_shelter": {
+      "row": 3,
+      "col": 3,
+      "region": [
+        273,
+        246,
+        91,
+        82
+      ]
+    }
+  },
+  "mockups": [
+    "res://assets/terrain-telegraphs-review/mockup-1-khe-da-cover.png",
+    "res://assets/terrain-telegraphs-review/mockup-2-loi-san-tinh-anh-charge.png",
+    "res://assets/terrain-telegraphs-review/mockup-3-hang-cuong-dien-lang-sweep.png",
+    "res://assets/terrain-telegraphs-review/telegraph-legend-strip.png"
+  ]
+}
