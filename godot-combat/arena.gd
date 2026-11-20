@@ -39,6 +39,8 @@ var threatened: Array = []
 var projectile: AtlasTexture
 var projectile_point := Vector2.ZERO
 var projectile_angle := 0.0
+var projectile_tint := Color.WHITE
+var projectile_span := 50.0
 var shock_point := Vector2.ZERO
 var shock_damage := 0
 var shock_progress := 1.0
@@ -47,9 +49,13 @@ var shock_guarded := false
 var shock_caption := ""
 var shock_tween: Tween
 var ward_visible := false
+var ward_tint := Color("#a2efd1bd")
+var mark_visible := false
 var warned_row := -1
 var charge_direction := 1
-var cover_ray := false
+var bolt_warning := false
+var cover_ray := 0
+var bolt := PackedVector2Array()
 
 
 func _ready() -> void:
@@ -71,8 +77,11 @@ func set_state(state: Rules) -> void:
 	available = rules.move_targets()
 	threatened = rules.intent.get("cells", []).duplicate()
 	ward_visible = rules.jade_turns > 0
+	ward_tint = Color("#eafaffcf") if rules.ward_strength > Rules.JADE_ABSORB else Color("#a2efd1bd")
+	mark_visible = rules.moon_mark
 	warned_row = rules.intent.get("row", -1)
 	charge_direction = rules.intent.get("direction", 1)
+	bolt_warning = rules.intent.get("pattern") == "bolt"
 	queue_redraw()
 
 
@@ -83,7 +92,7 @@ func set_selecting(value: bool) -> void:
 	queue_redraw()
 
 
-func show_cover_ray(value: bool) -> void:
+func show_cover_ray(value: int) -> void:
 	cover_ray = value
 	queue_redraw()
 
@@ -93,6 +102,7 @@ func clear_effects() -> void:
 		shock_tween.kill()
 	shock_progress = 1.0
 	projectile = null
+	bolt.clear()
 	queue_redraw()
 
 
@@ -144,13 +154,14 @@ func paint_tiles() -> void:
 		var variant := (point.x * 3 + point.y * 5 + point.x * point.y) % 8
 		var edge := mini(point.x, Rules.COLUMNS - point.x - 1)
 		var shade := 0.67 + 0.05 * mini(edge, 2)
-		var ground: Texture2D = [TRAIL, MULCH, STONE][room]
+		var ground: Texture2D = [TRAIL, MULCH, STONE, STONE][room]
 		var sample := ground.get_width() / 8.0
-		draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), Color(shade, shade, shade * 0.88))
+		var ground_tint := Color(shade, shade * 1.11, shade * 1.19) if room == 3 else Color(shade, shade, shade * .88)
+		draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), ground_tint)
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rules != null and cell in rules.rocks:
 			draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
-			if rules.tactic == "ravine":
+			if rules.uses_cover():
 				draw_rect(rect.grow(-3), Color("#b8cfe064"), false, 1.5)
 		var danger := cell in threatened
 		var accessible := selecting and cell in available
@@ -162,13 +173,18 @@ func paint_tiles() -> void:
 				var tail := -10 * charge_direction
 				draw_polyline(PackedVector2Array([tip + Vector2(tail, -9), tip, tip + Vector2(tail, 9)]),
 					Color("#ffe3adab"), 2.0, true)
+		elif danger and bolt_warning:
+			paint_marker(rect, Color("#a4d8ff") if accessible else Color("#87a6eb"), false, accessible)
+			var icon_at := rect.position + Vector2(16, 20)
+			draw_polyline(PackedVector2Array([icon_at + Vector2(3, -11), icon_at + Vector2(-5, -1),
+				icon_at + Vector2(4, -1), icon_at + Vector2(-2, 10)]), Color("#d6e7ffd0"), 2.0, true)
 		elif danger:
 			paint_marker(rect, Color("#ffc29a") if accessible else Color("#fb816a"), true, accessible)
 		elif accessible:
 			paint_marker(rect, GREEN, false, true)
 		if mouse_cell == cell:
 			draw_rect(rect.grow(-3), Color("#f4dfbcb8"), false, 2.0)
-	if room != 2:
+	if room < 2:
 		for x in range(52, 752, 84):
 			draw_texture_rect(THICKET, Rect2(x, 1, 84, 34), false, Color("#91a47e"))
 			draw_texture_rect(THICKET, Rect2(x - 10, 438, 90, 32), false, Color("#7c967a"))
@@ -204,11 +220,11 @@ func _draw() -> void:
 	var direction := 1 if hero_point.x <= wolf_point.x else -1
 	actor_ring(hero_point, GREEN)
 	if ward_visible:
-		draw_arc(hero_point + Vector2(0, -17), 29.0, PI * .92, PI * 2.08, 24, Color("#a2efd1bd"), 2.0, true)
+		draw_arc(hero_point + Vector2(0, -17), 29.0, PI * .92, PI * 2.08, 24, ward_tint, 2.0, true)
 	actor_ring(wolf_point, AMBER)
-	if cover_ray and rules.tactic == "ravine":
+	if cover_ray > 0 and rules.uses_cover():
 		var blocker := rules.ray_blocker(rules.hero, rules.wolf)
-		if blocker >= 0 and Rules.distance(rules.hero, rules.wolf) <= Rules.MOON_RANGE:
+		if blocker >= 0 and Rules.distance(rules.hero, rules.wolf) <= cover_ray:
 			var stop := cell_center(blocker)
 			draw_dashed_line(hero_point, stop, Color("#c5f7ffb0"), 2.0, 7.0, true, true)
 			draw_arc(stop, 10, 0, TAU, 20, Color("#ffc49c"), 2.0, true)
@@ -229,11 +245,17 @@ func _draw() -> void:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
 		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), 118, -direction, wolf_tint)
+	if mark_visible:
+		draw_arc(wolf_point + Vector2(0, -57), 7.0, PI * .30, PI * 1.85, 16, Color("#c8eaff"), 2.5, true)
 	if projectile != null:
 		draw_circle(projectile_point, 15, Color("#92ddf245"))
 		draw_set_transform(projectile_point, projectile_angle)
-		draw_texture_rect(projectile, Rect2(Vector2(-25, -25), Vector2(50, 50)), false)
+		var span := Vector2.ONE * projectile_span
+		draw_texture_rect(projectile, Rect2(-span * .5, span), false, projectile_tint)
 		draw_set_transform(Vector2.ZERO)
+	if not bolt.is_empty():
+		draw_polyline(bolt, Color("#7999eb99"), 7.0, true)
+		draw_polyline(bolt, Color("#e4f2ff"), 2.0, true)
 	if shock_progress < 1.0:
 		var tone := Color("#f8d68c") if shock_guarded else Color("#c5f7ff") if shock_cold else Color("#ffb994")
 		var alpha := 1.0 - shock_progress
@@ -276,7 +298,7 @@ func slide_hero(path: Array[int]) -> void:
 	await tween.finished
 
 
-func cast(at: Vector2) -> void:
+func cast(at: Vector2, refined: bool, empowered: bool) -> void:
 	hero_art = "cast"
 	var cast_pose := create_tween()
 	cast_pose.tween_method(set_hero_frame, 0.0, 4.0, .31)
@@ -285,6 +307,8 @@ func cast(at: Vector2) -> void:
 	var launch := hero_point + Vector2(23 if to.x >= hero_point.x else -23, -8)
 	projectile = AtlasTexture.new()
 	projectile.atlas = MOON
+	projectile_span = (73.0 if empowered else 61.0) if refined else 50.0
+	projectile_tint = Color("#e7deff") if refined else Color.WHITE
 	projectile.region = Rect2(0, 0, 32, 32)
 	projectile_angle = launch.angle_to_point(to)
 	var flight := create_tween().set_parallel()
@@ -300,6 +324,33 @@ func cast(at: Vector2) -> void:
 	hero_frame = 13
 
 
+func storm_shot(target: Vector2, damage: int, absorbed: int, guarding: bool) -> void:
+	set_wolf_frame(8)
+	await get_tree().create_timer(.20).timeout
+	var origin := wolf_point + Vector2(0, -22)
+	var end := target + Vector2(0, -19)
+	var cross := (end - origin).normalized().orthogonal() * 12
+	bolt = PackedVector2Array([origin, origin.lerp(end, .24) + cross, origin.lerp(end, .47) - cross,
+		origin.lerp(end, .68) + cross, end])
+	set_wolf_frame(10)
+	exchange_cue.emit("enemy_contact")
+	if absorbed > 0:
+		ward_visible = false
+	if damage > 0:
+		var caption := "Chặn %d  /  −%d" % [absorbed, damage] if absorbed > 0 else ""
+		impact(end, damage, false, guarding, caption)
+		if not guarding:
+			hero_art = "cast"
+			hero_frame = 9
+	elif absorbed > 0:
+		impact(end, 0, true, false, "Chặn %d" % absorbed)
+	queue_redraw()
+	await get_tree().create_timer(.16).timeout
+	bolt.clear()
+	queue_redraw()
+	await get_tree().create_timer(.14).timeout
+
+
 func play_exchange(exchange: Dictionary) -> void:
 	available.clear()
 	exchange_cue.emit("player")
@@ -307,8 +358,9 @@ func play_exchange(exchange: Dictionary) -> void:
 	if exchange.action == "move":
 		hero_art = "move"
 		await slide_hero(exchange.hero_path)
-	elif exchange.action == "moon":
-		await cast(wolf_point)
+	elif exchange.action in ["moon", "moon_edge"]:
+		await cast(wolf_point, exchange.action == "moon_edge", exchange.set_trigger)
+		mark_visible = rules.moon_mark
 	elif exchange.action == "strike":
 		var rally := hero_point
 		var forward := (wolf_point - hero_point).normalized() * 15
@@ -321,9 +373,11 @@ func play_exchange(exchange: Dictionary) -> void:
 		var brace := create_tween()
 		brace.tween_method(set_hero_frame, 6.0, 13.0, .23)
 		await brace.finished
-	elif exchange.action == "jade_skin":
+	elif exchange.action in ["jade_skin", "white_jade"]:
 		ward_visible = true
-		impact(hero_point + Vector2(0, -16), 0, true, false, "Ngọc Bì")
+		var refined: bool = exchange.action == "white_jade"
+		ward_tint = Color("#eafaffcf") if refined else Color("#a2efd1bd")
+		impact(hero_point + Vector2(0, -16), 0, true, false, "Bạch Ngọc" if refined else "Ngọc Bì")
 		await get_tree().create_timer(.28).timeout
 	elif exchange.action == "vital_leaf":
 		impact(hero_point + Vector2(0, -16), 0, false, true, "+%d" % exchange.healed)
@@ -344,6 +398,8 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
+	elif exchange.enemy_intent.kind == "shot" and not exchange.reaction.is_empty():
+		await storm_shot(cell_center(exchange.enemy_intent.cells[0]), exchange.hero_damage, exchange.absorbed, guarding)
 	elif exchange.reaction in ["heavy", "strike", "miss"]:
 		var start := wolf_point
 		var target := cell_center(rules.hero) if exchange.reaction != "miss" else cell_center(exchange.hero_from)

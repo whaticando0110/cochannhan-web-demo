@@ -2,6 +2,8 @@ extends RefCounted
 
 const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
+const Gu = preload("res://gu_catalog.gd")
+const CURRENT_VERSION := 4
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -17,6 +19,11 @@ const ROUTES := {
 		"heavy": "Vồ xuyên khe", "pace": 2, "rooms": [[5, 12, 26, 36], [3, 10, 29, 38], [2, 11, 26, 35]]},
 }
 const RAVINE_COVERS := [[4, 11, 20, 30], [5, 12, 19, 37], [2, 13, 18, 35]]
+const CHAPTER_TWO := {"name": "Sườn đá Mù Sương", "enemy": "Điện Lang phóng lôi", "damage": 16,
+	"bite": 9, "hp": 72, "heavy": "Hồ quang", "pace": 1, "wolf_cell": 22,
+	"rooms": [[4, 12, 26, 37], [5, 11, 29, 34], [3, 10, 27, 36]]}
+const CHAPTER_HEAL := 18
+const CHAPTER_QI := 3
 const LEGACY_REWARDS := {
 	"medicine": ["Dược thảo", "Hồi tối đa 24 sinh lực"],
 	"stone": ["Nguyên thạch", "+1 sức chứa và hồi đầy chân nguyên"],
@@ -48,7 +55,7 @@ var battle: Rules
 var journal: Array = []
 
 
-func _init(awakened: Dictionary, run_seed: int, save_version: int = 3) -> void:
+func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
 	profile = awakened
 	seed = run_seed
 	version = save_version
@@ -56,6 +63,8 @@ func _init(awakened: Dictionary, run_seed: int, save_version: int = 3) -> void:
 
 
 func stage_at(index: int) -> Dictionary:
+	if index == FLOORS.size():
+		return CHAPTER_TWO
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -66,7 +75,13 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 	var variant := floori(seed / pow(3, floor)) % 3
 	var tactic := ""
 	if version >= 3:
-		tactic = route if floor == 1 else "king" if floor == 2 else ""
+		match floor:
+			1:
+				tactic = route
+			2:
+				tactic = "king"
+			3:
+				tactic = "storm"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic)
 
 
@@ -76,7 +91,9 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"rocks": RAVINE_COVERS[variant] if tactic == "ravine" else stage.rooms[variant],
 		"heavy": stage.heavy, "damage": stage.damage,
 		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
-		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0)})
+		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
+		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
+		"refined_gu": arsenal.get("refined_gu", "")})
 
 
 func perform(action: String, target: int = -1) -> Dictionary:
@@ -89,7 +106,9 @@ func perform(action: String, target: int = -1) -> Dictionary:
 	if battle.result == Rules.DEFEAT:
 		phase = "death"
 	elif battle.result == Rules.VICTORY:
-		if floor == FLOORS.size() - 1:
+		if floor == FLOORS.size():
+			phase = "complete"
+		elif floor == FLOORS.size() - 1:
 			phase = "victory"
 		else:
 			phase = "route" if floor == 0 and version >= 2 else "reward"
@@ -188,6 +207,37 @@ func rest(id: String) -> bool:
 	return true
 
 
+func can_begin_chapter() -> bool:
+	return phase == "victory" and version >= 3
+
+
+func begin_chapter() -> bool:
+	if not can_begin_chapter():
+		return false
+	version = CURRENT_VERSION
+	phase = "refinement"
+	journal.append(["chapter_two"])
+	return true
+
+
+func workshop_vitals() -> Dictionary:
+	return {"hp": mini(Rules.MAX_HP, battle.hp + CHAPTER_HEAL),
+		"qi": mini(battle.max_qi, battle.qi + CHAPTER_QI)}
+
+
+func equip_build(recipe: String, starter: String) -> bool:
+	if phase != "refinement" or recipe not in Gu.RECIPES or starter not in Gu.STARTERS:
+		return false
+	var vitals := workshop_vitals()
+	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
+		"jade_skin": starter == "jade_skin", "leaves": battle.leaves}
+	floor = FLOORS.size()
+	battle = encounter(vitals.hp, vitals.qi, battle.max_qi, arsenal)
+	phase = "battle"
+	journal.append(["equip", recipe, starter])
+	return true
+
+
 func reward_history() -> PackedStringArray:
 	var picked: PackedStringArray = []
 	for command in journal:
@@ -201,7 +251,7 @@ func snapshot() -> Dictionary:
 
 
 static func restore(saved: Variant) -> RefCounted:
-	if not saved is Dictionary or not finite_integer(saved.get("version"), 1, 3) or not saved.get("journal") is Array:
+	if not saved is Dictionary or not finite_integer(saved.get("version"), 1, CURRENT_VERSION) or not saved.get("journal") is Array:
 		return null
 	if not saved.get("hero") is String or not finite_integer(saved.get("depth"), 12, 49):
 		return null
@@ -214,13 +264,18 @@ static func restore(saved: Variant) -> RefCounted:
 	for command in saved.journal:
 		if not command is Array or command.is_empty() or not command[0] is String:
 			return null
-		if command.size() == 1:
+		if command.size() == 3:
+			if command[0] != "equip" or not command[1] is String or not command[2] is String or not run.equip_build(command[1], command[2]):
+				return null
+		elif command.size() == 1:
 			var committed: bool
 			match run.phase:
 				"route":
 					committed = run.choose_route(command[0])
 				"rest":
 					committed = run.rest(command[0])
+				"victory":
+					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				_:
 					committed = run.reward(command[0])
 			if not committed:

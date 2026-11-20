@@ -3,6 +3,7 @@ extends SceneTree
 const Scene = preload("res://run_flow.tscn")
 const Run = preload("res://run_state.gd")
 const Rules = preload("res://battle_rules.gd")
+const Gu = preload("res://gu_catalog.gd")
 const Awakening = preload("res://awakening_rules.gd")
 
 var failed := false
@@ -142,7 +143,7 @@ func check_gu_and_tactics() -> void:
 
 
 func check_third_save() -> void:
-	var current_run := Run.new(Awakening.profile_for("huyen-bao", 40), 5)
+	var current_run := Run.new(Awakening.profile_for("huyen-bao", 40), 5, 3)
 	current_run.perform("moon")
 	current_run.perform("moon")
 	check(current_run.choose_route("ravine") and current_run.reward("jade_skin"), "Run did not award Ngọc Bì")
@@ -154,6 +155,85 @@ func check_third_save() -> void:
 		"Reload changed the ward exchange")
 	var fresh := Run.new(current_run.profile, 5)
 	check(not fresh.battle.jade_skin and fresh.battle.leaves == 0, "A new run inherited Gu")
+
+
+func check_rank_two_gu() -> void:
+	var lunar := Rules.new({"refined_gu": "moon_edge", "wolf_hp": 110, "qi": 7, "max_qi": 7})
+	var sneak := Rules.new({"refined_gu": "moon_edge", "moon_equipped": false, "jade_skin": true, "qi": 3})
+	check(lunar.build_family == "lunar" and sneak.build_family.is_empty(), "The equipped pair determines the set")
+	check(sneak.take_turn("moon").has("error") and sneak.turn == 1, "Unequipped Cổ remained usable")
+	check(sneak.preview_action("moon_edge").dealt == 30, "Mixed set received the mark bonus")
+	check(lunar.preview_action("moon").moon_mark and not lunar.moon_mark, "Forecast must not place a mark")
+	lunar.take_turn("moon")
+	check(lunar.moon_mark and lunar.wolf_hp == 84, "Moon Quang did not apply Nguyệt Ấn")
+	var forecast := lunar.preview_action("moon_edge")
+	check(forecast.set_trigger and forecast.dealt == 42 and lunar.moon_mark, "Refined shot forecast missed Nguyệt Ấn")
+	check(lunar.take_turn("moon_edge").wolf_damage == 42 and not lunar.moon_mark, "The boosted shot did not consume its mark")
+	var armor := Rules.new({"refined_gu": "white_jade", "moon_equipped": false, "jade_skin": true})
+	armor.intent = {"kind": "recover", "cells": [], "damage": 0}
+	armor.take_turn("jade_skin")
+	check(armor.ward_strength == Rules.JADE_ABSORB and armor.jade_turns == 1, "Ngọc Bì did not persist into the next response")
+	armor.intent = {"kind": "shot", "name": "Hồ quang", "cells": [armor.hero], "damage": 16}
+	forecast = armor.preview_action("white_jade")
+	check(forecast.set_trigger and forecast.absorbed == 12 and forecast.receives == 4 and armor.ward_strength == 5,
+		"Bạch Ngọc forecast did not upgrade the existing ward")
+	var exchange := armor.take_turn("white_jade")
+	check(exchange.reaction == "shot" and armor.ward_strength == 0 and armor.hp == 44 and armor.qi == 1,
+		"Incoming shot must consume the stronger ward")
+	armor.wolf = armor.hero + 1
+	armor.intent = {"kind": "recover", "cells": [], "damage": 0}
+	check(armor.counter_ready and armor.preview_action("strike").dealt == 22, "A successful armor block did not prime the counter")
+	check(armor.take_turn("strike").wolf_damage == 22 and not armor.counter_ready, "The next unarmed strike did not spend its counter")
+	var mixed := Rules.new({"refined_gu": "white_jade"})
+	check(mixed.preview_action("white_jade").absorbed == 8 and not mixed.preview_action("white_jade").counter_ready,
+		"Bạch Ngọc on a mixed set should only retain its base strength")
+	var storm := Rules.new({"tactic": "storm", "wolf_cell": 22, "rocks": [20], "refined_gu": "moon_edge"})
+	check(storm.intent.kind == "advance" and storm.take_turn("moon_edge").has("error") and storm.qi == 4,
+		"Cover must block both a long-range Gu and the enemy shot")
+
+
+func play_rank_two() -> void:
+	check(flow.run.version == 3 and flow.run.can_begin_chapter(), "v3 victory did not expose rank two")
+	await click_button("chapter_two")
+	check(flow.run.version == 4 and flow.run.phase == "refinement", "Opening the workshop did not upgrade/save the run")
+	await launch()
+	check(flow.run.phase == "refinement" and not flow.run.equip_build("wrong", "moon"), "Reload lost the workshop or accepted an unknown Gu")
+	await capture("godot-rank2-bo-co.png")
+	var workshop: Dictionary = flow.run.snapshot().duplicate(true)
+	for recipe in Gu.RECIPES:
+		for starter in Gu.STARTERS:
+			var copy: RefCounted = Run.restore(flow.run.snapshot())
+			check(copy.equip_build(recipe, starter) and copy.battle.build_family == Gu.build_family(recipe, starter)
+				and copy.battle.moon_equipped == (starter == "moon") and copy.battle.jade_skin == (starter == "jade_skin")
+				and not copy.equip_build(recipe, starter), "Wrong equipment or repeated workshop transaction for " + recipe + "/" + starter)
+	await click_button("moon_edge_moon")
+	check(flow.current.state.refined_gu == "moon_edge" and flow.current.actions.has("moon_edge") and flow.current.state.qi == 3,
+		"Chapter II did not equip Nguyệt Mang or restore the displayed Qi")
+	await capture("godot-rank2-san-dau.png")
+	await shoot(KEY_7)
+	check(flow.run.battle.wolf_hp == 42 and flow.run.battle.hp == 4 and flow.run.battle.intent.kind == "recover",
+		"Rank II hotkey, ranged hit or recovery timing is incorrect")
+	await launch()
+	check(flow.run.battle.build_family == "lunar" and flow.run.battle.wolf_hp == 42 and flow.run.battle.intent.kind == "recover",
+		"Mid-fight reload altered the rank II battle")
+	# Staying in front of the next shot at low HP should expose the normal rebirth flow.
+	await shoot(KEY_4)
+	await shoot(KEY_4)
+	check(flow.run.phase == "death" and flow.run.floor == Run.FLOORS.size(), "Death in rank two did not end the run")
+	await click_button("rebirth")
+	await click_button("skip_ceremony")
+	check(flow.run.battle.refined_gu.is_empty() and flow.run.battle.moon_equipped and not flow.run.battle.jade_skin
+		and flow.run.floor == 0, "Rebirth kept the rank II equipment")
+	flow.run = Run.restore(workshop)
+	flow.show_run()
+	await click_button("moon_edge_moon")
+	await play_commands([[KEY_1, 18], [KEY_4], [KEY_3], [KEY_4]])
+	check(flow.run.battle.moon_mark and flow.run.battle.wolf_hp == 39 and flow.run.battle.qi == 3,
+		"The ranged duel did not expose the intended marked shot")
+	await shoot(KEY_7)
+	check(flow.run.phase == "complete" and flow.find_child("new_run", true, false) != null, "The successful combo did not end Chapter II")
+	await launch()
+	check(flow.run.phase == "complete" and flow.run.battle.hp == 4, "Chapter II victory did not replay")
 
 
 func play_rest_and_leaf() -> void:
@@ -304,6 +384,7 @@ func exercise() -> void:
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
 	check_gu_and_tactics()
 	check_third_save()
+	check_rank_two_gu()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -395,7 +476,8 @@ func exercise() -> void:
 	await play_route("elite", [[KEY_4], [KEY_4], [KEY_4], [KEY_3], [KEY_4], [KEY_3]],
 		[[KEY_1, 10], [KEY_3], [KEY_4], [KEY_3], [KEY_1, 1], [KEY_4], [KEY_3]])
 	await play_rest_and_leaf()
+	await play_rank_two()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: ceremony, rebirth, v1/v2 restore, v3 Gu forecasts, training, rest/leaf reload and victory")
+		print("Godot run passed: ceremony, rebirth, v1/v2/v3 compatibility, training, ward and mark combos, workshop reload and Chapter II")
 	quit(1 if failed else 0)

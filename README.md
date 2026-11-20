@@ -21,9 +21,11 @@ Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**.
 
 **Ngọc Bì Cổ** là một lựa chọn thưởng sau màn đầu. Dùng phím **5** để tốn 1 chân nguyên và tạo lớp ngọc chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Có thể nhận **Sinh Cơ Diệp** sau trận Khe đá. Dùng phím **6** để tiêu một lá và hồi tối đa 12 sinh lực trước đòn đáp trả. Luyện Nguyệt Quang, hồi phục và Mở rộng Nguyên Hải vẫn có tác dụng như ghi trên thẻ thưởng.
 
-**Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một Cổ Nhất chuyển với một Cổ Nhị chuyển rồi thử bộ tại **Sườn đá Mù Sương**. **7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể dùng Ngọc Bì để tăng sức chặn của Bạch Ngọc và mở Phản đòn sau khi chặn thành công. Có thể ghép khác hệ để mang kỹ năng của cả hai. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi hành động hợp lệ, chọn tuyến, nhận chiến lợi phẩm hoặc chọn cách nghỉ. Lượt cũ tiếp tục theo phiên bản luật lúc bắt đầu. Phạm vi kiểm hiện tại là Windows.
+**Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ và chỉ số tích lũy được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ, gồm cả vào và ghép bộ tại Nhị chuyển. Lượt v1/v2 giữ luật cũ. Lượt v3 có thể tiếp tục sang v4 từ màn thắng Cuồng Điện Lang. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

@@ -10,7 +10,7 @@ Ba trận của chương đầu luyện ba kỹ năng theo thứ tự. Đọc v�
 | Lối săn tinh anh | Tinh anh luân phiên vồ vùng quanh mục tiêu và lao một hàng. Có lượt đổi vị trí giữa hai đòn nặng. | Mở rộng Nguyên Hải nằm trong nhóm thưởng riêng của tuyến. |
 | Điểm nghỉ trước hang | Chọn hồi tối đa 8 sinh lực, hồi 1 chân nguyên hoặc đi tiếp. Mỗi lượt chơi chỉ chọn một lần, có xem trước chỉ số. | Sinh Cơ Diệp dùng trong trận. Ngọc Bì Cổ giữ quyền sử dụng qua các màn, lớp ngọc hết khi chuyển trận. |
 | Hang Cuồng Điện Lang | Vồ vùng và quét hành lang dùng dấu khác nhau. Trùm hồi thế sau mỗi đòn nặng. Dưới nửa sinh lực, nó đổi thứ tự đòn và có thể ra đòn nặng ngay khi hết hồi thế. | Màn kết quả ghi đường đi, chiến lợi phẩm và tài nguyên còn lại. |
-| Chương tiếp theo | Thử địch cận chiến kết hợp địch đánh xa ở sân lớn hơn. Dùng hai Cổ ở hai vai trò khác nhau và có một điểm hợp luyện. | **Nguyệt Mang Cổ** cho nhánh công, **Bạch Ngọc Cổ** cho nhánh thủ sau mốc Nhị chuyển. **Địa Thính Nhục Nhĩ Thảo** dành cho lượt khám phá có phục kích. |
+| Sườn đá Mù Sương | Màn đầu Nhị chuyển có ba bố cục. Điện Lang phóng lôi khóa một ô khi có đường ngắm, rồi hồi thế một lượt. Vách đá chặn đòn tầm xa của hai bên. | Chọn **Nguyệt Mang Cổ** hoặc **Bạch Ngọc Cổ** và ghép với một Cổ Nhất chuyển. Hai Cổ cùng hệ mở hiệu ứng bộ. |
 
 ## Luật để thử
 
@@ -28,7 +28,21 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 2. Luyện trận và phần thưởng đã dùng chung luật Ngọc Bì Cổ và Sinh Cơ Diệp. Gemini phụ trách nguồn chỉnh sửa, icon, atlas và clip duyệt hai hiệu ứng trên nhánh riêng. Bản Godot hiện dùng hiệu ứng dựng bằng mã.
 3. Ba bố cục vách che, đòn lao theo hàng và điểm nghỉ đã vào luật lưu v3. Gemini phụ trách viền vách và hình báo đòn ở đúng cỡ chơi. Các lượt đang chơi ở v1/v2 giữ luật đã dùng khi bắt đầu.
 4. Hai đòn và nhịp hồi của Cuồng Điện Lang đã có trong lượt chính và Luyện trận. Kết quả dò đường thắng là mốc kiểm bố cục. Duyệt nhịp di chuyển, báo đòn và hiệu ứng trong Godot trước khi chốt cân bằng.
-5. Thử chương Nhị chuyển bằng một màn ngắn cho người chơi chọn một hướng. **Bạch Ngọc Cổ** nối nhánh phòng thủ từ Ngọc Bì. **Nguyệt Mang Cổ** nối nhánh tấn công từ Nguyệt Quang. Dùng một lựa chọn bí phương sau trùm làm điểm vào thử. Giữ tên và chức năng theo nguồn tiếng Việt ở trên. Nguyên liệu, chỉ số và cách hợp luyện cần chốt cùng brief chương hai.
+5. Chọn bộ Nhị chuyển sau khi thắng Cuồng Điện Lang. Bốn cặp hiện có đều dùng được trong lượt chính và Luyện trận. Gemini làm atlas Nguyệt Mang và Bạch Ngọc trên nhánh asset riêng.
+
+## Bộ Cổ ở Nhị chuyển
+
+Màn thử cấp một Cổ Nhị chuyển và một Cổ Nhất chuyển để lắp thành cặp. Giá trị sinh lực, chân nguyên và số lá chuyển sang được hiển thị trước khi xác nhận. Cặp Cổ đã chọn theo người chơi đến hết lượt. Luyện trận cho đổi cặp và chơi lại ở cả hai hệ.
+
+| Hệ | Cặp cùng hệ | Cách đánh trong demo |
+| --- | --- | --- |
+| Nguyệt | Nguyệt Quang Cổ + Nguyệt Mang Cổ | Nguyệt Quang đặt Nguyệt Ấn. Nguyệt Mang có tầm 6 ô, tốn 3 chân nguyên, gây 30 sát thương và thêm 12 khi tiêu ấn. Chỉ một ấn bám trên địch và giữ đến khi bị tiêu hoặc trận kết thúc. |
+| Hộ thể | Ngọc Bì Cổ + Bạch Ngọc Cổ | Bạch Ngọc tốn 2 chân nguyên, chặn 8 sát thương của đòn kế tiếp trong ba lượt. Thay lớp Ngọc Bì đang hoạt động nâng sức chặn lên 12. Khi lớp Bạch Ngọc của bộ này chặn được sát thương, cú Tay không kế tiếp được cộng 8 sát thương. |
+| Phối hệ | Nguyệt Mang + Ngọc Bì hoặc Bạch Ngọc + Nguyệt Quang | Mỗi Cổ dùng tác dụng cơ bản. Chọn cách đánh tầm xa kết hợp phòng hộ. |
+
+Sinh Cơ Diệp là vật phẩm trị thương dùng chung với cả hai hệ. Màn thử cấp sẵn cặp Cổ. Khi làm hệ thống hợp luyện, chương 98 là cơ sở cho hai bí phương: Nguyệt Quang và hai Tiểu Quang tạo Nguyệt Mang, Bạch Thỉ và Ngọc Bì tạo Bạch Ngọc. Chương 100 mô tả lớp phòng hộ trắng mỏng của Bạch Ngọc mạnh hơn Ngọc Bì. Hiệu ứng bộ, Phản đòn và các con số trong bảng là luật thiết kế của demo. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html) · [Chương 100](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-100.html)
+
+Khi thêm hệ mới, chuẩn bị ít nhất hai Cổ có vai trò bổ sung và một lựa chọn phối hệ. Chốt tương tác trong Luyện trận trước khi đưa cả bộ vào chiến lợi phẩm. Địa Thính Nhục Nhĩ Thảo phù hợp một nhánh do thám khi đã có màn phục kích và đường đi để người chơi tận dụng.
 
 <details>
 <summary>Kế hoạch của bản thử thú triều trước đây</summary>

@@ -6,6 +6,7 @@ signal training_requested
 signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
+const Gu = preload("res://gu_catalog.gd")
 const Arena = preload("res://arena.gd")
 const RunData = preload("res://run_state.gd")
 const PORTRAIT = preload("res://assets/huyen-bao-selection.png")
@@ -151,10 +152,16 @@ func build_hud() -> void:
 	label(room_title, 34, 48, 790, 60, 54, GOLD, true)
 	var mode := "Trận theo lượt"
 	if run != null:
-		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+		mode = "Nhị chuyển" if run.floor == RunData.FLOORS.size() else "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 	elif not training.is_empty():
 		mode = "Luyện trận"
 	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
+	if not state.refined_gu.is_empty():
+		var build := "Phối hệ" if state.build_family.is_empty() else "Bộ " + str(Gu.FAMILIES[state.build_family])
+		var tag := label(build, 520, 110, 145, 27, 16, GREEN)
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		tag.tooltip_text = Gu.synergy_text(state.build_family)
+		tag.mouse_filter = Control.MOUSE_FILTER_PASS
 	turn_label = label("", 678, 105, 160, 33, 20, GOLD, true)
 	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wards_label = label("", 860, 105, 306, 33, 15, GREEN)
@@ -214,13 +221,18 @@ func build_hud() -> void:
 	var descriptions := [
 		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
 		["strike", "2   Tay không\n%d sát thương · +1 CN" % Rules.STRIKE_DAMAGE],
-		["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]],
-		["guard", "4   Thủ thế\nGiảm %d%% · +1 CN" % roundi(Rules.GUARD_REDUCTION * 100)],
 	]
+	if state.moon_equipped:
+		descriptions.append(["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]])
+	descriptions.append(["guard", "4   Thủ thế\nGiảm %d%% · +1 CN" % roundi(Rules.GUARD_REDUCTION * 100)])
 	if state.jade_skin:
 		descriptions.append(["jade_skin", "5   Ngọc Bì Cổ\nChặn %d · −%d CN" % [Rules.JADE_ABSORB, Rules.JADE_COST]])
 	if state.leaves > 0:
 		descriptions.append(["vital_leaf", "6   Sinh Cơ Diệp\nHồi tối đa %d sinh lực" % Rules.LEAF_HEAL])
+	if state.refined_gu == "moon_edge":
+		descriptions.append(["moon_edge", "7   Nguyệt Mang\nTầm %d ô · −%d CN" % [Gu.MOON_EDGE_RANGE, Gu.MOON_EDGE_COST]])
+	elif state.refined_gu == "white_jade":
+		descriptions.append(["white_jade", "7   Bạch Ngọc\nChặn %d · −%d CN" % [Gu.WHITE_JADE_ABSORB, Gu.WHITE_JADE_COST]])
 	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
 	for index in range(descriptions.size()):
 		var row: Array = descriptions[index]
@@ -254,7 +266,11 @@ func update_hud() -> void:
 	update_player_contact()
 	var supplies: PackedStringArray = []
 	if state.jade_turns > 0:
-		supplies.append("Lớp ngọc · còn %d lượt" % state.jade_turns)
+		supplies.append("Ngọc %d · %d lượt" % [state.ward_strength, state.jade_turns])
+	if state.moon_mark:
+		supplies.append("Có Nguyệt Ấn")
+	if state.counter_ready:
+		supplies.append("Phản đòn +%d" % Gu.WARD_COUNTER_BONUS)
 	if actions.has("vital_leaf"):
 		supplies.append("Sinh Cơ ×%d" % state.leaves)
 	wards_label.text = "    ".join(supplies)
@@ -272,6 +288,8 @@ func update_hud() -> void:
 				intent_name.text += " · Cuồng nộ"
 			if state.intent.get("pattern") == "row":
 				intent_copy.text = "Hàng %d · %d sát thương. Rời hàng để né." % [int(state.intent.row) + 1, state.intent.damage]
+			elif state.intent.kind == "shot":
+				intent_copy.text = "Hồ quang khóa ô %s · %d sát thương." % [Rules.cell_name(state.intent.cells[0]), state.intent.damage]
 			elif state.intent.kind == "recover":
 				intent_copy.text = "Đối thủ hồi thế trong lượt này."
 			elif state.intent.damage > 0:
@@ -312,13 +330,13 @@ func show_battle() -> void:
 
 
 func show_hint() -> void:
-	field.show_cover_ray(false)
+	field.show_cover_ray(0)
 	if busy or not state.result.is_empty():
 		return
 	if selecting:
-		hint_label.text = "Ô xanh né được đòn. Ô hổ phách vẫn đi được nhưng nằm trong vùng đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
+		hint_label.text = "Ô xanh né được đòn. Ô có dấu báo đòn vẫn có thể bị đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
 	else:
-		hint_label.text = "Vách đá chặn Nguyệt Quang. Chọn lệnh để xem kết quả dự kiến." if state.tactic == "ravine" else "Địch đáp trả sau hành động của bạn. Chọn lệnh để xem kết quả dự kiến."
+		hint_label.text = "Vách đá chặn đòn đánh xa. Chọn lệnh để xem kết quả dự kiến." if state.uses_cover() else "Địch đáp trả sau hành động của bạn. Chọn lệnh để xem kết quả dự kiến."
 
 
 func show_exchange(cue: String) -> void:
@@ -337,7 +355,7 @@ func show_exchange(cue: String) -> void:
 func inspect_action(action: String) -> void:
 	if busy or not state.result.is_empty():
 		return
-	field.show_cover_ray(action == "moon")
+	field.show_cover_ray(shot_range(action))
 	if action == "move":
 		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % Rules.MOVE_RANGE
 		return
@@ -348,12 +366,22 @@ func inspect_action(action: String) -> void:
 	var pieces: PackedStringArray = []
 	if result.dealt > 0:
 		pieces.append("Gây %d sát thương" % result.dealt)
+	if result.set_trigger:
+		match action:
+			"moon_edge":
+				pieces.append("Kích phát Nguyệt Ấn")
+			"white_jade":
+				pieces.append("Ghép Ngọc Bì → Bạch Ngọc")
+			"strike":
+				pieces.append("Phản đòn +%d" % Gu.WARD_COUNTER_BONUS)
+	elif action == "moon" and result.moon_mark and not state.moon_mark:
+		pieces.append("Đặt Nguyệt Ấn")
 	if result.healed > 0:
 		pieces.append("Hồi %d sinh lực" % result.healed)
 	if result.absorbed > 0:
 		pieces.append("Lớp ngọc chặn %d" % result.absorbed)
 	elif result.jade_turns > 0:
-		pieces.append("Lớp ngọc còn %d lượt" % result.jade_turns)
+		pieces.append("Lớp ngọc %d · còn %d lượt" % [result.ward_strength, result.jade_turns])
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
 	elif result.dealt >= state.wolf_hp:
@@ -395,7 +423,7 @@ func choose(action: String) -> void:
 		return
 	var reason := state.unavailable(action)
 	if not reason.is_empty():
-		field.show_cover_ray(action == "moon")
+		field.show_cover_ray(shot_range(action))
 		hint_label.text = reason
 		return
 	if action == "move":
@@ -412,6 +440,12 @@ func choose(action: String) -> void:
 	resolve(action)
 
 
+func shot_range(action: String) -> int:
+	if action == "moon_edge" and state.refined_gu == action:
+		return Gu.MOON_EDGE_RANGE
+	return Rules.MOON_RANGE if action == "moon" and state.moon_equipped else 0
+
+
 func select_cell(cell: int) -> void:
 	if selecting and not busy:
 		resolve("move", cell)
@@ -423,7 +457,7 @@ func resolve(action: String, cell: int = -1) -> void:
 		hint_label.text = exchange.error
 		return
 	hp_at_contact = state.hp + int(exchange.hero_damage)
-	field.show_cover_ray(false)
+	field.show_cover_ray(0)
 	busy = true
 	action_committed.emit()
 	selecting = false
@@ -456,6 +490,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: "moon", KEY_4: "guard", KEY_5: "jade_skin", KEY_6: "vital_leaf"}
 	if key_actions.has(event.keycode):
 		choose(key_actions[event.keycode])
+	elif event.keycode == KEY_7 and not state.refined_gu.is_empty():
+		choose(state.refined_gu)
 	elif event.keycode == KEY_R and run == null:
 		reset_battle()
 	else:
