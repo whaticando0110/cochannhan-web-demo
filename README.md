@@ -35,11 +35,13 @@ Sau Lôi Nha Đài, chọn **Sang Tam chuyển** để vào **Đầm Rễ Độc
 
 Sau khi nhận thưởng Đầm Rễ Độc, chọn **Tới Hẻm Hàn Phong**. Đợt gió cắt đổi từ Tây sang Đông rồi ngược lại. Các ô có mũi tên báo vùng chịu đòn. Đứng sau tảng đá theo chiều gió để tránh sát thương. Thắng trận, chọn **Ấn Dẫn Phong** để hồi tối đa 2 chân nguyên ở lần Di chuyển đầu tiên thoát vùng báo đòn khi đang thiếu chân nguyên trong mỗi trận, hoặc **Túi Hàn Dược** để hồi tối đa 3 chân nguyên và nhận 2 Sinh Cơ Diệp.
 
+Sau khi nhận thưởng Hẻm Hàn Phong, chọn **Tới Đài Trấn Ấn**. Thạch Giáp Lang giảm 8 sát thương mỗi đòn. Kết thúc Di chuyển trên ô ấn tím để khóa giáp 5 lượt. Tay không gây thêm 4 sát thương khi giáp đang vỡ. Thắng chọn **Thạch Tủy Luyện Thể** để tăng sát thương Tay không thêm 3 trong lượt chơi, hoặc **Hộp tiếp tế cổ trận** để nhận 6 nguyên thạch và 1 Sinh Cơ Diệp.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
 Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Bản lưu v8 tại Hẻm Đá, v9 tại Lôi Nha Đài và v10 tại Đầm Rễ Độc có thể đi tiếp từ màn kết quả tương ứng. Phạm vi kiểm hiện tại là Windows.
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Bản lưu v8 tại Hẻm Đá, v9 tại Lôi Nha Đài, v10 tại Đầm Rễ Độc và v11 tại Hẻm Hàn Phong có thể đi tiếp từ màn kết quả tương ứng. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

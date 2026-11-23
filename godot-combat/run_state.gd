@@ -4,7 +4,7 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 11
+const CURRENT_VERSION := 12
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -14,6 +14,8 @@ const MARSH_FLOOR := 7
 const MARSH_VERSION := 10
 const WIND_FLOOR := 8
 const WIND_VERSION := 11
+const ALTAR_FLOOR := 9
+const ALTAR_VERSION := 12
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -64,6 +66,15 @@ const WIND_QI := 3
 const WIND_SUPPLY_QI := 3
 const WIND_SUPPLY_LEAVES := 2
 const WIND_REWARDS := {"wind_seal": "Ấn Dẫn Phong", "wind_supplies": "Túi Hàn Dược"}
+const SEAL_ALTAR := {"name": "Đài Trấn Ấn", "enemy": "Thạch Giáp Lang", "damage": 18,
+	"bite": 12, "hp": 124, "heavy": "Chấn Ấn", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 11, 27, 35], [3, 13, 25, 35], [5, 10, 26, 36]],
+	"runes": [[19, 28], [1, 20], [19, 12]]}
+const ALTAR_HEAL := 24
+const ALTAR_QI := 2
+const ALTAR_STRIKE_BONUS := 3
+const ALTAR_CACHE_STONES := 6
+const ALTAR_REWARDS := {"stone_marrow": "Thạch Tủy Luyện Thể", "altar_cache": "Hộp tiếp tế cổ trận"}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -108,6 +119,8 @@ var elite_room := false
 var elite_award := ""
 var marsh_award := ""
 var wind_award := ""
+var altar_award := ""
+var strike_bonus := 0
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -131,6 +144,8 @@ func stage_at(index: int) -> Dictionary:
 			return POISON_MARSH
 		WIND_FLOOR:
 			return WIND_PASS
+		ALTAR_FLOOR:
+			return SEAL_ALTAR
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -165,6 +180,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "marsh"
 			WIND_FLOOR:
 				tactic = "wind_pass"
+			ALTAR_FLOOR:
+				tactic = "seal_altar"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -174,11 +191,13 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"rocks": RAVINE_COVERS[variant] if tactic == "ravine" else stage.rooms[variant],
 		"water": stage.water[variant] if stage.has("water") else [],
 		"cracks": stage.cracks[variant] if stage.has("cracks") else [],
+		"runes": stage.runes[variant] if stage.has("runes") else [],
 		"heavy": stage.heavy, "damage": stage.damage,
 		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
 		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
 		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
 		"refined_gu": arsenal.get("refined_gu", ""), "starter_gu": arsenal.get("starter_gu", ""),
+		"strike_bonus": arsenal.get("strike_bonus", 0),
 		"revised_ward": revised_ward, "relic": arsenal.get("relic", "")})
 
 
@@ -200,6 +219,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "marsh_reward"
 		elif floor == WIND_FLOOR:
 			phase = "wind_reward"
+		elif floor == ALTAR_FLOOR:
+			phase = "altar_reward"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -333,6 +354,9 @@ func workshop_vitals() -> Dictionary:
 	if phase == "wind_workshop":
 		return {"hp": mini(Rules.MAX_HP, battle.hp + WIND_HEAL), "qi": mini(battle.max_qi, battle.qi + WIND_QI),
 			"leaves": battle.leaves}
+	if phase == "altar_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + ALTAR_HEAL), "qi": mini(battle.max_qi, battle.qi + ALTAR_QI),
+			"leaves": battle.leaves}
 	var heal := CHAPTER_HEAL
 	if phase != "refinement":
 		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
@@ -455,6 +479,29 @@ func claim_wind_reward(id: String) -> bool:
 	relic = next.relic
 	wind_award = id
 	phase = "wind_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_altar() -> bool:
+	if phase != "wind_cleared":
+		return false
+	version = maxi(version, ALTAR_VERSION)
+	phase = "altar_workshop"
+	journal.append(["enter_altar"])
+	return true
+
+
+func claim_altar_reward(id: String) -> bool:
+	if phase != "altar_reward" or not ALTAR_REWARDS.has(id):
+		return false
+	if id == "stone_marrow":
+		strike_bonus += ALTAR_STRIKE_BONUS
+	else:
+		stones += ALTAR_CACHE_STONES
+		battle.leaves += 1
+	altar_award = id
+	phase = "altar_cleared"
 	journal.append([id])
 	return true
 
@@ -597,14 +644,15 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
 		return false
 	var vitals := workshop_vitals()
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
-		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves, "relic": relic}
+		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves,
+		"relic": relic, "strike_bonus": strike_bonus}
 	match phase:
 		"ford_workshop":
 			floor = FORD_FLOOR
@@ -616,6 +664,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = MARSH_FLOOR
 		"wind_workshop":
 			floor = WIND_FLOOR
+		"altar_workshop":
+			floor = ALTAR_FLOOR
 		"elite_workshop":
 			elite_room = true
 		_:
@@ -691,6 +741,10 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_wind_pass" and run.enter_wind_pass()
 				"wind_reward":
 					committed = run.claim_wind_reward(command[0])
+				"wind_cleared":
+					committed = command[0] == "enter_altar" and run.enter_altar()
+				"altar_reward":
+					committed = run.claim_altar_reward(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

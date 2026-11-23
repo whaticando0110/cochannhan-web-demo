@@ -61,6 +61,7 @@ var bolt_warning := false
 var thunder_warning := false
 var poison_warning := false
 var wind_direction := 0
+var seal_warning := false
 var area_active := false
 var flood_warning := false
 var flood_active := false
@@ -108,6 +109,7 @@ func set_state(state: Rules) -> void:
 	thunder_warning = rules.intent.get("pattern") == "thunder"
 	poison_warning = rules.intent.get("pattern") == "poison"
 	wind_direction = rules.intent.get("direction", 0) if rules.intent.get("pattern") == "wind" else 0
+	seal_warning = rules.intent.get("pattern") == "seal_burst"
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
@@ -247,6 +249,9 @@ func paint_tiles() -> void:
 			terrain_frame(Art.FLOOD, rect, Vector2i(0, 1) if area_active else Vector2i(1, 0), glyph_color)
 			if accessible:
 				paint_marker(rect, glyph_color if poison_warning else Color("#cebcff"), false, true)
+		elif danger and seal_warning:
+			draw_rect(rect.grow(-1), Color("#ff9699bf") if area_active else Color("#db697c7a"))
+			paint_marker(rect, Color("#ffc9d2"), true, accessible)
 		elif danger and wind_direction != 0:
 			draw_rect(rect.grow(-1), Color("#9be0f6bf") if area_active else Color("#65b6d86b"))
 			var center := rect.get_center()
@@ -265,6 +270,13 @@ func paint_tiles() -> void:
 			paint_marker(rect, Color("#ffc29a") if accessible else Color("#fb816a"), true, accessible)
 		elif accessible:
 			paint_marker(rect, GREEN, false, true)
+		if rules != null and cell in rules.runes:
+			var center := rect.get_center()
+			var diamond := PackedVector2Array([center + Vector2(0, -17), center + Vector2(18, 0),
+				center + Vector2(0, 17), center + Vector2(-18, 0)])
+			draw_colored_polygon(diamond, Color("#564185d8"))
+			diamond.append(diamond[0])
+			draw_polyline(diamond, Color("#dbc3ff"), 2.0)
 		if mouse_cell == cell:
 			draw_rect(rect.grow(-3), Color("#f4dfbcb8"), false, 2.0)
 	if room < 2:
@@ -376,6 +388,8 @@ func _draw() -> void:
 		wolf_tint = Color("#bddf9b")
 	elif not fallen and rules.tactic == "wind_pass":
 		wolf_tint = Color("#bbdeff")
+	elif not fallen and rules.tactic == "seal_altar":
+		wolf_tint = Color("#bdb2dc") if rules.seal_turns == 0 else Color("#edd2b8")
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
@@ -582,7 +596,7 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
-	elif exchange.enemy_intent.kind in ["thunder", "poison", "wind"] and not exchange.reaction.is_empty():
+	elif exchange.enemy_intent.kind in ["thunder", "poison", "wind", "seal_burst"] and not exchange.reaction.is_empty():
 		await get_tree().create_timer(.18).timeout
 		area_active = true
 		queue_redraw()

@@ -217,6 +217,8 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 1"
 	if run.floor == Run.WIND_FLOOR or run.phase == "wind_workshop":
 		section = "TAM CHUYỂN    /    MÀN 2"
+	if run.floor == Run.ALTAR_FLOOR or run.phase == "altar_workshop":
+		section = "TAM CHUYỂN    /    MÀN 3"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
@@ -272,7 +274,17 @@ func show_result() -> void:
 			description = "Đã vượt màn hai Tam chuyển. Chọn bảo vật hoặc tiếp tế cho lượt chơi."
 		"wind_cleared":
 			title = "Vượt qua Hẻm Hàn Phong"
-			description = "Đã nhận %s." % Run.WIND_REWARDS[run.wind_award]
+			description = "Đã nhận %s. Đài Trấn Ấn nằm ở cuối đường đá." % Run.WIND_REWARDS[run.wind_award]
+		"altar_workshop":
+			title = Run.SEAL_ALTAR.name
+			description = "Dừng trên ô ấn tím để khóa giáp %d lượt. Đánh Tay không trong lúc giáp vỡ được cộng %d sát thương." % [
+				Rules.ALTAR_BREAK_TURNS, Rules.ALTAR_OPEN_STRIKE]
+		"altar_reward":
+			title = "Chiến lợi phẩm Đài Trấn Ấn"
+			description = "Đã vượt màn ba Tam chuyển. Chọn một phần thưởng cho lượt chơi."
+		"altar_cleared":
+			title = "Vượt qua Đài Trấn Ấn"
+			description = "Đã nhận %s." % Run.ALTAR_REWARDS[run.altar_award]
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -303,7 +315,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
@@ -311,6 +323,8 @@ func show_result() -> void:
 		draw_marsh_rewards()
 	elif run.phase == "wind_reward":
 		draw_wind_rewards()
+	elif run.phase == "altar_reward":
+		draw_altar_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -361,6 +375,14 @@ func show_result() -> void:
 			head_up.grab_focus()
 		elif run.phase == "wind_cleared":
 			draw_vitals(355)
+			var altar := button(menu, "Tới Đài Trấn Ấn", Rect2(432, 480, 310, 54), enter_altar)
+			altar.name = "enter_altar"
+			altar.grab_focus()
+		elif run.phase == "altar_cleared":
+			draw_vitals(355)
+			if run.strike_bonus > 0:
+				text(menu, "Tay không +%d sát thương trong lượt chơi này" % run.strike_bonus,
+					Rect2(96, 403, 1008, 38), 19, GOLD)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -433,6 +455,12 @@ func enter_marsh() -> void:
 
 func enter_wind_pass() -> void:
 	if run.enter_wind_pass():
+		persist()
+		show_result()
+
+
+func enter_altar() -> void:
+	if run.enter_altar():
 		persist()
 		show_result()
 
@@ -549,6 +577,26 @@ func draw_wind_rewards() -> void:
 
 func claim_wind_reward(id: String) -> void:
 	if run.claim_wind_reward(id):
+		persist()
+		show_result()
+
+
+func draw_altar_rewards() -> void:
+	var details := {"stone_marrow": "Tay không +%d sát thương trong các trận tiếp theo của lượt chơi. Giữ bảo vật đang mang." % Run.ALTAR_STRIKE_BONUS,
+		"altar_cache": "Nguyên thạch %d → %d\nSinh Cơ Diệp %d → %d" %
+		[run.stones, run.stones + Run.ALTAR_CACHE_STONES, run.battle.leaves, run.battle.leaves + 1]}
+	var i := 0
+	for id in Run.ALTAR_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 212), Color("#252737"), Color("#8a7ea8"))
+		text(card, Run.ALTAR_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 78), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 156, 454, 41), claim_altar_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_altar_reward(id: String) -> void:
+	if run.claim_altar_reward(id):
 		persist()
 		show_result()
 

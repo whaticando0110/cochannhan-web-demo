@@ -499,6 +499,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await capture("godot-v9-an-tran-loi.png")
 	await play_poison_marsh()
 	await play_wind_pass()
+	await play_seal_altar()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -633,6 +634,67 @@ func play_wind_pass() -> void:
 		"Preview must show the wind seal gain only when escaping, without consuming it")
 	trial.take_turn("move", 26)
 	check(trial.qi == 1 + Goods.WIND_SEAL_QI and not trial.relic_ready, "An actual escape must trigger the wind seal once")
+
+
+func play_seal_altar() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = Run.WIND_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.phase == "wind_cleared" and flow.run.relic == "wind_seal",
+		"The v11 clear must keep its selected relic")
+	flow.show_run()
+	await click_button("enter_altar")
+	await launch()
+	check(flow.run.version == Run.ALTAR_VERSION and flow.run.phase == "altar_workshop"
+		and not flow.run.enter_altar() and not flow.run.claim_altar_reward("stone_marrow"),
+		"Entry must upgrade v11 once and lock the reward")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	var current_qi := battle.qi
+	var armored := battle.preview_action("moon")
+	var escape := battle.preview_action("move", 19)
+	check(battle.tactic == "seal_altar" and battle.intent.kind == "seal_burst" and battle.hero in battle.intent.cells
+		and flow.current.field.threatened == battle.intent.cells and 19 in battle.runes and escape.receives == 0
+		and escape.seal_turns == Rules.ALTAR_BREAK_TURNS and battle.seal_turns == 0, "Rune and attack previews must match the board")
+	check(armored.armor_block == Rules.ALTAR_ARMOR and armored.dealt == battle.moon_damage - Rules.ALTAR_ARMOR
+		and escape.relic_qi == mini(Goods.WIND_SEAL_QI, battle.max_qi - current_qi), "Armor and escape should forecast actual damage and Qi")
+	var finisher := Rules.new({"tactic": "seal_altar", "wolf_hp": 10})
+	check(finisher.take_turn("moon").wolf_damage == 10 and finisher.result == Rules.VICTORY,
+		"Armor must apply before capping damage at the enemy's remaining HP")
+	await capture("godot-v12-dai-tran-an.png")
+	await shoot(KEY_1, 19)
+	await launch()
+	battle = flow.run.battle
+	check(battle.seal_turns == Rules.ALTAR_BREAK_TURNS and battle.qi == current_qi + escape.relic_qi
+		and not battle.relic_ready and battle.preview_action("moon").armor_block == 0,
+		"Landing on the rune must disable armor and activate the carried seal on the same turn")
+	await capture("godot-v12-khoa-thach-giap.png")
+	var cooldown: RefCounted = Run.restore(flow.run.snapshot())
+	for remaining in range(Rules.ALTAR_BREAK_TURNS - 1, -1, -1):
+		cooldown.perform("guard")
+		check(cooldown.battle.seal_turns == remaining, "Armor must return on schedule even while standing on a rune")
+	check(cooldown.battle.preview_action("strike").armor_block == Rules.ALTAR_ARMOR,
+		"Armor must block damage again after the rune effect expires")
+	await play_commands([[KEY_3], [KEY_7], [KEY_4], [KEY_2], [KEY_3]])
+	check(flow.run.phase == "altar_reward", "Altar victory must open the reward choice")
+	await launch()
+	await capture("godot-v12-chien-loi-pham.png")
+	var cache: RefCounted = Run.restore(flow.run.snapshot())
+	var before_stones: int = cache.stones
+	var before_leaves: int = cache.battle.leaves
+	check(cache.claim_altar_reward("altar_cache") and cache.stones == before_stones + Run.ALTAR_CACHE_STONES
+		and cache.battle.leaves == before_leaves + 1 and Run.restore(cache.snapshot()).altar_award == "altar_cache",
+		"The cache must grant and replay both resources")
+	await click_button("stone_marrow")
+	await launch()
+	check(flow.run.phase == "altar_cleared" and flow.run.strike_bonus == Run.ALTAR_STRIKE_BONUS
+		and flow.run.relic == "wind_seal" and not flow.run.claim_altar_reward("altar_cache"),
+		"The damage reward must persist separately from the relic and can only be taken once")
+	var next := Run.battle_for(Run.SEAL_ALTAR, 0, 48, 4, 4, 0, {"strike_bonus": flow.run.strike_bonus}, "seal_altar", true)
+	next.wolf = 18
+	next.seal_turns = 1
+	check(next.preview_action("strike").dealt == Rules.STRIKE_DAMAGE + Run.ALTAR_STRIKE_BONUS + Rules.ALTAR_OPEN_STRIKE,
+		"The reward damage must apply in a new encounter and stack with broken armor")
 
 
 func check_ambush_kit() -> void:
@@ -948,5 +1010,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: older replays, Rank III wind, both marsh rewards and wind seal")
+		print("Godot run passed: legacy journals, wind and altar rewards, armor timing and relic carry")
 	quit(1 if failed else 0)

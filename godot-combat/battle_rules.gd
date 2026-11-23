@@ -23,6 +23,9 @@ const THUNDER_CROSS_BONUS := 4
 const THUNDER_OPEN_BONUS := 5
 const MARSH_LUNGE_DAMAGE := 16
 const MARSH_JAW_BONUS := 6
+const ALTAR_ARMOR := 8
+const ALTAR_BREAK_TURNS := 5
+const ALTAR_OPEN_STRIKE := 4
 
 var turn := 1
 var hero := 17
@@ -63,6 +66,9 @@ var steps_bonus := 0
 var veil_turns := 0
 var relic := ""
 var relic_ready := false
+var strike_bonus := 0
+var runes: Array = []
+var seal_turns := 0
 
 
 func _init(options: Dictionary = {}) -> void:
@@ -91,6 +97,8 @@ func _init(options: Dictionary = {}) -> void:
 	revised_ward = options.get("revised_ward", false)
 	water = options.get("water", [])
 	cracks = options.get("cracks", [])
+	runes = options.get("runes", [])
+	strike_bonus = options.get("strike_bonus", 0)
 	brew_left = Gu.BREW_CHARGES if starter_gu == "brew" else 0
 	relic = options.get("relic", "")
 	relic_ready = relic in ["reed_boots", "jade_token", "elite_fang", "wind_seal"]
@@ -195,6 +203,8 @@ func forecast() -> void:
 		forecast_marsh(gap)
 	elif tactic == "wind_pass":
 		forecast_wind_pass(gap)
+	elif tactic == "seal_altar":
+		forecast_altar(gap)
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
 	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
@@ -227,6 +237,21 @@ func forecast() -> void:
 
 func enraged_phase() -> bool:
 	return tactic == "king" and wolf_hp * 2 < wolf_max
+
+
+func forecast_altar(gap: int) -> void:
+	if turn % 3 == 1:
+		var cells: Array[int] = []
+		var center := grid(hero)
+		for cell in range(COLUMNS * ROWS):
+			var offset := (grid(cell) - center).abs()
+			if offset.x <= 1 and offset.y <= 1 and cell not in rocks:
+				cells.append(cell)
+		intent = {"kind": "seal_burst", "name": heavy_name, "cells": cells, "damage": heavy_damage, "pattern": "seal_burst"}
+	elif gap == 1:
+		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
+	else:
+		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
 
 
 func forecast_thunder() -> void:
@@ -287,7 +312,7 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass", "seal_altar"]
 
 
 func aim_can_be_lost() -> bool:
@@ -436,9 +461,12 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var ready_relic := relic_ready
 	var set_trigger := false
 	var relic_qi := 0
+	var next_seal_turns := maxi(0, seal_turns - 1)
 	match action:
 		"move":
 			extra_steps = 0
+			if target in runes:
+				next_seal_turns = ALTAR_BREAK_TURNS
 			if relic == "reed_boots":
 				ready_relic = false
 			elif relic == "wind_seal" and ready_relic and hero in intent.cells and target not in intent.cells:
@@ -448,17 +476,17 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		"strike":
 			set_trigger = counter_ready or boosted > 0
 			var bonus := counter_bonus() if counter_ready else Gu.BREW_STRIKE_BONUS if boosted > 0 else 0
-			dealt = mini(wolf_hp, STRIKE_DAMAGE + bonus)
+			dealt = STRIKE_DAMAGE + strike_bonus + bonus
 			boosted = maxi(0, boosted - 1)
 			counter = false
 			qi_after = mini(max_qi, qi + 1)
 		"moon":
-			dealt = mini(wolf_hp, moon_damage)
+			dealt = moon_damage
 			qi_after = qi - MOON_COST
-			mark = build_family == "lunar" and dealt < wolf_hp
+			mark = build_family == "lunar"
 		"moon_edge":
 			set_trigger = mark
-			dealt = mini(wolf_hp, Gu.MOON_EDGE_DAMAGE + (Gu.MOON_MARK_BONUS if set_trigger else 0))
+			dealt = Gu.MOON_EDGE_DAMAGE + (Gu.MOON_MARK_BONUS if set_trigger else 0)
 			qi_after = qi - Gu.MOON_EDGE_COST
 			mark = false
 		"guard":
@@ -491,13 +519,17 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 				extra_steps = 2
 		"vital_leaf":
 			healed = mini(LEAF_HEAL, MAX_HP - hp)
+	var armor_block := mini(dealt, ALTAR_ARMOR) if tactic == "seal_altar" and seal_turns == 0 else 0
+	dealt = mini(wolf_hp, dealt - armor_block)
 	var exposed_damage := 0
 	if recovering and dealt > 0:
 		if tactic == "thunder_boss":
 			exposed_damage = mini(THUNDER_OPEN_BONUS, wolf_hp - dealt)
 		elif tactic == "marsh" and action == "strike":
 			exposed_damage = mini(MARSH_JAW_BONUS, wolf_hp - dealt)
-		dealt += exposed_damage
+	if tactic == "seal_altar" and seal_turns > 0 and action == "strike":
+		exposed_damage = mini(ALTAR_OPEN_STRIKE, wolf_hp - dealt)
+	dealt += exposed_damage
 	var relic_damage := 0
 	if relic == "elite_fang" and ready_relic and dealt > 0:
 		relic_damage = mini(Goods.FANG_BONUS, wolf_hp - dealt)
@@ -531,7 +563,8 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
 		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
 		"relic_ready": ready_relic, "relic_block": relic_block, "relic_damage": relic_damage,
-		"exposed_damage": exposed_damage, "qi_drained": qi_drained, "relic_qi": relic_qi}
+		"exposed_damage": exposed_damage, "qi_drained": qi_drained, "relic_qi": relic_qi,
+		"armor_block": armor_block, "seal_turns": next_seal_turns}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -546,6 +579,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	var notes: Array = exchange.notes
 	var previous_qi := qi
 	qi = preview.qi
+	seal_turns = preview.seal_turns
 	var action_qi: int = qi + preview.qi_drained
 	jade_turns = preview.jade_turns
 	ward_strength = preview.ward_strength if jade_turns > 0 else 0
@@ -563,6 +597,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		"move":
 			hero = target
 			notes.append("Bạn di chuyển đến %s." % cell_name(hero))
+			if target in runes:
+				notes.append("Ấn đá vô hiệu Thạch Giáp trong %d lượt kế tiếp." % seal_turns)
 			if preview.relic_qi > 0:
 				notes.append("Ấn Dẫn Phong hồi %d chân nguyên." % preview.relic_qi)
 			elif used_relic:
@@ -573,8 +609,11 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			exchange.wolf_damage = damage
 			var name: String = Gu.GU[action].name if Gu.GU.has(action) else "Tay không"
 			notes.append("%s gây %d sát thương." % [name, damage])
+			if preview.armor_block > 0:
+				notes.append("Thạch Giáp chặn %d sát thương." % preview.armor_block)
 			if preview.exposed_damage > 0:
-				notes.append("%s cộng %d sát thương." % [intent.name, preview.exposed_damage])
+				notes.append("%s cộng %d sát thương." % ["Vỡ Thạch Giáp" if tactic == "seal_altar" else intent.name,
+					preview.exposed_damage])
 			if preview.relic_damage > 0:
 				notes.append("Nanh Tinh Anh cộng %d sát thương." % preview.relic_damage)
 			if action == "moon_edge" and preview.set_trigger:
@@ -646,7 +685,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	if result.is_empty():
 		if intent.kind in ["heavy", "shot", "flood", "ambush", "fall"]:
 			heavy_count += 1
-		recovering = (intent.kind == "heavy" and tactic in ["king", "den"]) or intent.kind in ["shot", "flood", "ambush", "fall", "thunder"]
+		recovering = (intent.kind == "heavy" and tactic in ["king", "den"]) or intent.kind in ["shot", "flood", "ambush", "fall", "thunder", "seal_burst"]
 		turn += 1
 		forecast()
 	else:

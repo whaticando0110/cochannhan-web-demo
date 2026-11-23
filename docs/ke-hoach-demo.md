@@ -38,6 +38,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 10. Mở Lôi Nha Đài ở lượt v9 sau Hẻm Đá Phục Kích. Cả hai đường dùng chung điểm chuẩn bị. Thắng boss nhận Ấn Trấn Lôi và mở trận luyện riêng.
 11. Mở Đầm Rễ Độc, màn đầu Tam chuyển, sau Lôi Nha Đài. Hai cụm hồ phun độc luân phiên. Chọn một phần thưởng tăng sức chứa hoặc tiếp tế sau trận.
 12. Mở Hẻm Hàn Phong, màn hai Tam chuyển, sau khi nhận thưởng Đầm Rễ Độc. Tận dụng các ô khuất sau đá khi gió đảo chiều.
+13. Mở Đài Trấn Ấn, màn ba Tam chuyển, sau khi nhận thưởng Hẻm Hàn Phong. Né Chấn Ấn và kết thúc lượt di chuyển trên ô ấn để phá giáp.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -166,6 +167,29 @@ Phát lại đường thắng Đầm Rễ Độc trước khi chọn thưởng, 
 Tinh Lộ nhanh hơn ở 77/192 cặp so sánh. Cao giải độc kết thúc với nhiều sinh lực hơn ở 120/192 cặp và dùng ít nhất một Sinh Cơ Diệp trong 42 ca. Bộ Ẩn thuần cần 15–19 lượt với Tinh Lộ và 14–16 lượt với Cao giải độc. Đường thắng thấp nhất còn một sinh lực với Tinh Lộ và bốn với Cao giải độc. Số liệu mô tả các đường thắng tìm được từ những đầu vào đã thử.
 
 Kiểm thêm 24 lượt có nhật ký từ sau Suối Sấm đến Hẻm Hàn Phong, gồm bốn bộ thuần, ba lộ trình trước Lôi Nha Đài và hai phần thưởng Đầm Rễ Độc. Cả 24 lượt thắng. Phát lại được từng lựa chọn trong hai phần thưởng Hẻm Hàn Phong sau mỗi lượt.
+
+## Đài Trấn Ấn
+
+Sau khi nhận phần thưởng Hẻm Hàn Phong, chọn **Tới Đài Trấn Ấn**. Lượt v11 nâng lên v12 tại đây. Người chơi hồi tối đa 24 sinh lực và 2 chân nguyên, giữ bảo vật, Sinh Cơ Diệp và sức chứa đã có, rồi chọn bộ Cổ. Có ba bố cục đá và ô ấn theo mã lượt.
+
+Thạch Giáp Lang có 124 sinh lực và chặn 8 sát thương trước khi giới hạn đòn đánh theo lượng sinh lực còn lại. Kết thúc Di chuyển trên một trong hai ô ấn tím để vô hiệu hóa giáp trong 5 lượt kế tiếp. Đi ngang qua ô hoặc đứng yên chỉ tiêu lượt theo nhịp thường. Tay không trúng lúc giáp vỡ cộng 4 sát thương. Màn hình báo số lượt giáp vỡ còn lại và mức giáp chặn trong phần xem trước.
+
+Chấn Ấn báo vùng 3 × 3 quanh vị trí đầu lượt của người chơi, loại các ô đá và gây 18 sát thương. Lang hồi thế một lượt sau mỗi đợt. Né đòn bằng cách di chuyển ra ngoài vùng đỏ. Có thể đáp xuống ô ấn để vô hiệu giáp và kích hoạt Ấn Dẫn Phong trong cùng một lượt nếu đang thiếu chân nguyên.
+
+Khi thắng, chọn **Thạch Tủy Luyện Thể** để Tay không gây thêm 3 sát thương trong các trận tiếp theo của lượt chơi hoặc **Hộp tiếp tế cổ trận** để nhận 6 nguyên thạch và một Sinh Cơ Diệp. Cả hai lựa chọn giữ bảo vật đang mang và chỉ nhận được một lần.
+
+### Kiểm cân bằng Đài Trấn Ấn
+
+Lấy tài nguyên sau Hẻm Hàn Phong trước khi nhận thưởng, gồm 16 cặp Cổ, bốn tư chất và ba bố cục. Mỗi cặp so sánh bắt đầu từ cùng trạng thái. Trong 192 đầu vào có 96 ca dùng Tinh Lộ Tịnh Mạch và 96 ca dùng Cao giải độc ở Đầm Rễ Độc.
+
+| Thưởng từ Hẻm Hàn Phong | Có đường thắng | Lượt | Lượt trung bình | Sinh lực còn lại trung bình |
+| --- | --- | --- | --- | --- |
+| Ấn Dẫn Phong | 192/192 | 6–18 | 11,44 | 14,66 |
+| Túi Hàn Dược | 192/192 | 5–15 | 11,02 | 16,63 |
+
+Bản thử đầu có 84 cấu hình mà phép tìm thiếu đường thắng ở ít nhất một lựa chọn. Dời ô ấn gần lối tiếp cận, tăng thời gian khóa giáp từ 3 lên 5 lượt, thêm thưởng Tay không và giảm sát thương địch giúp tìm được đường thắng cho toàn bộ 384 ca ở bản chốt. Ấn Dẫn Phong kích hoạt ở 94/192 đường thắng. Túi Hàn Dược giúp thắng sớm hơn ở 46 cấu hình so với 8 cấu hình của Ấn. Cách tìm ưu tiên kết thúc sớm rồi giữ sinh lực trong các đường thắng tìm được, và đường thắng thấp nhất còn 1 sinh lực với Ấn hoặc 2 với Túi.
+
+Kiểm thêm 48 lượt có nhật ký từ Suối Sấm qua ba lộ trình Nhị chuyển, hai phần thưởng Đầm Rễ Độc, hai phần thưởng Hẻm Hàn Phong và bốn bộ thuần. Cả 48 lượt thắng Đài Trấn Ấn. Hai lựa chọn thưởng cuối được phát lại từ mỗi lượt.
 
 ## Đồ họa trong trận
 

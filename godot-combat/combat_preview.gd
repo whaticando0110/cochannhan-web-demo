@@ -77,6 +77,8 @@ func configure(current_run: RunData) -> void:
 		arena_room = 4
 	elif run.floor == RunData.WIND_FLOOR:
 		arena_room = 5
+	elif run.floor == RunData.ALTAR_FLOOR:
+		arena_room = 2
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
 
@@ -174,6 +176,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 1"
 	elif run != null and run.floor == RunData.WIND_FLOOR:
 		mode = "Tam chuyển · Màn 2"
+	elif run != null and run.floor == RunData.ALTAR_FLOOR:
+		mode = "Tam chuyển · Màn 3"
 	elif run != null:
 		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 		if run.floor >= RunData.RIDGE_FLOOR:
@@ -246,7 +250,7 @@ func build_hud() -> void:
 
 	var descriptions := [
 		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
-		["strike", "2   Tay không\n%d sát thương · +1 CN" % Rules.STRIKE_DAMAGE],
+		["strike", "2   Tay không\n%d sát thương · +1 CN" % (Rules.STRIKE_DAMAGE + state.strike_bonus)],
 	]
 	if state.moon_equipped:
 		descriptions.append(["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]])
@@ -317,6 +321,8 @@ func update_hud() -> void:
 		supplies.append("Ẩn Lân · %d lượt" % state.veil_turns)
 	if actions.has("vital_leaf"):
 		supplies.append("Sinh Cơ ×%d" % state.leaves)
+	if state.tactic == "seal_altar":
+		supplies.append("Vỡ giáp · %d lượt" % state.seal_turns if state.seal_turns > 0 else "Thạch Giáp · chặn %d" % Rules.ALTAR_ARMOR)
 	wards_label.text = "    ".join(supplies)
 	if is_instance_valid(relic_label):
 		var status := " · Sẵn sàng" if state.relic_ready else " · Đã dùng"
@@ -351,6 +357,8 @@ func update_hud() -> void:
 			elif state.intent.kind == "wind":
 				var direction := "Tây → Đông" if state.intent.direction > 0 else "Đông → Tây"
 				intent_copy.text = "%s · %d sát thương. Nấp sau đá." % [direction, state.intent.damage]
+			elif state.intent.kind == "seal_burst":
+				intent_copy.text = "Vùng 3 × 3 quanh bạn · %d sát thương." % state.intent.damage
 			elif state.intent.kind == "thunder":
 				var pattern := "Cả hàng và cột" if state.intent.cross else "Hàng đang đứng"
 				intent_copy.text = "%s · %d sát thương. Rời vùng tím." % [pattern, state.intent.damage]
@@ -475,7 +483,10 @@ func inspect_action(action: String) -> void:
 	if result.relic_damage > 0:
 		pieces.append("Nanh Tinh Anh +%d" % result.relic_damage)
 	if result.exposed_damage > 0:
-		pieces.append("%s +%d" % [state.intent.name, result.exposed_damage])
+		pieces.append("%s +%d" % ["Vỡ Thạch Giáp" if state.tactic == "seal_altar" else state.intent.name,
+			result.exposed_damage])
+	if result.armor_block > 0:
+		pieces.append("Thạch Giáp chặn %d" % result.armor_block)
 	if result.qi_drained > 0:
 		pieces.append("Độc rút %d chân nguyên" % result.qi_drained)
 	if result.receives > 0:
@@ -528,6 +539,8 @@ func inspect_cell(cell: int) -> void:
 	var qi_note := " · mất %d chân nguyên" % preview.qi_drained if preview.qi_drained > 0 else ""
 	if preview.relic_qi > 0:
 		qi_note = " · Ấn Dẫn Phong hồi %d chân nguyên" % preview.relic_qi
+	if cell in state.runes:
+		qi_note += " · Khóa Thạch Giáp %d lượt" % preview.seal_turns
 	hint_label.text = "%s · %d bước · %s%s" % [name, preview.steps, outcome, qi_note]
 
 
