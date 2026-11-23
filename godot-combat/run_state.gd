@@ -4,7 +4,7 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 12
+const CURRENT_VERSION := 13
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -16,6 +16,8 @@ const WIND_FLOOR := 8
 const WIND_VERSION := 11
 const ALTAR_FLOOR := 9
 const ALTAR_VERSION := 12
+const PULSE_FLOOR := 10
+const PULSE_VERSION := 13
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -75,6 +77,17 @@ const ALTAR_QI := 2
 const ALTAR_STRIKE_BONUS := 3
 const ALTAR_CACHE_STONES := 6
 const ALTAR_REWARDS := {"stone_marrow": "Thạch Tủy Luyện Thể", "altar_cache": "Hộp tiếp tế cổ trận"}
+const PULSE_HALL := {"name": "Điện Trấn Mạch", "enemy": "Thạch Vương", "damage": 18,
+	"bite": 12, "hp": 140, "heavy": "Nội Chấn", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 10, 27, 35], [3, 12, 26, 37], [5, 11, 28, 34]]}
+const PULSE_HEAL := 30
+const PULSE_QI := 3
+const PULSE_RITE_PRICE := 8
+const PULSE_RITE_HEAL := 6
+const PULSE_CACHE_STONES := 8
+const PULSE_CACHE_LEAVES := 2
+const PULSE_SEAL := "Ấn Trấn Mạch"
+const PULSE_REWARDS := {"pulse_pearl": "Châu Hoàn Nguyên", "pulse_cache": "Rương Trấn Mạch"}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -120,6 +133,8 @@ var elite_award := ""
 var marsh_award := ""
 var wind_award := ""
 var altar_award := ""
+var pulse_award := ""
+var pulse_rite := false
 var strike_bonus := 0
 
 
@@ -146,6 +161,8 @@ func stage_at(index: int) -> Dictionary:
 			return WIND_PASS
 		ALTAR_FLOOR:
 			return SEAL_ALTAR
+		PULSE_FLOOR:
+			return PULSE_HALL
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -182,6 +199,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "wind_pass"
 			ALTAR_FLOOR:
 				tactic = "seal_altar"
+			PULSE_FLOOR:
+				tactic = "pulse_boss"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -221,6 +240,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "wind_reward"
 		elif floor == ALTAR_FLOOR:
 			phase = "altar_reward"
+		elif floor == PULSE_FLOOR:
+			phase = "pulse_reward"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -357,6 +378,12 @@ func workshop_vitals() -> Dictionary:
 	if phase == "altar_workshop":
 		return {"hp": mini(Rules.MAX_HP, battle.hp + ALTAR_HEAL), "qi": mini(battle.max_qi, battle.qi + ALTAR_QI),
 			"leaves": battle.leaves}
+	if phase == "pulse_workshop":
+		var capacity := battle.max_qi + int(pulse_rite)
+		var healed := PULSE_HEAL + (PULSE_RITE_HEAL if pulse_rite else 0)
+		return {"hp": mini(Rules.MAX_HP, battle.hp + healed),
+			"qi": capacity if pulse_rite else mini(capacity, battle.qi + PULSE_QI), "max_qi": capacity,
+			"leaves": battle.leaves}
 	var heal := CHAPTER_HEAL
 	if phase != "refinement":
 		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
@@ -365,7 +392,8 @@ func workshop_vitals() -> Dictionary:
 
 
 func departure_qi() -> int:
-	return starting_qi(workshop_vitals().qi)
+	var vitals := workshop_vitals()
+	return vitals.qi if phase == "pulse_workshop" and pulse_rite else starting_qi(vitals.qi)
 
 
 func starting_qi(qi: int) -> int:
@@ -502,6 +530,42 @@ func claim_altar_reward(id: String) -> bool:
 		battle.leaves += 1
 	altar_award = id
 	phase = "altar_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_pulse_hall() -> bool:
+	if phase != "altar_cleared":
+		return false
+	version = maxi(version, PULSE_VERSION)
+	phase = "pulse_workshop"
+	journal.append(["enter_pulse_hall"])
+	return true
+
+
+func can_buy_pulse_rite() -> bool:
+	return phase == "pulse_workshop" and not pulse_rite and stones >= PULSE_RITE_PRICE
+
+
+func buy_pulse_rite() -> bool:
+	if not can_buy_pulse_rite():
+		return false
+	stones -= PULSE_RITE_PRICE
+	pulse_rite = true
+	journal.append(["pulse_rite"])
+	return true
+
+
+func claim_pulse_reward(id: String) -> bool:
+	if phase != "pulse_reward" or not PULSE_REWARDS.has(id):
+		return false
+	if id == "pulse_pearl":
+		relic = id
+	else:
+		stones += PULSE_CACHE_STONES
+		battle.leaves += PULSE_CACHE_LEAVES
+	pulse_award = id
+	phase = "rank_three_cleared"
 	journal.append([id])
 	return true
 
@@ -644,7 +708,7 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
@@ -666,11 +730,13 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = WIND_FLOOR
 		"altar_workshop":
 			floor = ALTAR_FLOOR
+		"pulse_workshop":
+			floor = PULSE_FLOOR
 		"elite_workshop":
 			elite_room = true
 		_:
 			floor = RIDGE_FLOOR
-	battle = encounter(vitals.hp, vitals.qi, battle.max_qi, arsenal)
+	battle = encounter(vitals.hp, vitals.qi, vitals.get("max_qi", battle.max_qi), arsenal)
 	stop.clear()
 	phase = "battle"
 	journal.append(["equip", recipe, starter])
@@ -745,6 +811,12 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_altar" and run.enter_altar()
 				"altar_reward":
 					committed = run.claim_altar_reward(command[0])
+				"altar_cleared":
+					committed = command[0] == "enter_pulse_hall" and run.enter_pulse_hall()
+				"pulse_workshop":
+					committed = command[0] == "pulse_rite" and run.buy_pulse_rite()
+				"pulse_reward":
+					committed = run.claim_pulse_reward(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

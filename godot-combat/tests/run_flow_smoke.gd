@@ -458,7 +458,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	flow.show_run()
 	flow.open_training(flow.show_run)
 	var opponent := flow.find_child("training_opponent", true, false) as OptionButton
-	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size() - 1, "Boss training must start locked")
+	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size() - 2, "Boss training must start locked")
 	await click_button("training_back")
 	await click_button("enter_boss")
 	await launch()
@@ -500,17 +500,19 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_poison_marsh()
 	await play_wind_pass()
 	await play_seal_altar()
+	await play_pulse_boss()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
-	check(flow.run.floor == 0 and flow.boss_seal and flow.run.battle.tactic.is_empty(), "The seal must survive a new run")
+	check(flow.run.floor == 0 and flow.boss_seal and flow.pulse_seal and flow.run.battle.tactic.is_empty(),
+		"Both training unlocks must survive a new run")
 	var campaign := FileAccess.get_file_as_string(path)
 	flow.open_training(flow.show_run)
 	opponent = flow.find_child("training_opponent", true, false) as OptionButton
-	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size(), "The seal must unlock the boss in training")
+	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size(), "Both boss training encounters must unlock")
 	opponent.select(opponent.item_count - 1)
 	await click_button("training_begin")
-	check(flow.current.state.tactic == "thunder_boss" and flow.current.state.wolf_hp == Run.THUNDER_GATE.hp
+	check(flow.current.state.tactic == "pulse_boss" and flow.current.state.wolf_hp == Run.PULSE_HALL.hp
 		and FileAccess.get_file_as_string(path) == campaign, "Practice must use boss rules and leave the campaign untouched")
 
 
@@ -685,6 +687,18 @@ func play_seal_altar() -> void:
 	check(cache.claim_altar_reward("altar_cache") and cache.stones == before_stones + Run.ALTAR_CACHE_STONES
 		and cache.battle.leaves == before_leaves + 1 and Run.restore(cache.snapshot()).altar_award == "altar_cache",
 		"The cache must grant and replay both resources")
+	var old_capacity: int = cache.battle.max_qi
+	var old_hp: int = cache.battle.hp
+	check(cache.enter_pulse_hall() and cache.buy_pulse_rite() and not cache.buy_pulse_rite(),
+		"The altar cache must be able to fund a single preparation rite")
+	cache = Run.restore(cache.snapshot())
+	check(cache != null and cache.pulse_rite and not cache.buy_pulse_rite()
+		and cache.stones == before_stones + Run.ALTAR_CACHE_STONES - Run.PULSE_RITE_PRICE,
+		"The rite and its cost must survive reloading once")
+	check(cache.equip_build("moon_edge", "moon") and cache.battle.leaves == before_leaves + 1
+		and cache.battle.strike_bonus == 0 and cache.battle.max_qi == old_capacity + 1 and cache.battle.qi == cache.battle.max_qi
+		and cache.battle.hp == mini(Rules.MAX_HP, old_hp + Run.PULSE_HEAL + Run.PULSE_RITE_HEAL),
+		"The paid preparation and cache supplies must carry into the boss")
 	await click_button("stone_marrow")
 	await launch()
 	check(flow.run.phase == "altar_cleared" and flow.run.strike_bonus == Run.ALTAR_STRIKE_BONUS
@@ -695,6 +709,69 @@ func play_seal_altar() -> void:
 	next.seal_turns = 1
 	check(next.preview_action("strike").dealt == Rules.STRIKE_DAMAGE + Run.ALTAR_STRIKE_BONUS + Rules.ALTAR_OPEN_STRIKE,
 		"The reward damage must apply in a new encounter and stack with broken armor")
+
+
+func play_pulse_boss() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = Run.ALTAR_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.phase == "altar_cleared" and not flow.pulse_seal,
+		"A v12 result must retain the altar prize without unlocking the boss reward")
+	flow.show_run()
+	await click_button("enter_pulse_hall")
+	await launch()
+	check(flow.run.version == Run.PULSE_VERSION and flow.run.phase == "pulse_workshop"
+		and not flow.run.enter_pulse_hall() and not flow.run.claim_pulse_reward("pulse_pearl")
+		and not flow.run.buy_pulse_rite(), "Boss entry must upgrade once and reject unfunded preparation")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	check(battle.tactic == "pulse_boss" and battle.strike_bonus == Run.ALTAR_STRIKE_BONUS
+		and battle.intent.inner and battle.intent.radius == 2 and battle.intent.cells == flow.current.field.threatened,
+		"Thạch Tủy and the inner wave must reach the battle")
+	await capture("godot-v13-noi-chan.png")
+	var doomed: RefCounted = Run.restore(flow.run.snapshot())
+	for i in range(44):
+		if doomed.phase == "battle":
+			doomed.perform("guard")
+	check(doomed.phase == "death" and not doomed.claim_pulse_reward("pulse_cache")
+		and Run.restore(doomed.snapshot()).phase == "death", "Boss defeat must never award loot")
+	await play_commands([[KEY_3], [KEY_1, 18]])
+	check(not battle.intent.inner and battle.hero in battle.intent.cells
+		and battle.preview_action("move", 20).receives == 0, "Outer wave must leave a safe route inwards")
+	await shoot(KEY_1, 20)
+	await launch()
+	battle = flow.run.battle
+	check(battle.pulse_open and battle.intent.kind == "recover" and battle.preview_action("strike").exposed_damage == Rules.PULSE_OPEN_BONUS
+		and battle.preview_action("strike").dealt == Rules.STRIKE_DAMAGE + Run.ALTAR_STRIKE_BONUS + Rules.PULSE_OPEN_BONUS,
+		"Escaping the wave must preserve the one-turn opening across reload")
+	await play_commands([[KEY_2], [KEY_7], [KEY_2]])
+	check(battle.wolf_hp * 2 <= battle.wolf_max and battle.intent.radius == 3 and not battle.intent.inner
+		and battle.intent.damage == Run.PULSE_HALL.damage + Rules.PULSE_ENRAGE_DAMAGE and not battle.pulse_open,
+		"The next pulse below half HP must shift the boundary and raise damage")
+	await capture("godot-v13-ngoai-chan.png")
+	await shoot(KEY_3)
+	check(flow.run.phase == "pulse_reward" and flow.pulse_seal, "Victory must grant the practice unlock before choosing loot")
+	await launch()
+	await capture("godot-v13-chien-loi-pham.png")
+	var cache: RefCounted = Run.restore(flow.run.snapshot())
+	var stones: int = cache.stones
+	var leaves: int = cache.battle.leaves
+	check(cache.claim_pulse_reward("pulse_cache") and cache.stones == stones + Run.PULSE_CACHE_STONES
+		and cache.battle.leaves == leaves + Run.PULSE_CACHE_LEAVES and Run.restore(cache.snapshot()).pulse_award == "pulse_cache",
+		"The boss cache must persist both currencies")
+	await click_button("pulse_pearl")
+	await launch()
+	check(flow.run.phase == "rank_three_cleared" and flow.run.relic == "pulse_pearl" and flow.pulse_seal
+		and not flow.run.claim_pulse_reward("pulse_cache"), "The pearl and chapter clear must survive reload")
+	var pearl := Rules.new({"qi": 2, "relic": flow.run.relic, "wolf_hp": 120})
+	check(pearl.preview_action("moon").relic_qi == Goods.PULSE_PEARL_QI and pearl.relic_ready and pearl.qi == 2,
+		"Preview must report the refund without changing the relic")
+	pearl.take_turn("moon")
+	check(pearl.qi == 2 and not pearl.relic_ready and pearl.preview_action("moon").relic_qi == 0,
+		"The pearl should refund only the first actual paid cast")
+	var empty := Rules.new({"qi": 1, "relic": flow.run.relic})
+	check(empty.take_turn("moon").has("error") and empty.relic_ready and empty.qi == 1,
+		"The refund must not let a player cast with insufficient Qi")
 
 
 func check_ambush_kit() -> void:
@@ -1010,5 +1087,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, wind and altar rewards, armor timing and relic carry")
+		print("Godot run passed: legacy journals, Rank III boss, two altar routes and training unlock")
 	quit(1 if failed else 0)

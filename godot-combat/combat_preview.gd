@@ -77,7 +77,7 @@ func configure(current_run: RunData) -> void:
 		arena_room = 4
 	elif run.floor == RunData.WIND_FLOOR:
 		arena_room = 5
-	elif run.floor == RunData.ALTAR_FLOOR:
+	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
@@ -178,6 +178,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 2"
 	elif run != null and run.floor == RunData.ALTAR_FLOOR:
 		mode = "Tam chuyển · Màn 3"
+	elif run != null and run.floor == RunData.PULSE_FLOOR:
+		mode = "Tam chuyển · Boss cuối"
 	elif run != null:
 		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 		if run.floor >= RunData.RIDGE_FLOOR:
@@ -359,6 +361,9 @@ func update_hud() -> void:
 				intent_copy.text = "%s · %d sát thương. Nấp sau đá." % [direction, state.intent.damage]
 			elif state.intent.kind == "seal_burst":
 				intent_copy.text = "Vùng 3 × 3 quanh bạn · %d sát thương." % state.intent.damage
+			elif state.intent.kind == "core_wave":
+				var distance_text := "≤" if state.intent.inner else ">"
+				intent_copy.text = "Cách boss %s %d ô · %d sát thương." % [distance_text, state.intent.radius, state.intent.damage]
 			elif state.intent.kind == "thunder":
 				var pattern := "Cả hàng và cột" if state.intent.cross else "Hàng đang đứng"
 				intent_copy.text = "%s · %d sát thương. Rời vùng tím." % [pattern, state.intent.damage]
@@ -368,6 +373,8 @@ func update_hud() -> void:
 						intent_copy.text = "Đòn trúng được cộng %d sát thương." % Rules.THUNDER_OPEN_BONUS
 					"marsh":
 						intent_copy.text = "Tay không được cộng %d sát thương." % Rules.MARSH_JAW_BONUS
+					"pulse_boss":
+						intent_copy.text = "Đòn trúng được cộng %d sát thương." % Rules.PULSE_OPEN_BONUS if state.pulse_open else "Thạch Vương đang hồi thế."
 					_:
 						intent_copy.text = "Đối thủ hồi thế trong lượt này."
 			elif state.intent.damage > 0:
@@ -482,6 +489,8 @@ func inspect_action(action: String) -> void:
 		pieces.append("Ngọc bài chặn %d" % result.relic_block)
 	if result.relic_damage > 0:
 		pieces.append("Nanh Tinh Anh +%d" % result.relic_damage)
+	if action != "move" and result.relic_qi > 0:
+		pieces.append("Châu Hoàn Nguyên hoàn %d chân nguyên" % result.relic_qi)
 	if result.exposed_damage > 0:
 		pieces.append("%s +%d" % ["Vỡ Thạch Giáp" if state.tactic == "seal_altar" else state.intent.name,
 			result.exposed_damage])

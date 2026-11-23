@@ -12,9 +12,9 @@ const GOLD := Color("#f1d89f")
 const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
 const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2],
-	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS, Run.THUNDER_GATE]
-const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5, 2]
-const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush", "thunder_boss"]
+	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS, Run.THUNDER_GATE, Run.PULSE_HALL]
+const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5, 2, 2]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush", "thunder_boss", "pulse_boss"]
 const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
@@ -26,6 +26,7 @@ var headline := SystemFont.new()
 var status: Label
 var save_problem := false
 var boss_seal := false
+var pulse_seal := false
 var training_return: Callable
 var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Rules.MAX_HP,
 	"jade_skin": false, "leaves": 0, "build": 0}
@@ -39,6 +40,9 @@ func _ready() -> void:
 		if run != null:
 			var seal: Variant = saved.get("boss_seal", false)
 			boss_seal = run.phase == "chapter_cleared" or (seal is bool and seal)
+			var pulse: Variant = saved.get("pulse_seal", false)
+			pulse_seal = run.phase in ["pulse_reward", "rank_three_cleared"] or (pulse is bool and pulse)
+			boss_seal = boss_seal or pulse_seal
 	if run == null:
 		show_entry()
 	else:
@@ -46,7 +50,8 @@ func _ready() -> void:
 
 
 func persist() -> void:
-	boss_seal = boss_seal or run.phase == "chapter_cleared"
+	pulse_seal = pulse_seal or run.phase in ["pulse_reward", "rank_three_cleared"]
+	boss_seal = boss_seal or pulse_seal or run.phase == "chapter_cleared"
 	var temp := save_path + ".tmp"
 	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
@@ -55,6 +60,8 @@ func persist() -> void:
 	var saved := run.snapshot()
 	if boss_seal:
 		saved.boss_seal = true
+	if pulse_seal:
+		saved.pulse_seal = true
 	file.store_string(JSON.stringify(saved))
 	var written := file.get_error() == OK
 	file.close()
@@ -156,7 +163,9 @@ func show_entry() -> void:
 			[hero_name, run.profile.grade, run.profile.sea_pct, run.profile.max_qi], Rect2(22, 90, 250, 92), 19)
 		var skip := button(card, "Bỏ qua Khai Khiếu", Rect2(24, 211, 244, 42), skip_ceremony)
 		skip.name = "skip_ceremony"
-	if boss_seal:
+	if pulse_seal:
+		text(menu, Run.PULSE_SEAL + " · Đã mở Thạch Vương trong Luyện trận", Rect2(96, 593, 1008, 38), 19, GOLD)
+	elif boss_seal:
 		text(menu, Run.BOSS_SEAL + " · Đã mở Lôi Nha Trấn Ải trong Luyện trận",
 			Rect2(96, 593, 1008, 38), 19, GOLD)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
@@ -219,6 +228,8 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 2"
 	if run.floor == Run.ALTAR_FLOOR or run.phase == "altar_workshop":
 		section = "TAM CHUYỂN    /    MÀN 3"
+	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
+		section = "TAM CHUYỂN    /    BOSS CUỐI"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
@@ -284,7 +295,16 @@ func show_result() -> void:
 			description = "Đã vượt màn ba Tam chuyển. Chọn một phần thưởng cho lượt chơi."
 		"altar_cleared":
 			title = "Vượt qua Đài Trấn Ấn"
-			description = "Đã nhận %s." % Run.ALTAR_REWARDS[run.altar_award]
+			description = "Đã nhận %s. Thạch Vương chờ ở Điện Trấn Mạch." % Run.ALTAR_REWARDS[run.altar_award]
+		"pulse_workshop":
+			title = Run.PULSE_HALL.name
+			description = "Thạch Vương luân phiên quét vùng gần và vùng xa. Di chuyển thoát vùng báo đòn để làm hở mạch."
+		"pulse_reward":
+			title = "Chiến lợi phẩm Điện Trấn Mạch"
+			description = "Ấn Trấn Mạch đã mở Thạch Vương trong Luyện trận. Chọn một chiến lợi phẩm cho lượt chơi."
+		"rank_three_cleared":
+			title = "Hoàn thành Tam chuyển"
+			description = "Đã hạ Thạch Vương và nhận %s." % Run.PULSE_REWARDS[run.pulse_award]
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -315,7 +335,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
@@ -325,6 +345,8 @@ func show_result() -> void:
 		draw_wind_rewards()
 	elif run.phase == "altar_reward":
 		draw_altar_rewards()
+	elif run.phase == "pulse_reward":
+		draw_pulse_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -383,6 +405,12 @@ func show_result() -> void:
 			if run.strike_bonus > 0:
 				text(menu, "Tay không +%d sát thương trong lượt chơi này" % run.strike_bonus,
 					Rect2(96, 403, 1008, 38), 19, GOLD)
+			var gate := button(menu, "Tới Điện Trấn Mạch", Rect2(432, 480, 310, 54), enter_pulse_hall)
+			gate.name = "enter_pulse_hall"
+			gate.grab_focus()
+		elif run.phase == "rank_three_cleared":
+			text(menu, "Thưởng từ Đài Trấn Ấn · %s" % Run.ALTAR_REWARDS[run.altar_award], Rect2(96, 309, 1008, 38), 19, GOLD)
+			draw_vitals(355)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -461,6 +489,18 @@ func enter_wind_pass() -> void:
 
 func enter_altar() -> void:
 	if run.enter_altar():
+		persist()
+		show_result()
+
+
+func enter_pulse_hall() -> void:
+	if run.enter_pulse_hall():
+		persist()
+		show_result()
+
+
+func buy_pulse_rite() -> void:
+	if run.buy_pulse_rite():
 		persist()
 		show_result()
 
@@ -601,6 +641,27 @@ func claim_altar_reward(id: String) -> void:
 		show_result()
 
 
+func draw_pulse_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"pulse_pearl": Goods.RELICS.pulse_pearl[1] + "\n" + carried,
+		"pulse_cache": "Nguyên thạch %d → %d\nSinh Cơ Diệp %d → %d" %
+			[run.stones, run.stones + Run.PULSE_CACHE_STONES, run.battle.leaves, run.battle.leaves + Run.PULSE_CACHE_LEAVES]}
+	var i := 0
+	for id in Run.PULSE_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 248), Color("#30252c"), Color("#ab8178"))
+		text(card, Run.PULSE_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 111), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 190, 454, 41), claim_pulse_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_pulse_reward(id: String) -> void:
+	if run.claim_pulse_reward(id):
+		persist()
+		show_result()
+
+
 func draw_shop() -> void:
 	var for_sale: Array = Goods.RELICS[run.shop_relic()]
 	var offers := [
@@ -682,9 +743,17 @@ func draw_workshop() -> void:
 	var fight := button(card, "Vào trận với bộ này", Rect2(676, 270, 306, 44),
 		func(): equip_build(Gu.RECIPES[recipe.selected], Gu.STARTERS[starter.selected]))
 	fight.name = "equip_confirm"
+	if run.phase == "pulse_workshop":
+		var title := "Đã dưỡng mạch" if run.pulse_rite else "Dưỡng mạch · %d nguyên thạch" % Run.PULSE_RITE_PRICE
+		var rite := button(card, title, Rect2(24, 270, 302, 44), buy_pulse_rite)
+		rite.name = "pulse_rite"
+		rite.disabled = not run.can_buy_pulse_rite()
+		rite.tooltip_text = "+1 sức chứa, hồi đầy chân nguyên và hồi thêm tối đa %d sinh lực." % Run.PULSE_RITE_HEAL
+		text(card, "Túi · %d nguyên thạch" % run.stones, Rect2(348, 270, 302, 44), 17, GREEN)
 	var vitals: Dictionary = run.workshop_vitals()
 	text(menu, "Khi vào trận  ·  Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d  ·  Giữ Sinh Cơ Diệp ×%d" %
-		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, run.departure_qi(), run.battle.max_qi, vitals.leaves],
+		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, run.departure_qi(),
+			vitals.get("max_qi", run.battle.max_qi), vitals.leaves],
 		Rect2(96, 644, 1008, 39), 18, GREEN)
 
 
@@ -810,7 +879,8 @@ func show_training_setup() -> void:
 		Rect2(96, 174, 1006, 56), 22)
 	var card := panel(menu, Rect2(96, 252, 1008, 355), Color("#1a2b25"), Color("#586c54"))
 	var opponent_items: Array = []
-	for stage in TRAINING_STAGES.slice(0, TRAINING_STAGES.size() if boss_seal else TRAINING_STAGES.size() - 1):
+	var unlocked_count := TRAINING_STAGES.size() - int(not boss_seal) - int(not pulse_seal)
+	for stage in TRAINING_STAGES.slice(0, unlocked_count):
 		opponent_items.append(stage.enemy + " · " + stage.name)
 	var opponent := dropdown(card, "training_opponent", "Đối thủ", opponent_items, training_options.opponent, Rect2(28, 27, 452, 48))
 	var hero := dropdown(card, "training_hero", "Nhân vật", ["Huyền bào", "Áo rêu"], training_options.hero, Rect2(525, 27, 452, 48))

@@ -62,6 +62,7 @@ var thunder_warning := false
 var poison_warning := false
 var wind_direction := 0
 var seal_warning := false
+var pulse_warning := false
 var area_active := false
 var flood_warning := false
 var flood_active := false
@@ -110,6 +111,7 @@ func set_state(state: Rules) -> void:
 	poison_warning = rules.intent.get("pattern") == "poison"
 	wind_direction = rules.intent.get("direction", 0) if rules.intent.get("pattern") == "wind" else 0
 	seal_warning = rules.intent.get("pattern") == "seal_burst"
+	pulse_warning = rules.intent.get("pattern") == "core_wave"
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
@@ -252,6 +254,9 @@ func paint_tiles() -> void:
 		elif danger and seal_warning:
 			draw_rect(rect.grow(-1), Color("#ff9699bf") if area_active else Color("#db697c7a"))
 			paint_marker(rect, Color("#ffc9d2"), true, accessible)
+		elif danger and pulse_warning:
+			draw_rect(rect.grow(-1), Color("#ffd287de") if area_active else Color("#d786546e"))
+			paint_marker(rect, Color("#ffe0af"), true, accessible)
 		elif danger and wind_direction != 0:
 			draw_rect(rect.grow(-1), Color("#9be0f6bf") if area_active else Color("#65b6d86b"))
 			var center := rect.get_center()
@@ -390,6 +395,8 @@ func _draw() -> void:
 		wolf_tint = Color("#bbdeff")
 	elif not fallen and rules.tactic == "seal_altar":
 		wolf_tint = Color("#bdb2dc") if rules.seal_turns == 0 else Color("#edd2b8")
+	elif not fallen and rules.tactic == "pulse_boss":
+		wolf_tint = Color("#f49c73") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#ded0b1")
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
@@ -596,7 +603,7 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
-	elif exchange.enemy_intent.kind in ["thunder", "poison", "wind", "seal_burst"] and not exchange.reaction.is_empty():
+	elif exchange.enemy_intent.kind in ["thunder", "poison", "wind", "seal_burst", "core_wave"] and not exchange.reaction.is_empty():
 		await get_tree().create_timer(.18).timeout
 		area_active = true
 		queue_redraw()

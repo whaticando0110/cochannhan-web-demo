@@ -39,6 +39,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 11. Mở Đầm Rễ Độc, màn đầu Tam chuyển, sau Lôi Nha Đài. Hai cụm hồ phun độc luân phiên. Chọn một phần thưởng tăng sức chứa hoặc tiếp tế sau trận.
 12. Mở Hẻm Hàn Phong, màn hai Tam chuyển, sau khi nhận thưởng Đầm Rễ Độc. Tận dụng các ô khuất sau đá khi gió đảo chiều.
 13. Mở Đài Trấn Ấn, màn ba Tam chuyển, sau khi nhận thưởng Hẻm Hàn Phong. Né Chấn Ấn và kết thúc lượt di chuyển trên ô ấn để phá giáp.
+14. Mở Điện Trấn Mạch, boss cuối Tam chuyển, sau khi nhận thưởng Đài Trấn Ấn. Luân phiên cự ly gần và xa để đối phó sóng chấn.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -190,6 +191,25 @@ Lấy tài nguyên sau Hẻm Hàn Phong trước khi nhận thưởng, gồm 16 
 Bản thử đầu có 84 cấu hình mà phép tìm thiếu đường thắng ở ít nhất một lựa chọn. Dời ô ấn gần lối tiếp cận, tăng thời gian khóa giáp từ 3 lên 5 lượt, thêm thưởng Tay không và giảm sát thương địch giúp tìm được đường thắng cho toàn bộ 384 ca ở bản chốt. Ấn Dẫn Phong kích hoạt ở 94/192 đường thắng. Túi Hàn Dược giúp thắng sớm hơn ở 46 cấu hình so với 8 cấu hình của Ấn. Cách tìm ưu tiên kết thúc sớm rồi giữ sinh lực trong các đường thắng tìm được, và đường thắng thấp nhất còn 1 sinh lực với Ấn hoặc 2 với Túi.
 
 Kiểm thêm 48 lượt có nhật ký từ Suối Sấm qua ba lộ trình Nhị chuyển, hai phần thưởng Đầm Rễ Độc, hai phần thưởng Hẻm Hàn Phong và bốn bộ thuần. Cả 48 lượt thắng Đài Trấn Ấn. Hai lựa chọn thưởng cuối được phát lại từ mỗi lượt.
+
+## Điện Trấn Mạch
+
+Sau khi nhận thưởng Đài Trấn Ấn, chọn **Tới Điện Trấn Mạch** để nâng lượt v12 lên v13. Điểm chuẩn bị hồi tối đa 30 sinh lực và 3 chân nguyên, giữ bộ tài nguyên và cho chọn lại Cổ. Người chơi có thể chi 8 nguyên thạch để Dưỡng mạch một lần. Lựa chọn này tăng sức chứa chân nguyên thêm 1 trong lượt chơi, hồi đầy chân nguyên và hồi thêm tối đa 6 sinh lực. Màn chuẩn bị hiển thị túi nguyên thạch và chỉ số thực tế khi vào trận.
+
+Thạch Vương có 140 sinh lực. Nội Chấn ảnh hưởng các ô cách boss tối đa hai bước theo hàng và cột. Ngoại Chấn đánh phần xa hơn. Đá chặn di chuyển và đòn bắn, đồng thời bị loại khỏi vùng báo. Sau mỗi đợt có một lượt hồi thế. Di chuyển từ ô bị báo đòn sang ô an toàn mở **Hở mạch**. Đòn trúng trong lượt hồi thế đó cộng 5 sát thương, có thể cộng dồn với Thạch Tủy. Từ 70 sinh lực trở xuống, ranh giới mở từ hai lên ba bước và đợt chấn mới gây 21 thay vì 18 sát thương. Đợt đang được báo giữ mẫu cho đến khi kết thúc.
+
+Hạ Thạch Vương nhận **Ấn Trấn Mạch**, mở boss trong Luyện trận và giữ quyền luyện qua lượt mới. Sau trận, chọn **Châu Hoàn Nguyên** để thay bảo vật. Châu hoàn tối đa 2 chân nguyên vừa tiêu ở lần đầu dùng Cổ tốn chân nguyên mỗi trận. Người chơi cần đủ chân nguyên để thực hiện lần dùng đó. **Rương Trấn Mạch** giữ bảo vật đang mang và thêm 8 nguyên thạch cùng 2 Sinh Cơ Diệp. Chỉ nhận một lựa chọn trong mỗi lượt chơi.
+
+### Kiểm cân bằng Điện Trấn Mạch
+
+Phát lại Đài Trấn Ấn để lấy tài nguyên thật sau trận. So sánh hai lựa chọn từ cùng trạng thái với 16 cặp Cổ, bốn tư chất và ba bố cục. Ma trận dùng túi 6 nguyên thạch trước khi nhận thưởng. Cả hai đường mua Dưỡng mạch khi đủ tiền, nên Hộp tiếp tế đủ điều kiện và Thạch Tủy vào trận với sức chứa cũ.
+
+| Thưởng từ Đài Trấn Ấn | Có đường thắng | Lượt | Lượt trung bình | Sinh lực còn lại trung bình |
+| --- | --- | --- | --- | --- |
+| Thạch Tủy Luyện Thể | 192/192 | 7–12 | 9,87 | 18,42 |
+| Hộp tiếp tế cổ trận, mua Dưỡng mạch | 192/192 | 5–13 | 10,01 | 22,65 |
+
+Thạch Tủy nhanh hơn ở 113/192 cấu hình. Hộp nhanh hơn ở 50/192 và giữ nhiều sinh lực hơn ở 97/192. Bộ Nguyệt thuần cần 5–7 lượt với Hộp và 7–8 lượt với Thạch Tủy. Ba bộ thuần Hộ thể, Tửu và Ẩn có lợi thế về số lượt với Thạch Tủy. Đây là đường thắng tự động ưu tiên kết thúc sớm, và các ca thử dùng Hộp chưa mua Dưỡng mạch cũng đều có đường thắng. Kiểm thêm 32 lượt có nhật ký từ Suối Sấm, phủ bốn bộ thuần và các cặp lựa chọn từ Đầm Rễ Độc, Hẻm Hàn Phong, Đài Trấn Ấn. Phát lại được cả hai chiến lợi phẩm boss từ mọi lượt.
 
 ## Đồ họa trong trận
 
