@@ -35,6 +35,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 7. Nối Hẻm Đá Phục Kích và hệ Ẩn. Lượt v4/v5 giữ luật đã áp dụng trong hai màn trước khi tiếp tục vào hẻm. Gemini làm hiệu ứng hai Cổ hệ Ẩn và mẫu ô nứt/đá rơi trên nhánh asset riêng.
 8. Thêm điểm dừng, nguyên thạch trong túi, thương nhân và bảo vật cho lượt v7. Xem chi phí và kết quả dự kiến ở mức sinh lực, chân nguyên và số lá thực tế trước khi xác nhận.
 9. Thêm Ổ Điện Lang vào điểm dừng sau Suối Sấm ở lượt v8. Thắng trận phụ mở một lựa chọn chiến lợi phẩm rồi đưa người chơi về Hẻm Đá.
+10. Mở Lôi Nha Đài ở lượt v9 sau Hẻm Đá Phục Kích. Cả hai đường dùng chung điểm chuẩn bị. Thắng boss nhận Ấn Trấn Lôi và mở trận luyện riêng.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -98,6 +99,26 @@ Phép tìm đường thắng ưu tiên kết thúc sớm kiểm 192 tổ hợp t
 | Ẩn | 13–17 | 4–32 |
 
 Nanh giúp kết thúc Hẻm Đá sớm hơn lối qua lều trong 76/192 tổ hợp. Túi dược cho sinh lực vào Hẻm Đá cao hơn Nanh trong 164/192 tổ hợp và cho sinh lực thấp nhất sau Hẻm Đá là 7, so với 1 khi chọn Nanh. Các số này mô tả đường thắng tìm được, phụ thuộc tài nguyên ở điểm dừng và cách chọn hành động.
+
+## Lôi Nha Đài
+
+Sau Hẻm Đá, người chơi hồi tối đa 32 sinh lực và 4 chân nguyên, mang lá và bảo vật còn lại rồi chọn bộ Cổ. Ba bố cục được chọn theo mã lượt. Lôi Nha Trấn Ải có 108 sinh lực. Trong tầm năm ô, boss báo quét cả hàng có nhân vật và gây 20 sát thương. Từ 54 sinh lực trở xuống, lần báo tiếp theo phủ cả hàng và cột, gây 24 sát thương. Các ô đá bị loại khỏi vùng tím. Đòn đã báo chốt theo vị trí đầu lượt. Để né chữ thập, đi hai bước đổi cả hàng lẫn cột. Ngoài tầm điện, boss áp sát.
+
+Sau mỗi đòn điện, boss hở lôi giáp đúng một lượt. Tay không, Nguyệt Quang và Nguyệt Mang trúng trong lượt này gây thêm tối đa 5 sát thương. Nanh Tinh Anh vẫn cộng cho đòn trúng đầu trận và cả hai hiệu ứng được tính trước khi địch đáp trả. Đòn vùng có thể chịu bằng Thủ thế hoặc lớp ngọc. Ẩn Lân làm trượt các đòn nhắm mục tiêu theo luật hiện có.
+
+Hạ boss nhận Ấn Trấn Lôi tự động trong bản lưu cục bộ. Ấn mở Lôi Nha Trấn Ải trong Luyện trận, vẫn hiện khi bắt đầu lượt mới và dùng chung cho cả hai nhân vật. Luyện trận giữ tiến độ chính tách riêng. Bản lưu v8 giữ nguyên nhật ký. Ở màn kết quả Hẻm Đá, người chơi có thể bắt đầu lượt mới hoặc vào Lôi Nha Đài để chuyển lượt hiện tại sang v9.
+
+Phép tìm đường thắng ưu tiên kết thúc sớm, bắt đầu từ cùng trạng thái sau Bãi Đá Suối Sấm và giữ cùng cặp Cổ trên mỗi lộ trình. Với 16 cặp Cổ, bốn tư chất và ba bố cục, mỗi lối đều có đường thắng ở 192 cấu hình. Tổng lượt tính từ sau Suối Sấm gồm Hẻm Đá, boss và trận phụ nếu đã săn tinh anh.
+
+| Lối đi | Thắng | Lượt đánh boss | Lượt đánh boss trung bình | Tổng lượt trung bình |
+| --- | --- | --- | --- | --- |
+| Lều nghỉ → Hẻm Đá | 192/192 | 4–13 | 9,31 | 17,31 |
+| Ổ Điện Lang → Nanh Tinh Anh | 192/192 | 5–12 | 8,78 | 27,92 |
+| Ổ Điện Lang → Túi dược | 192/192 | 4–13 | 9,41 | 28,95 |
+
+Nanh rút số lượt đánh boss ở 134/192 cặp so sánh với lối qua lều. Lối qua lều vẫn ngắn hơn về tổng số lượt trung bình. Đây là kết quả tìm đường thắng từ các trạng thái đã chọn, phụ thuộc trang bị và hành động trong từng lượt.
+
+Kiểm thêm 48 cấu hình ở trận boss với 33 sinh lực, 4 chân nguyên, túi trống và Nguyệt Quang chưa luyện. Cả 16 cặp Cổ ở cả ba bố cục đều có đường thắng trong 8–13 lượt. Đường thắng còn ít sinh lực nhất kết thúc ở 5 sinh lực.
 
 ## Đồ họa trong trận
 

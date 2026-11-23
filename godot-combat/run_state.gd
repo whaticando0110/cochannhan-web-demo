@@ -4,10 +4,12 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 8
+const CURRENT_VERSION := 9
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
+const BOSS_FLOOR := 6
+const BOSS_VERSION := 9
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -37,6 +39,12 @@ const AMBUSH_PASS := {"name": "Hẻm Đá Phục Kích", "enemy": "Điện Lang 
 const ELITE_DEN := {"name": "Ổ Điện Lang", "enemy": "Điện Lang đầu đàn", "damage": 21,
 	"bite": 12, "hp": 96, "heavy": "Vồ giữ ổ", "pace": 2, "wolf_cell": 21,
 	"rooms": [[4, 11, 22, 27, 35], [5, 12, 19, 26, 38], [3, 13, 20, 29, 34]]}
+const THUNDER_GATE := {"name": "Lôi Nha Đài", "enemy": "Lôi Nha Trấn Ải", "damage": 20,
+	"bite": 12, "hp": 108, "heavy": "Lôi quét ngang", "pace": 2, "wolf_cell": 21,
+	"rooms": [[3, 12, 27, 35], [4, 11, 26, 37], [5, 13, 28, 34]]}
+const BOSS_SEAL := "Ấn Trấn Lôi"
+const BOSS_HEAL := 32
+const BOSS_QI := 4
 const CHAPTER_HEAL := 18
 const CHAPTER_QI := 3
 const FORD_HEAL := 20
@@ -93,6 +101,8 @@ func stage_at(index: int) -> Dictionary:
 			return THUNDER_FORD
 		AMBUSH_FLOOR:
 			return AMBUSH_PASS
+		BOSS_FLOOR:
+			return THUNDER_GATE
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -121,6 +131,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "ford"
 			AMBUSH_FLOOR:
 				tactic = "ambush"
+			BOSS_FLOOR:
+				tactic = "thunder_boss"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -150,6 +162,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 	elif battle.result == Rules.VICTORY:
 		if elite_room:
 			phase = "elite_reward"
+		elif floor == BOSS_FLOOR:
+			phase = "chapter_cleared"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -274,6 +288,9 @@ func begin_chapter() -> bool:
 func workshop_vitals() -> Dictionary:
 	if not stop.is_empty():
 		return stop.duplicate()
+	if phase == "boss_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + BOSS_HEAL), "qi": mini(battle.max_qi, battle.qi + BOSS_QI),
+			"leaves": battle.leaves}
 	var heal := CHAPTER_HEAL
 	if phase != "refinement":
 		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
@@ -314,6 +331,19 @@ func enter_pass() -> bool:
 		return false
 	enter_waypoint("ambush_workshop")
 	journal.append(["enter_pass"])
+	return true
+
+
+func can_enter_boss() -> bool:
+	return version >= 8 and phase == "complete" and floor == AMBUSH_FLOOR
+
+
+func enter_boss() -> bool:
+	if not can_enter_boss():
+		return false
+	version = maxi(version, BOSS_VERSION)
+	phase = "boss_workshop"
+	journal.append(["enter_boss"])
 	return true
 
 
@@ -455,7 +485,7 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
@@ -468,6 +498,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = FORD_FLOOR
 		"ambush_workshop":
 			floor = AMBUSH_FLOOR
+		"boss_workshop":
+			floor = BOSS_FLOOR
 		"elite_workshop":
 			elite_room = true
 		_:
@@ -542,6 +574,8 @@ static func restore(saved: Variant) -> RefCounted:
 						committed = saved.version >= 5 and run.cross_ford()
 					elif command[0] == "enter_pass":
 						committed = saved.version >= 6 and run.enter_pass()
+					elif command[0] == "enter_boss":
+						committed = run.enter_boss()
 				_:
 					committed = run.reward(command[0])
 			if not committed:

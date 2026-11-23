@@ -58,6 +58,8 @@ var effects: Array[Dictionary] = []
 var warned_row := -1
 var charge_direction := 1
 var bolt_warning := false
+var thunder_warning := false
+var thunder_active := false
 var flood_warning := false
 var flood_active := false
 var rubble_warning := false
@@ -101,6 +103,7 @@ func set_state(state: Rules) -> void:
 	warned_row = rules.intent.get("row", -1)
 	charge_direction = rules.intent.get("direction", 1)
 	bolt_warning = rules.intent.get("pattern") == "bolt"
+	thunder_warning = rules.intent.get("pattern") == "thunder"
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
@@ -229,6 +232,11 @@ func paint_tiles() -> void:
 			terrain_frame(Art.ROCKFALL, rect, Vector2i(tile, 0))
 			if accessible:
 				paint_marker(rect, Color("#ffca87"), false, true)
+		elif danger and thunder_warning:
+			draw_rect(rect.grow(-1), Color("#aa78ffff") if thunder_active else Color("#9671e17d"))
+			terrain_frame(Art.FLOOD, rect, Vector2i(0, 1) if thunder_active else Vector2i(1, 0), Color("#edcaff"))
+			if accessible:
+				paint_marker(rect, Color("#cebcff"), false, true)
 		elif danger and bolt_warning:
 			paint_marker(rect, Color("#a4d8ff") if accessible else Color("#87a6eb"), false, accessible)
 			var icon_at := rect.position + Vector2(16, 20)
@@ -343,6 +351,8 @@ func _draw() -> void:
 		atlas_frame(HERO, 8, 6, hero_frame, hero_point, 113, direction, hero_tint)
 	var fallen := rules.wolf_hp == 0 and wolf_frame == (13 if room == 2 else 8)
 	var wolf_tint := Color("#818985") if fallen else Color.WHITE
+	if not fallen and rules.tactic == "thunder_boss":
+		wolf_tint = Color("#c9bcff") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#acc9ff")
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
@@ -549,6 +559,13 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
+	elif exchange.enemy_intent.kind == "thunder" and not exchange.reaction.is_empty():
+		await get_tree().create_timer(.18).timeout
+		thunder_active = true
+		queue_redraw()
+		enemy_contact(exchange, hero_point + Vector2(0, -15), guarding)
+		await get_tree().create_timer(.3).timeout
+		thunder_active = false
 	elif exchange.enemy_intent.kind == "flood" and not exchange.reaction.is_empty():
 		await get_tree().create_timer(.18).timeout
 		flood_active = true

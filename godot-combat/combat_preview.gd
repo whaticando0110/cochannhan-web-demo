@@ -68,7 +68,8 @@ func configure(current_run: RunData) -> void:
 	state = run.battle
 	var floor_data: Dictionary = run.current_stage()
 	var known_grade := "%s · Nguyên Hải %d%%" % [run.profile.grade, run.profile.sea_pct]
-	configure_identity(floor_data, 1 if run.elite_room else run.floor, run.profile.hero, known_grade)
+	var arena_room := 1 if run.elite_room else 2 if run.floor == RunData.BOSS_FLOOR else run.floor
+	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
 
 func configure_training(settings: Dictionary) -> void:
@@ -162,7 +163,9 @@ func build_hud() -> void:
 	if run != null and run.elite_room:
 		mode = "Nhánh tinh anh"
 	elif run != null:
-		mode = "Nhị chuyển · %d/3" % (run.floor - RunData.RIDGE_FLOOR + 1) if run.floor >= RunData.RIDGE_FLOOR else "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
+		if run.floor >= RunData.RIDGE_FLOOR:
+			mode = "Nhị chuyển · %d/%d" % [run.floor - RunData.RIDGE_FLOOR + 1, 4 if run.version >= RunData.BOSS_VERSION else 3]
 	elif not training.is_empty():
 		mode = "Luyện trận"
 	label("%s  ·  %s" % [mode, enemy_name], 38, 113, 600, 27, 20, MUTE)
@@ -330,8 +333,11 @@ func update_hud() -> void:
 				intent_copy.text = "Đá rơi vào ô nứt · %d sát thương." % state.intent.damage
 			elif state.intent.kind == "ambush":
 				intent_copy.text = "Vồ vùng quanh bạn · %d sát thương." % state.intent.damage
+			elif state.intent.kind == "thunder":
+				var pattern := "Cả hàng và cột" if state.intent.cross else "Hàng đang đứng"
+				intent_copy.text = "%s · %d sát thương. Rời vùng tím." % [pattern, state.intent.damage]
 			elif state.intent.kind == "recover":
-				intent_copy.text = "Đối thủ hồi thế trong lượt này."
+				intent_copy.text = "Đòn trúng được cộng %d sát thương." % Rules.THUNDER_OPEN_BONUS if state.tactic == "thunder_boss" else "Đối thủ hồi thế trong lượt này."
 			elif state.intent.damage > 0:
 				intent_copy.text = "Gây %d sát thương ở vùng gạch đỏ sau hành động của bạn." % state.intent.damage
 			else:
@@ -441,6 +447,8 @@ func inspect_action(action: String) -> void:
 		pieces.append("Ngọc bài chặn %d" % result.relic_block)
 	if result.relic_damage > 0:
 		pieces.append("Nanh Tinh Anh +%d" % result.relic_damage)
+	if result.exposed_damage > 0:
+		pieces.append("Hở lôi giáp +%d" % result.exposed_damage)
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
 	elif result.dealt >= state.wolf_hp:

@@ -439,6 +439,76 @@ func play_elite_detour() -> void:
 	await select_kit("moon_edge", "moon")
 	check(flow.run.floor == Run.AMBUSH_FLOOR and flow.run.battle.hp == prize.hp and flow.run.battle.qi == prize.qi
 		and flow.run.battle.relic == "elite_fang" and flow.run.battle.relic_ready, "The elite prize must carry into the main route")
+	await play_thunder_boss(checkpoint)
+
+
+func play_thunder_boss(checkpoint: Dictionary) -> void:
+	flow.run = Run.restore(checkpoint)
+	flow.run.choose_waypoint("camp")
+	flow.run.equip_build("moon_edge", "moon")
+	for command in [["move", 19], ["moon", -1], ["move", 21], ["strike", -1], ["moon", -1], ["strike", -1]]:
+		check(not flow.run.perform(command[0], command[1]).has("error"), "Invalid Hẻm Đá fixture")
+	check(flow.run.can_enter_boss() and not flow.boss_seal, "Clearing Hẻm Đá must unlock the gate, with the seal still locked")
+	var old_save: Dictionary = flow.run.snapshot().duplicate(true)
+	old_save.version = 8
+	var old: RefCounted = Run.restore(old_save)
+	check(old != null and old.phase == "complete" and old.snapshot().version == 8, "v8 clear must replay without an automatic upgrade")
+	check(old.enter_boss() and old.snapshot().version == Run.BOSS_VERSION
+		and Run.restore(old.snapshot()).phase == "boss_workshop", "A v8 clear must be able to continue into the new boss")
+	flow.show_run()
+	flow.open_training(flow.show_run)
+	var opponent := flow.find_child("training_opponent", true, false) as OptionButton
+	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size() - 1, "Boss training must start locked")
+	await click_button("training_back")
+	await click_button("enter_boss")
+	await launch()
+	check(flow.run.phase == "boss_workshop" and not flow.run.enter_boss(), "Boss preparation must survive a reload")
+	var departure: Dictionary = flow.run.workshop_vitals()
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	check(flow.run.floor == Run.BOSS_FLOOR and flow.current.room_title == Run.THUNDER_GATE.name and battle.hp == departure.hp
+		and battle.qi == departure.qi and battle.leaves == departure.leaves, "Boss arena did not apply preparation")
+	check(battle.intent.kind == "thunder" and not battle.intent.cross and battle.preview_action("move", 10).receives == 0,
+		"The first sweep must be telegraphed and avoidable")
+	await capture("godot-v9-loi-quet.png")
+	await shoot(KEY_1, 10)
+	check(battle.intent.kind == "recover" and battle.preview_action("moon").exposed_damage == Rules.THUNDER_OPEN_BONUS
+		and battle.hp == departure.hp and battle.wolf_hp == battle.wolf_max, "The open armor preview mutated combat or lost the bonus")
+	await play_commands([[KEY_3], [KEY_4], [KEY_3]])
+	await launch()
+	battle = flow.run.battle
+	var center := Rules.grid(battle.hero)
+	var cross_cells: Array[int] = []
+	for cell in range(Rules.COLUMNS * Rules.ROWS):
+		var point := Rules.grid(cell)
+		if cell not in battle.rocks and (point.x == center.x or point.y == center.y):
+			cross_cells.append(cell)
+	check(battle.intent.cross and battle.intent.cells == cross_cells and flow.current.field.threatened == cross_cells,
+		"Below half HP the forecast and painted cross must match, including after reload")
+	await capture("godot-v9-loi-chu-thap.png")
+	var doomed: RefCounted = Run.restore(flow.run.snapshot())
+	for i in range(20):
+		if doomed.phase == "battle":
+			doomed.perform("guard")
+	check(doomed.phase == "death" and Run.restore(doomed.snapshot()).phase == "death" and not flow.boss_seal,
+		"Death against the boss must replay as defeat and never award the seal")
+	await play_commands([[KEY_4], [KEY_3]])
+	check(flow.run.phase == "chapter_cleared" and flow.boss_seal, "Boss victory must immediately award the seal")
+	await launch()
+	check(flow.run.phase == "chapter_cleared" and flow.boss_seal, "Victory or seal disappeared after reload")
+	await capture("godot-v9-an-tran-loi.png")
+	await click_button("new_run")
+	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
+	await launch()
+	check(flow.run.floor == 0 and flow.boss_seal and flow.run.battle.tactic.is_empty(), "The seal must survive a new run")
+	var campaign := FileAccess.get_file_as_string(path)
+	flow.open_training(flow.show_run)
+	opponent = flow.find_child("training_opponent", true, false) as OptionButton
+	check(opponent != null and opponent.item_count == flow.TRAINING_STAGES.size(), "The seal must unlock the boss in training")
+	opponent.select(opponent.item_count - 1)
+	await click_button("training_begin")
+	check(flow.current.state.tactic == "thunder_boss" and flow.current.state.wolf_hp == Run.THUNDER_GATE.hp
+		and FileAccess.get_file_as_string(path) == campaign, "Practice must use boss rules and leave the campaign untouched")
 
 
 func check_ambush_kit() -> void:
@@ -754,5 +824,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy saves, Gu loadouts, waypoints, optional elite, exclusive rewards and replay")
+		print("Godot run passed: legacy saves, waypoints, elite rewards, Thunder Gate, seal unlock and replay")
 	quit(1 if failed else 0)

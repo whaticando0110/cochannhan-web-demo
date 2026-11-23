@@ -12,9 +12,9 @@ const GOLD := Color("#f1d89f")
 const GREEN := Color("#a2d6aa")
 const PALE := Color("#e3e9dc")
 const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2],
-	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS]
-const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5]
-const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush"]
+	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS, Run.THUNDER_GATE]
+const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5, 2]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush", "thunder_boss"]
 const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
 
 var save_path := "user://thanh-mao-run-v1.json"
@@ -25,6 +25,7 @@ var menu: Control
 var headline := SystemFont.new()
 var status: Label
 var save_problem := false
+var boss_seal := false
 var training_return: Callable
 var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Rules.MAX_HP,
 	"jade_skin": false, "leaves": 0, "build": 0}
@@ -33,7 +34,11 @@ var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Ru
 func _ready() -> void:
 	headline.font_names = PackedStringArray(["Cambria", "Georgia"])
 	if FileAccess.file_exists(save_path):
-		run = Run.restore(JSON.parse_string(FileAccess.get_file_as_string(save_path)))
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+		run = Run.restore(saved)
+		if run != null:
+			var seal: Variant = saved.get("boss_seal", false)
+			boss_seal = run.phase == "chapter_cleared" or (seal is bool and seal)
 	if run == null:
 		show_entry()
 	else:
@@ -41,12 +46,16 @@ func _ready() -> void:
 
 
 func persist() -> void:
+	boss_seal = boss_seal or run.phase == "chapter_cleared"
 	var temp := save_path + ".tmp"
 	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
 		save_problem = true
 		return
-	file.store_string(JSON.stringify(run.snapshot()))
+	var saved := run.snapshot()
+	if boss_seal:
+		saved.boss_seal = true
+	file.store_string(JSON.stringify(saved))
 	var written := file.get_error() == OK
 	file.close()
 	save_problem = not written
@@ -147,6 +156,9 @@ func show_entry() -> void:
 			[hero_name, run.profile.grade, run.profile.sea_pct, run.profile.max_qi], Rect2(22, 90, 250, 92), 19)
 		var skip := button(card, "Bỏ qua Khai Khiếu", Rect2(24, 211, 244, 42), skip_ceremony)
 		skip.name = "skip_ceremony"
+	if boss_seal:
+		text(menu, Run.BOSS_SEAL + " · Đã mở Lôi Nha Trấn Ải trong Luyện trận",
+			Rect2(96, 593, 1008, 38), 19, GOLD)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -197,8 +209,8 @@ func show_result() -> void:
 	var section := "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()]
 	if run.floor >= Run.RIDGE_FLOOR or run.phase == "refinement":
 		var stage_number := maxi(1, run.floor - Run.RIDGE_FLOOR + 1)
-		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop", "waypoint", "shop"])
-		section = "NHỊ CHUYỂN    /    %d TRÊN 3" % stage_number
+		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop", "waypoint", "shop", "boss_workshop"])
+		section = "NHỊ CHUYỂN    /    %d TRÊN %d" % [stage_number, 4 if run.version >= Run.BOSS_VERSION else 3]
 	if run.elite_room or run.phase == "elite_workshop":
 		section = "NHỊ CHUYỂN    /    NHÁNH TINH ANH"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
@@ -233,6 +245,12 @@ func show_result() -> void:
 		"elite_reward":
 			title = "Chiến lợi phẩm tinh anh"
 			description = "Chọn một món trước khi trở lại đường chính. Cả hai lựa chọn đều hồi tối đa %d sinh lực và %d chân nguyên." % [Goods.DEN_HEAL, Goods.DEN_QI]
+		"boss_workshop":
+			title = Run.THUNDER_GATE.name
+			description = "Lôi Nha quét ngang. Khi còn nửa sinh lực, nó đánh cả hàng và cột. Ra khỏi vùng tím rồi phản công lúc hở lôi giáp."
+		"chapter_cleared":
+			title = "Hoàn thành Nhị chuyển"
+			description = "Đã hạ Lôi Nha Trấn Ải. Ấn Trấn Lôi được lưu và mở trận này để luyện riêng."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -248,6 +266,8 @@ func show_result() -> void:
 				description = "Bến đá phía trước dẫn qua Suối Sấm."
 			elif run.can_enter_pass():
 				description = "Dấu chân Điện Lang dẫn vào hẻm đá bên kia suối."
+			elif run.can_enter_boss():
+				description = "Lôi Nha Đài nằm cuối hẻm. Chuẩn bị lần cuối trước khi đối đầu Lôi Nha Trấn Ải."
 			else:
 				description = "Bạn đã vượt qua cả ba màn Nhị chuyển."
 		_:
@@ -261,7 +281,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
@@ -270,10 +290,12 @@ func show_result() -> void:
 	elif run.phase == "shop":
 		draw_shop()
 	else:
-		var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
-			Rect2(96, 480 if run.phase in ["victory", "complete"] else 335, 316, 54), show_entry)
-		next.name = "rebirth" if run.phase == "death" else "new_run"
-		next.grab_focus()
+		var can_end_at_pass := run.version < Run.BOSS_VERSION
+		if not run.can_enter_boss() or can_end_at_pass:
+			var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
+				Rect2(96, 335 if run.phase == "death" else 480, 316, 54), show_entry)
+			next.name = "rebirth" if run.phase == "death" else "new_run"
+			next.grab_focus()
 		if run.phase == "victory":
 			var picks := " · ".join(run.reward_history())
 			var route_name := "Đường đã đi  ·  %s" % run.stage_at(1).name
@@ -284,7 +306,7 @@ func show_result() -> void:
 				var workshop := button(menu, "Sang Nhị chuyển", Rect2(432, 480, 310, 54), begin_chapter)
 				workshop.name = "chapter_two"
 				workshop.grab_focus()
-		elif run.phase == "complete":
+		elif run.phase in ["complete", "chapter_cleared"]:
 			text(menu, "Bộ đã dùng  ·  %s + %s" % [Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name],
 				Rect2(96, 310, 1000, 49), 23, GOLD)
 			draw_vitals(387)
@@ -296,6 +318,13 @@ func show_result() -> void:
 				var crossing := button(menu, "Tới Hẻm Đá", Rect2(432, 480, 310, 54), enter_pass)
 				crossing.name = "enter_pass"
 				crossing.grab_focus()
+			elif run.can_enter_boss():
+				var gate := button(menu, "Tới Lôi Nha Đài", Rect2(432 if can_end_at_pass else 96, 480, 316, 54), enter_boss)
+				gate.name = "enter_boss"
+				gate.grab_focus()
+			elif run.phase == "chapter_cleared":
+				var path_name := "Qua Ổ Điện Lang · %s" % Goods.ELITE_REWARDS[run.elite_award] if not run.elite_award.is_empty() else "Đường thẳng qua Hẻm Đá"
+				text(menu, path_name, Rect2(96, 352, 1008, 34), 18, GREEN)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -350,6 +379,12 @@ func cross_ford() -> void:
 
 func enter_pass() -> void:
 	if run.enter_pass():
+		persist()
+		show_result()
+
+
+func enter_boss() -> void:
+	if run.enter_boss():
 		persist()
 		show_result()
 
@@ -631,7 +666,7 @@ func show_training_setup() -> void:
 		Rect2(96, 174, 1006, 56), 22)
 	var card := panel(menu, Rect2(96, 252, 1008, 355), Color("#1a2b25"), Color("#586c54"))
 	var opponent_items: Array = []
-	for stage in TRAINING_STAGES:
+	for stage in TRAINING_STAGES.slice(0, TRAINING_STAGES.size() if boss_seal else TRAINING_STAGES.size() - 1):
 		opponent_items.append(stage.enemy + " · " + stage.name)
 	var opponent := dropdown(card, "training_opponent", "Đối thủ", opponent_items, training_options.opponent, Rect2(28, 27, 452, 48))
 	var hero := dropdown(card, "training_hero", "Nhân vật", ["Huyền bào", "Áo rêu"], training_options.hero, Rect2(525, 27, 452, 48))
