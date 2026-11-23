@@ -36,6 +36,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 8. Thêm điểm dừng, nguyên thạch trong túi, thương nhân và bảo vật cho lượt v7. Xem chi phí và kết quả dự kiến ở mức sinh lực, chân nguyên và số lá thực tế trước khi xác nhận.
 9. Thêm Ổ Điện Lang vào điểm dừng sau Suối Sấm ở lượt v8. Thắng trận phụ mở một lựa chọn chiến lợi phẩm rồi đưa người chơi về Hẻm Đá.
 10. Mở Lôi Nha Đài ở lượt v9 sau Hẻm Đá Phục Kích. Cả hai đường dùng chung điểm chuẩn bị. Thắng boss nhận Ấn Trấn Lôi và mở trận luyện riêng.
+11. Mở Đầm Rễ Độc, màn đầu Tam chuyển, sau Lôi Nha Đài. Hai cụm hồ phun độc luân phiên. Chọn một phần thưởng tăng sức chứa hoặc tiếp tế sau trận.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -119,6 +120,30 @@ Phép tìm đường thắng ưu tiên kết thúc sớm, bắt đầu từ cùn
 Nanh rút số lượt đánh boss ở 134/192 cặp so sánh với lối qua lều. Lối qua lều vẫn ngắn hơn về tổng số lượt trung bình. Đây là kết quả tìm đường thắng từ các trạng thái đã chọn, phụ thuộc trang bị và hành động trong từng lượt.
 
 Kiểm thêm 48 cấu hình ở trận boss với 33 sinh lực, 4 chân nguyên, túi trống và Nguyệt Quang chưa luyện. Cả 16 cặp Cổ ở cả ba bố cục đều có đường thắng trong 8–13 lượt. Đường thắng còn ít sinh lực nhất kết thúc ở 5 sinh lực.
+
+## Đầm Rễ Độc
+
+Chọn **Sang Tam chuyển** ở màn kết quả Lôi Nha Đài. Lượt v9 nâng lên v10 tại bước này. Trước trận, người chơi hồi tối đa 30 sinh lực và 4 chân nguyên, giữ bảo vật, Sinh Cơ Diệp và Ấn Trấn Lôi, rồi chọn lại bộ Cổ. Điện Lang nhiễm độc có 112 sinh lực. Ba bố cục hồ và đá được chọn theo mã lượt.
+
+Đầu mỗi chu kỳ ba lượt, một cụm hồ báo đòn Phun độc màu vàng lục. Nếu còn đứng trong vùng báo khi đòn phát, người chơi chịu 18 sát thương trước phòng thủ. Nếu bị mất sinh lực, độc rút tối đa 1 chân nguyên còn lại. Lớp ngọc chặn hết sát thương giữ được chân nguyên. Đi qua ô hồ trong khi di chuyển chỉ kích hoạt đòn nếu ô kết thúc lượt nằm trong vùng báo.
+
+Lượt kế tiếp, Điện Lang dùng Táp độc gây 16 sát thương nếu ở tầm bốn ô và có đường ngắm. Đổi ô hoặc dùng Ẩn Lân để tránh đòn nhắm. Sau mỗi cú táp, Điện Lang hở hàm một lượt. Đòn Tay không trúng lúc này được cộng 6 sát thương, kể cả khi dùng Phản đòn hay cường hóa từ Tứ Vị. Khi mất đường ngắm, Điện Lang áp sát hoặc cắn người đứng kề.
+
+Thắng trận, chọn một món. **Tinh Lộ Tịnh Mạch** tăng sức chứa chân nguyên thêm 1 và hồi đầy. **Cao giải độc** hồi tối đa 18 sinh lực và thêm hai Sinh Cơ Diệp. Màn kết quả hiển thị tài nguyên thực nhận. Phần thưởng được lưu một lần và thuộc lượt chơi hiện tại.
+
+### Kiểm cân bằng Tam chuyển
+
+Thử 16 cặp Cổ, bốn bậc tư chất và ba bố cục đầm. Phép tìm đường thắng ưu tiên kết thúc sớm, dùng sinh lực và chân nguyên khi kết thúc Lôi Nha Đài của từng lối. Các ca này giữ Nanh nếu đã chọn và đặt số Sinh Cơ Diệp về 0 để thử khả năng thắng khi hết lá.
+
+| Lối trước Lôi Nha Đài | Cấu hình có đường thắng | Lượt ở Đầm Rễ Độc | Lượt trung bình |
+| --- | --- | --- | --- |
+| Qua Lều nghỉ | 192/192 | 6–9 | 8,08 |
+| Qua Ổ Điện Lang, chọn Nanh | 192/192 | 6–9 | 7,91 |
+| Qua Ổ Điện Lang, chọn Túi dược | 192/192 | 6–9 | 8,08 |
+
+Ở lối qua lều, Nguyệt thuần thắng sau 6–7 lượt. Hộ thể, Tửu và Ẩn thuần đều thắng sau 9 lượt, giảm một lượt so với bản thử chưa có cửa phản công Hở hàm. Sinh lực thấp nhất của Hộ thể thuần trên đường thắng tăng từ 4 lên 15. Tửu thuần có trường hợp chỉ còn 2 sinh lực khi chọn kết thúc sớm.
+
+Chạy thêm 12 lượt thực từ sau Suối Sấm với bốn bộ thuần trên cả ba lối và phát lại hai lựa chọn thưởng từ mỗi lượt. Cả 48 ca vào đầm với 31 sinh lực, 4 chân nguyên, túi trống và Nguyệt Quang chưa luyện đều có đường thắng trong 7–10 lượt.
 
 ## Đồ họa trong trận
 

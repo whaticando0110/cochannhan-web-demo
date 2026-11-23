@@ -59,7 +59,8 @@ var warned_row := -1
 var charge_direction := 1
 var bolt_warning := false
 var thunder_warning := false
-var thunder_active := false
+var poison_warning := false
+var area_active := false
 var flood_warning := false
 var flood_active := false
 var rubble_warning := false
@@ -104,6 +105,7 @@ func set_state(state: Rules) -> void:
 	charge_direction = rules.intent.get("direction", 1)
 	bolt_warning = rules.intent.get("pattern") == "bolt"
 	thunder_warning = rules.intent.get("pattern") == "thunder"
+	poison_warning = rules.intent.get("pattern") == "poison"
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
@@ -130,6 +132,7 @@ func clear_effects() -> void:
 	projectile = null
 	bolt.clear()
 	flood_active = false
+	area_active = false
 	rubble_progress = 1.0
 	for effect in effects:
 		effect.tween.kill()
@@ -180,6 +183,7 @@ func paint_tiles() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#182a22"))
 	var grid_rect := Rect2(ORIGIN, TILE * Vector2(Rules.COLUMNS, Rules.ROWS))
 	draw_rect(grid_rect.grow(5), Color("#65563b"))
+	var marsh := rules != null and rules.tactic == "marsh"
 	for cell in range(Rules.ROWS * Rules.COLUMNS):
 		var point := Rules.grid(cell)
 		var rect := Rect2(ORIGIN + Vector2(point) * TILE, TILE)
@@ -190,13 +194,13 @@ func paint_tiles() -> void:
 		var tint := Color(shade, shade, shade)
 		if room == 4:
 			var wet: bool = rules != null and cell in rules.water
-			terrain_frame(Art.FORD, rect, Vector2i(variant % 4, 0), tint)
+			terrain_frame(Art.FORD, rect, Vector2i(variant % 4, 0), tint * Color("#d5dfb3") if marsh else tint)
 			if wet or rock:
 				terrain_frame(Art.FORD, rect, Vector2i((2 if wet else 0) + variant % 2, 1), tint)
 			if wet:
 				var mask := water_mask(point)
 				@warning_ignore("integer_division")
-				terrain_frame(Art.WATER, rect, Vector2i(mask % 4, mask / 4))
+				terrain_frame(Art.WATER, rect, Vector2i(mask % 4, mask / 4), Color("#91a56b") if marsh else Color.WHITE)
 		elif room == 5:
 			var cracked: bool = rules != null and cell in rules.cracks
 			terrain_frame(Art.CANYON, rect, Vector2i(variant % 4, 0), tint)
@@ -232,11 +236,14 @@ func paint_tiles() -> void:
 			terrain_frame(Art.ROCKFALL, rect, Vector2i(tile, 0))
 			if accessible:
 				paint_marker(rect, Color("#ffca87"), false, true)
-		elif danger and thunder_warning:
-			draw_rect(rect.grow(-1), Color("#aa78ffff") if thunder_active else Color("#9671e17d"))
-			terrain_frame(Art.FLOOD, rect, Vector2i(0, 1) if thunder_active else Vector2i(1, 0), Color("#edcaff"))
+		elif danger and (thunder_warning or poison_warning):
+			var pulse := Color("#eff280ed") if poison_warning else Color("#aa78ffff")
+			var wash := Color("#c7cf5aa6") if poison_warning else Color("#9671e17d")
+			draw_rect(rect.grow(-1), pulse if area_active else wash)
+			var glyph_color := Color("#f5ee9a") if poison_warning else Color("#edcaff")
+			terrain_frame(Art.FLOOD, rect, Vector2i(0, 1) if area_active else Vector2i(1, 0), glyph_color)
 			if accessible:
-				paint_marker(rect, Color("#cebcff"), false, true)
+				paint_marker(rect, glyph_color if poison_warning else Color("#cebcff"), false, true)
 		elif danger and bolt_warning:
 			paint_marker(rect, Color("#a4d8ff") if accessible else Color("#87a6eb"), false, accessible)
 			var icon_at := rect.position + Vector2(16, 20)
@@ -353,10 +360,12 @@ func _draw() -> void:
 	var wolf_tint := Color("#818985") if fallen else Color.WHITE
 	if not fallen and rules.tactic == "thunder_boss":
 		wolf_tint = Color("#c9bcff") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#acc9ff")
+	elif not fallen and rules.tactic == "marsh":
+		wolf_tint = Color("#bddf9b")
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
-		var wolf_size := 142 if rules.tactic == "den" else 118
+		var wolf_size := 142 if rules.tactic in ["den", "marsh"] else 118
 		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, -direction, wolf_tint)
 	if not ward_kind.is_empty():
 		draw_effect(Art.LOOPS[ward_kind], loop_time, hero_point, 112, direction, true)
@@ -559,13 +568,13 @@ func play_exchange(exchange: Dictionary) -> void:
 		var walk_start := 0.0 if room == 2 else 4.0
 		approach.tween_method(set_wolf_frame, walk_start, walk_start + 3.99, .26)
 		await approach.finished
-	elif exchange.enemy_intent.kind == "thunder" and not exchange.reaction.is_empty():
+	elif exchange.enemy_intent.kind in ["thunder", "poison"] and not exchange.reaction.is_empty():
 		await get_tree().create_timer(.18).timeout
-		thunder_active = true
+		area_active = true
 		queue_redraw()
 		enemy_contact(exchange, hero_point + Vector2(0, -15), guarding)
 		await get_tree().create_timer(.3).timeout
-		thunder_active = false
+		area_active = false
 	elif exchange.enemy_intent.kind == "flood" and not exchange.reaction.is_empty():
 		await get_tree().create_timer(.18).timeout
 		flood_active = true

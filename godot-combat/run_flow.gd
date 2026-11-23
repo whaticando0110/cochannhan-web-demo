@@ -213,6 +213,8 @@ func show_result() -> void:
 		section = "NHỊ CHUYỂN    /    %d TRÊN %d" % [stage_number, 4 if run.version >= Run.BOSS_VERSION else 3]
 	if run.elite_room or run.phase == "elite_workshop":
 		section = "NHỊ CHUYỂN    /    NHÁNH TINH ANH"
+	if run.floor == Run.MARSH_FLOOR or run.phase == "marsh_workshop":
+		section = "TAM CHUYỂN    /    MÀN 1"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
@@ -251,6 +253,15 @@ func show_result() -> void:
 		"chapter_cleared":
 			title = "Hoàn thành Nhị chuyển"
 			description = "Đã hạ Lôi Nha Trấn Ải. Ấn Trấn Lôi được lưu và mở trận này để luyện riêng."
+		"marsh_workshop":
+			title = Run.POISON_MARSH.name
+			description = "Né vùng độc vàng lục và cú táp nhắm vào ô bạn đứng. Sau cú táp, áp sát đánh Tay không lúc Điện Lang hở hàm."
+		"marsh_reward":
+			title = "Chiến lợi phẩm Đầm Rễ Độc"
+			description = "Đã vượt màn đầu Tam chuyển. Chọn một phần thưởng để giữ trong lượt chơi."
+		"marsh_cleared":
+			title = "Vượt qua Đầm Rễ Độc"
+			description = "Đã nhận %s. Chiến lợi phẩm đã được ghi vào lượt chơi này." % Run.MARSH_REWARDS[run.marsh_award]
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -281,10 +292,12 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
+	elif run.phase == "marsh_reward":
+		draw_marsh_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -325,6 +338,11 @@ func show_result() -> void:
 			elif run.phase == "chapter_cleared":
 				var path_name := "Qua Ổ Điện Lang · %s" % Goods.ELITE_REWARDS[run.elite_award] if not run.elite_award.is_empty() else "Đường thẳng qua Hẻm Đá"
 				text(menu, path_name, Rect2(96, 352, 1008, 34), 18, GREEN)
+				var climb := button(menu, "Sang Tam chuyển", Rect2(432, 480, 310, 54), enter_marsh)
+				climb.name = "enter_marsh"
+				climb.grab_focus()
+		elif run.phase == "marsh_cleared":
+			draw_vitals(355)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -385,6 +403,12 @@ func enter_pass() -> void:
 
 func enter_boss() -> void:
 	if run.enter_boss():
+		persist()
+		show_result()
+
+
+func enter_marsh() -> void:
+	if run.enter_marsh():
 		persist()
 		show_result()
 
@@ -453,6 +477,29 @@ func draw_elite_rewards() -> void:
 
 func claim_elite_reward(id: String) -> void:
 	if run.claim_elite_reward(id):
+		persist()
+		show_result()
+
+
+func draw_marsh_rewards() -> void:
+	var details := {"purifying_dew": "Thêm 1 sức chứa chân nguyên và hồi đầy.",
+		"marsh_tonic": "Hồi tối đa %d sinh lực và nhận %d Sinh Cơ Diệp." % [Run.TONIC_HEAL, Run.TONIC_LEAVES]}
+	var i := 0
+	for id in Run.MARSH_REWARDS:
+		var next: Dictionary = run.marsh_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#1a2b25"), Color("#71935d"))
+		text(card, Run.MARSH_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 58), 19)
+		text(card, "Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d\nSinh Cơ Diệp %d → %d" %
+			[run.battle.hp, next.hp, run.battle.qi, run.battle.max_qi, next.qi, next.max_qi, run.battle.leaves, next.leaves],
+			Rect2(20, 128, 452, 54), 17, GREEN)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 183, 454, 41), claim_marsh_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_marsh_reward(id: String) -> void:
+	if run.claim_marsh_reward(id):
 		persist()
 		show_result()
 

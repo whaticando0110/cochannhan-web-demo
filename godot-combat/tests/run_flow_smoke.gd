@@ -497,6 +497,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await launch()
 	check(flow.run.phase == "chapter_cleared" and flow.boss_seal, "Victory or seal disappeared after reload")
 	await capture("godot-v9-an-tran-loi.png")
+	await play_poison_marsh()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -509,6 +510,69 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await click_button("training_begin")
 	check(flow.current.state.tactic == "thunder_boss" and flow.current.state.wolf_hp == Run.THUNDER_GATE.hp
 		and FileAccess.get_file_as_string(path) == campaign, "Practice must use boss rules and leave the campaign untouched")
+
+
+func play_poison_marsh() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = 9
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.phase == "chapter_cleared", "v9 must still replay to the original boss result")
+	flow.show_run()
+	check(not flow.run.claim_marsh_reward("purifying_dew"), "A chapter clear must not grant the marsh reward")
+	await click_button("enter_marsh")
+	await launch()
+	check(flow.run.phase == "marsh_workshop" and flow.run.version == Run.MARSH_VERSION and flow.boss_seal,
+		"Continuing a v9 save must upgrade only after entry and keep the seal")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	var first_cells: Array = battle.intent.cells
+	var escape := battle.preview_action("move", 16)
+	var waiting := battle.preview_action("guard")
+	check(battle.tactic == "marsh" and battle.intent.kind == "poison" and first_cells == flow.current.field.threatened
+		and escape.receives == 0 and waiting.qi_drained == 1 and battle.qi == battle.max_qi, "Poison forecast must match terrain and preview")
+	var other: RefCounted = Run.restore(flow.run.snapshot())
+	other.battle.jade_turns = 1
+	other.battle.ward_strength = Rules.JADE_ABSORB + 1
+	var blocked: Dictionary = other.battle.preview_action("guard")
+	check(blocked.receives == 0 and blocked.qi_drained == 0, "A fully blocked poison hit must not siphon Qi")
+	other.battle.jade_turns = 0
+	var hit: Dictionary = other.perform("guard")
+	check(other.battle.qi == waiting.qi and other.battle.hp == battle.hp - waiting.receives and not hit.has("error"),
+		"Committing a poison hit must match its Qi and HP preview")
+	check(other.battle.intent.name == "Táp độc" and other.battle.intent.cells == [other.battle.hero]
+		and other.battle.aim_can_be_lost(), "The follow-up must aim at one square and allow concealment")
+	var close: RefCounted = Run.restore(flow.run.snapshot())
+	close.perform("move", 19)
+	close.perform("move", 20)
+	check(close.battle.intent.kind == "recover" and close.battle.preview_action("strike").exposed_damage == Rules.MARSH_JAW_BONUS
+		and close.battle.preview_action("moon").exposed_damage == 0, "The missed lunge must open a melee-only counterattack")
+	for i in range(36):
+		if other.phase == "battle":
+			other.perform("guard")
+	check(other.phase == "death" and not other.claim_marsh_reward("purifying_dew")
+		and Run.restore(other.snapshot()).phase == "death", "Defeat in the marsh must not grant a reward")
+	await capture("godot-v10-dam-re-doc.png")
+	await play_commands([[KEY_1, 16], [KEY_1, 18], [KEY_3]])
+	await launch()
+	battle = flow.run.battle
+	check(battle.intent.kind == "poison" and not battle.intent.cells.is_empty()
+		and first_cells.all(func(cell): return cell not in battle.intent.cells), "Reload must preserve the alternate poison pool")
+	await play_commands([[KEY_3], [KEY_4], [KEY_2], [KEY_3]])
+	check(flow.run.phase == "marsh_reward", "Winning the marsh must award a choice")
+	await launch()
+	await capture("godot-v10-phan-thuong-tam-chuyen.png")
+	var tonic: RefCounted = Run.restore(flow.run.snapshot())
+	var old_qi: int = tonic.battle.max_qi
+	var old_leaves: int = tonic.battle.leaves
+	var old_hp: int = tonic.battle.hp
+	check(tonic.claim_marsh_reward("marsh_tonic") and tonic.battle.leaves == old_leaves + Run.TONIC_LEAVES
+		and tonic.battle.hp == mini(Rules.MAX_HP, old_hp + Run.TONIC_HEAL) and tonic.battle.max_qi == old_qi,
+		"Tonic must grant recovery and leaves")
+	await click_button("purifying_dew")
+	await launch()
+	check(flow.run.phase == "marsh_cleared" and flow.run.marsh_award == "purifying_dew" and flow.run.battle.max_qi == old_qi + 1
+		and flow.run.battle.qi == flow.run.battle.max_qi and not flow.run.claim_marsh_reward("marsh_tonic"),
+		"Dew must raise and refill capacity once across reload")
 
 
 func check_ambush_kit() -> void:
@@ -824,5 +888,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy saves, waypoints, elite rewards, Thunder Gate, seal unlock and replay")
+		print("Godot run passed: legacy saves, elite rewards, Thunder Gate, poison marsh and reaction/reward replay")
 	quit(1 if failed else 0)

@@ -31,11 +31,13 @@ Sau Suối Sấm, **Săn tinh anh** dẫn vào **Ổ Điện Lang** thay cho m�
 
 Sau Hẻm Đá, chọn **Tới Lôi Nha Đài** để chuẩn bị trận cuối Nhị chuyển. Cả hai lộ trình được hồi tối đa 32 sinh lực và 4 chân nguyên, giữ lá và bảo vật còn lại, rồi chọn bộ Cổ. Lôi Nha Trấn Ải quét điện theo hàng và chuyển sang đánh cả hàng lẫn cột khi còn nửa sinh lực. Rời các ô tím hoặc Thủ thế, rồi phản công trong lượt hở lôi giáp để cộng 5 sát thương. Thắng lần đầu nhận **Ấn Trấn Lôi**, mở khóa boss trong Luyện trận và giữ ấn khi bắt đầu lượt mới.
 
+Sau Lôi Nha Đài, chọn **Sang Tam chuyển** để vào **Đầm Rễ Độc**. Hai cụm hồ vàng lục phun độc luân phiên. Nếu đòn phun làm mất sinh lực, bạn mất thêm 1 chân nguyên. Né cú Táp độc rồi phản công bằng Tay không lúc Điện Lang hở hàm để cộng 6 sát thương. Khi thắng, chọn **Tinh Lộ Tịnh Mạch** để tăng sức chứa chân nguyên thêm 1 và hồi đầy, hoặc **Cao giải độc** để hồi tối đa 18 sinh lực và nhận 2 Sinh Cơ Diệp.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
 Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ, kể cả chọn điểm dừng và nhận chiến lợi phẩm. Lượt v8 có thể chơi tiếp từ màn kết quả Hẻm Đá và chuyển sang v9 khi chọn **Tới Lôi Nha Đài**. Phạm vi kiểm hiện tại là Windows.
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Lượt v8 có thể vào Lôi Nha Đài từ màn kết quả Hẻm Đá. Lượt v9 đã thắng Lôi Nha Trấn Ải có thể chọn **Sang Tam chuyển** và nâng lên v10. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

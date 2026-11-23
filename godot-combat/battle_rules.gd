@@ -21,6 +21,8 @@ const JADE_TURNS := 2
 const LEAF_HEAL := 12
 const THUNDER_CROSS_BONUS := 4
 const THUNDER_OPEN_BONUS := 5
+const MARSH_LUNGE_DAMAGE := 16
+const MARSH_JAW_BONUS := 6
 
 var turn := 1
 var hero := 17
@@ -184,9 +186,13 @@ func forecast() -> void:
 	var heavy_turn := (turn - 1) % 2 == 0 or enraged
 	if recovering:
 		var name := "Hở lôi giáp" if tactic == "thunder_boss" else "Hồi thế"
+		if tactic == "marsh":
+			name = "Hở hàm"
 		intent = {"kind": "recover", "name": name, "cells": [], "damage": 0}
 	elif tactic == "thunder_boss" and gap <= 5:
 		forecast_thunder()
+	elif tactic == "marsh":
+		forecast_marsh(gap)
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
 	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
@@ -234,6 +240,20 @@ func forecast_thunder() -> void:
 		"pattern": "thunder", "cross": cross}
 
 
+func forecast_marsh(gap: int) -> void:
+	if turn % 3 == 1:
+		@warning_ignore("integer_division")
+		var left := ((turn - 1) / 3) % 2 == 0
+		var cells := water.filter(func(cell: int) -> bool: return (grid(cell).x < COLUMNS / 2.0) == left)
+		intent = {"kind": "poison", "name": heavy_name, "cells": cells, "damage": heavy_damage, "pattern": "poison"}
+	elif turn % 3 == 2 and gap <= 4 and ray_blocker(wolf, hero) < 0:
+		intent = {"kind": "ambush", "name": "Táp độc", "cells": [hero], "damage": MARSH_LUNGE_DAMAGE}
+	elif gap == 1:
+		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
+	else:
+		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
+
+
 func cells_around_hero() -> Array[int]:
 	var cells: Array[int] = [hero]
 	for cell in neighbors(hero):
@@ -243,7 +263,7 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh"]
 
 
 func aim_can_be_lost() -> bool:
@@ -443,8 +463,11 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		"vital_leaf":
 			healed = mini(LEAF_HEAL, MAX_HP - hp)
 	var exposed_damage := 0
-	if tactic == "thunder_boss" and recovering and dealt > 0:
-		exposed_damage = mini(THUNDER_OPEN_BONUS, wolf_hp - dealt)
+	if recovering and dealt > 0:
+		if tactic == "thunder_boss":
+			exposed_damage = mini(THUNDER_OPEN_BONUS, wolf_hp - dealt)
+		elif tactic == "marsh" and action == "strike":
+			exposed_damage = mini(MARSH_JAW_BONUS, wolf_hp - dealt)
 		dealt += exposed_damage
 	var relic_damage := 0
 	if relic == "elite_fang" and ready_relic and dealt > 0:
@@ -471,13 +494,15 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			relic_block = mini(Goods.TOKEN_BLOCK, damage - absorbed)
 			ready_relic = false
 		receives = mini(hp + healed, damage - absorbed - relic_block)
+	var qi_drained := int(receives > 0 and intent.kind == "poison" and qi_after > 0)
+	qi_after -= qi_drained
 	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
 		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if dealt < wolf_hp else 0,
 		"ward_strength": protection, "moon_mark": mark and dealt < wolf_hp, "set_trigger": set_trigger,
 		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
 		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
 		"relic_ready": ready_relic, "relic_block": relic_block, "relic_damage": relic_damage,
-		"exposed_damage": exposed_damage}
+		"exposed_damage": exposed_damage, "qi_drained": qi_drained}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -492,6 +517,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	var notes: Array = exchange.notes
 	var previous_qi := qi
 	qi = preview.qi
+	var action_qi: int = qi + preview.qi_drained
 	jade_turns = preview.jade_turns
 	ward_strength = preview.ward_strength if jade_turns > 0 else 0
 	var had_mark := moon_mark
@@ -517,7 +543,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			var name: String = Gu.GU[action].name if Gu.GU.has(action) else "Tay không"
 			notes.append("%s gây %d sát thương." % [name, damage])
 			if preview.exposed_damage > 0:
-				notes.append("Hở lôi giáp cộng %d sát thương." % preview.exposed_damage)
+				notes.append("%s cộng %d sát thương." % [intent.name, preview.exposed_damage])
 			if preview.relic_damage > 0:
 				notes.append("Nanh Tinh Anh cộng %d sát thương." % preview.relic_damage)
 			if action == "moon_edge" and preview.set_trigger:
@@ -527,14 +553,14 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			elif moon_mark and not had_mark:
 				notes.append("Nguyệt Ấn bám trên đối thủ.")
 		"guard":
-			notes.append("Thủ thế và hồi 1 chân nguyên." if qi > previous_qi else "Bạn vào thế thủ.")
+			notes.append("Thủ thế và hồi 1 chân nguyên." if action_qi > previous_qi else "Bạn vào thế thủ.")
 		"jade_skin":
 			notes.append("Ngọc Bì Cổ tạo một lớp bảo hộ.")
 		"white_jade":
 			notes.append("Bạch Ngọc tạo lớp chặn %d sát thương." % preview.ward_strength)
 		"brew":
 			brew_left -= 1
-			notes.append("Tửu Trùng hồi %d chân nguyên." % (qi - previous_qi))
+			notes.append("Tửu Trùng hồi %d chân nguyên." % (action_qi - previous_qi))
 		"four_flavors":
 			notes.append("Tứ Vị cường hóa %d cú Tay không." % strong_strikes)
 		"stone_veil":
@@ -576,6 +602,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("Lớp ngọc chặn %d sát thương." % preview.absorbed)
 		if preview.relic_block > 0:
 			notes.append("Ngọc bài chặn thêm %d sát thương." % preview.relic_block)
+		if preview.qi_drained > 0:
+			notes.append("Độc rút %d chân nguyên." % preview.qi_drained)
 		if counter_ready and (not had_counter or action == "strike"):
 			notes.append("Phản đòn đã sẵn sàng.")
 		if hp <= 0:

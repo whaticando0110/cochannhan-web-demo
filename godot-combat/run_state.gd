@@ -4,12 +4,14 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 9
+const CURRENT_VERSION := 10
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
 const BOSS_FLOOR := 6
 const BOSS_VERSION := 9
+const MARSH_FLOOR := 7
+const MARSH_VERSION := 10
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -42,6 +44,16 @@ const ELITE_DEN := {"name": "Ổ Điện Lang", "enemy": "Điện Lang đầu đ
 const THUNDER_GATE := {"name": "Lôi Nha Đài", "enemy": "Lôi Nha Trấn Ải", "damage": 20,
 	"bite": 12, "hp": 108, "heavy": "Lôi quét ngang", "pace": 2, "wolf_cell": 21,
 	"rooms": [[3, 12, 27, 35], [4, 11, 26, 37], [5, 13, 28, 34]]}
+const POISON_MARSH := {"name": "Đầm Rễ Độc", "enemy": "Điện Lang nhiễm độc", "damage": 18,
+	"bite": 10, "hp": 112, "heavy": "Phun độc", "pace": 1, "wolf_cell": 21,
+	"rooms": [[4, 12, 26, 37], [3, 13, 27, 36], [5, 11, 28, 35]],
+	"water": [[9, 10, 17, 18, 25, 29, 30, 33, 34, 38, 39],
+		[8, 9, 16, 17, 18, 22, 23, 30, 31, 34], [9, 10, 17, 18, 25, 22, 23, 30, 31, 38]]}
+const MARSH_HEAL := 30
+const MARSH_QI := 4
+const TONIC_HEAL := 18
+const TONIC_LEAVES := 2
+const MARSH_REWARDS := {"purifying_dew": "Tinh Lộ Tịnh Mạch", "marsh_tonic": "Cao giải độc"}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -84,6 +96,7 @@ var stop := {}
 var visited_shop := {}
 var elite_room := false
 var elite_award := ""
+var marsh_award := ""
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -103,6 +116,8 @@ func stage_at(index: int) -> Dictionary:
 			return AMBUSH_PASS
 		BOSS_FLOOR:
 			return THUNDER_GATE
+		MARSH_FLOOR:
+			return POISON_MARSH
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -133,6 +148,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "ambush"
 			BOSS_FLOOR:
 				tactic = "thunder_boss"
+			MARSH_FLOOR:
+				tactic = "marsh"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -164,6 +181,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "elite_reward"
 		elif floor == BOSS_FLOOR:
 			phase = "chapter_cleared"
+		elif floor == MARSH_FLOOR:
+			phase = "marsh_reward"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -291,6 +310,9 @@ func workshop_vitals() -> Dictionary:
 	if phase == "boss_workshop":
 		return {"hp": mini(Rules.MAX_HP, battle.hp + BOSS_HEAL), "qi": mini(battle.max_qi, battle.qi + BOSS_QI),
 			"leaves": battle.leaves}
+	if phase == "marsh_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + MARSH_HEAL), "qi": mini(battle.max_qi, battle.qi + MARSH_QI),
+			"leaves": battle.leaves}
 	var heal := CHAPTER_HEAL
 	if phase != "refinement":
 		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
@@ -344,6 +366,42 @@ func enter_boss() -> bool:
 	version = maxi(version, BOSS_VERSION)
 	phase = "boss_workshop"
 	journal.append(["enter_boss"])
+	return true
+
+
+func enter_marsh() -> bool:
+	if phase != "chapter_cleared":
+		return false
+	version = maxi(version, MARSH_VERSION)
+	phase = "marsh_workshop"
+	journal.append(["enter_marsh"])
+	return true
+
+
+func marsh_reward_preview(id: String) -> Dictionary:
+	if phase != "marsh_reward" or not MARSH_REWARDS.has(id):
+		return {}
+	var next := {"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi, "leaves": battle.leaves}
+	if id == "purifying_dew":
+		next.max_qi += 1
+		next.qi = next.max_qi
+	else:
+		next.hp = mini(Rules.MAX_HP, next.hp + TONIC_HEAL)
+		next.leaves += TONIC_LEAVES
+	return next
+
+
+func claim_marsh_reward(id: String) -> bool:
+	var next := marsh_reward_preview(id)
+	if next.is_empty():
+		return false
+	battle.hp = next.hp
+	battle.qi = next.qi
+	battle.max_qi = next.max_qi
+	battle.leaves = next.leaves
+	marsh_award = id
+	phase = "marsh_cleared"
+	journal.append([id])
 	return true
 
 
@@ -485,7 +543,7 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
@@ -500,6 +558,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = AMBUSH_FLOOR
 		"boss_workshop":
 			floor = BOSS_FLOOR
+		"marsh_workshop":
+			floor = MARSH_FLOOR
 		"elite_workshop":
 			elite_room = true
 		_:
@@ -567,6 +627,10 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = run.leave_shop() if command[0] == "leave_shop" else run.buy(command[0])
 				"elite_reward":
 					committed = run.claim_elite_reward(command[0])
+				"chapter_cleared":
+					committed = command[0] == "enter_marsh" and run.enter_marsh()
+				"marsh_reward":
+					committed = run.claim_marsh_reward(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":
