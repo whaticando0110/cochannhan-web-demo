@@ -39,11 +39,13 @@ Sau khi nhận thưởng Hẻm Hàn Phong, chọn **Tới Đài Trấn Ấn**. T
 
 Sau khi nhận thưởng ở Đài Trấn Ấn, chọn **Tới Điện Trấn Mạch** để đánh Thạch Vương, boss cuối Tam chuyển. Boss luân phiên Nội Chấn và Ngoại Chấn. Di chuyển khỏi vùng báo đòn để mở **Hở mạch**, cộng 5 sát thương cho đòn trúng trong lượt hồi thế kế tiếp. Có thể dùng 8 nguyên thạch để **Dưỡng mạch** một lần, tăng sức chứa thêm 1, hồi đầy chân nguyên và hồi thêm tối đa 6 sinh lực. Thắng nhận **Ấn Trấn Mạch** để mở boss trong Luyện trận, rồi chọn Châu Hoàn Nguyên hoặc Rương Trấn Mạch.
 
+Sau khi nhận thưởng Điện Trấn Mạch, chọn **Sang Tứ chuyển**. Người chơi theo đoàn buôn tới **bãi đá chân núi Tam Xoa**, bên ngoài phúc địa của truyền thừa Tam Vương. Dùng chân nguyên hoàng kim, né cú Húc giáp của chó Thiết Giáp, rồi đánh sườn để vượt lớp phòng ngự trước mặt. Thắng có thể giữ da làm giáp hoặc đổi lấy nguyên thạch.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
 Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)
 
-Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Bản lưu v8 tại Hẻm Đá, v9 tại Lôi Nha Đài, v10 tại Đầm Rễ Độc, v11 tại Hẻm Hàn Phong và v12 tại Đài Trấn Ấn có thể đi tiếp từ màn kết quả tương ứng. Phạm vi kiểm hiện tại là Windows.
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Bản lưu v8 tại Hẻm Đá, v9 tại Lôi Nha Đài, v10 tại Đầm Rễ Độc, v11 tại Hẻm Hàn Phong, v12 tại Đài Trấn Ấn và v13 tại Điện Trấn Mạch có thể đi tiếp từ màn kết quả tương ứng. Phạm vi kiểm hiện tại là Windows.
 
 ```sh
 godot --headless --path godot-combat --import

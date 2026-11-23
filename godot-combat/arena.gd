@@ -63,6 +63,7 @@ var poison_warning := false
 var wind_direction := 0
 var seal_warning := false
 var pulse_warning := false
+var hound_warning := false
 var area_active := false
 var flood_warning := false
 var flood_active := false
@@ -112,6 +113,7 @@ func set_state(state: Rules) -> void:
 	wind_direction = rules.intent.get("direction", 0) if rules.intent.get("pattern") == "wind" else 0
 	seal_warning = rules.intent.get("pattern") == "seal_burst"
 	pulse_warning = rules.intent.get("pattern") == "core_wave"
+	hound_warning = rules.intent.get("pattern") == "hound_rush"
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
@@ -257,6 +259,11 @@ func paint_tiles() -> void:
 		elif danger and pulse_warning:
 			draw_rect(rect.grow(-1), Color("#ffd287de") if area_active else Color("#d786546e"))
 			paint_marker(rect, Color("#ffe0af"), true, accessible)
+		elif danger and hound_warning:
+			draw_rect(rect.grow(-1), Color("#b0774a83"))
+			terrain_frame(Art.TELEGRAPHS, rect, Vector2i(1, 2), Color("#e9c495"), rules.hound_facing > 0)
+			if accessible:
+				paint_marker(rect, Color("#ffd49a"), false, true)
 		elif danger and wind_direction != 0:
 			draw_rect(rect.grow(-1), Color("#9be0f6bf") if area_active else Color("#65b6d86b"))
 			var center := rect.get_center()
@@ -397,11 +404,14 @@ func _draw() -> void:
 		wolf_tint = Color("#bdb2dc") if rules.seal_turns == 0 else Color("#edd2b8")
 	elif not fallen and rules.tactic == "pulse_boss":
 		wolf_tint = Color("#f49c73") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#ded0b1")
+	elif not fallen and rules.tactic == "armored_hound":
+		wolf_tint = Color("#8a8981")
 	if room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
-		var wolf_size := 142 if rules.tactic in ["den", "marsh", "wind_pass"] else 118
-		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, -direction, wolf_tint)
+		var wolf_size := 142 if rules.tactic in ["den", "marsh", "wind_pass", "armored_hound"] else 118
+		var face := rules.hound_facing if rules.tactic == "armored_hound" else -direction
+		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, face, wolf_tint)
 	if not ward_kind.is_empty():
 		draw_effect(Art.LOOPS[ward_kind], loop_time, hero_point, 112, direction, true)
 	if brew_stacks > 0:
@@ -631,6 +641,8 @@ func play_exchange(exchange: Dictionary) -> void:
 	elif exchange.reaction in ["heavy", "strike", "ambush", "miss"]:
 		var start := wolf_point
 		var target := cell_center(rules.hero) if exchange.reaction != "miss" else cell_center(exchange.hero_from)
+		if exchange.enemy_intent.get("pattern") == "hound_rush" and exchange.reaction == "miss":
+			target = cell_center(exchange.enemy_intent.cells.back())
 		var vector := target - start
 		var landing := target - vector.normalized() * minf(47, vector.length() * .42)
 		var row: int = exchange.enemy_intent.get("row", -1)

@@ -230,6 +230,8 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
+	if run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
+		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
@@ -304,7 +306,17 @@ func show_result() -> void:
 			description = "Ấn Trấn Mạch đã mở Thạch Vương trong Luyện trận. Chọn một chiến lợi phẩm cho lượt chơi."
 		"rank_three_cleared":
 			title = "Hoàn thành Tam chuyển"
-			description = "Đã hạ Thạch Vương và nhận %s." % Run.PULSE_REWARDS[run.pulse_award]
+			description = "Đã nhận %s. Sau khi đột phá Tứ chuyển, theo đoàn buôn tới núi Tam Xoa." % Run.PULSE_REWARDS[run.pulse_award]
+		"xoa_workshop":
+			title = Run.XOA_TRAIL.name
+			description = "Đoàn buôn dừng ngoài cửa phúc địa. Một con chó Thiết Giáp chắn đường. Né cú húc rồi đánh vào sườn."
+		"xoa_reward":
+			title = "Da chó Thiết Giáp"
+			description = "Giữ da làm giáp hoặc đổi cho đoàn buôn lấy nguyên thạch."
+		"xoa_cleared":
+			title = "Qua bãi đá chân núi"
+			description = "Đã nhận Giáp da Thiết Giáp." if run.xoa_award == "iron_hide" else (
+				"Đã đổi da lấy %d nguyên thạch." % Run.XOA_HIDE_PRICE)
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -335,7 +347,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
@@ -347,6 +359,8 @@ func show_result() -> void:
 		draw_altar_rewards()
 	elif run.phase == "pulse_reward":
 		draw_pulse_rewards()
+	elif run.phase == "xoa_reward":
+		draw_xoa_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -410,6 +424,11 @@ func show_result() -> void:
 			gate.grab_focus()
 		elif run.phase == "rank_three_cleared":
 			text(menu, "Thưởng từ Đài Trấn Ấn · %s" % Run.ALTAR_REWARDS[run.altar_award], Rect2(96, 309, 1008, 38), 19, GOLD)
+			draw_vitals(355)
+			var road := button(menu, "Sang Tứ chuyển", Rect2(432, 480, 310, 54), enter_xoa_trail)
+			road.name = "enter_xoa_trail"
+			road.grab_focus()
+		elif run.phase == "xoa_cleared":
 			draw_vitals(355)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
@@ -495,6 +514,12 @@ func enter_altar() -> void:
 
 func enter_pulse_hall() -> void:
 	if run.enter_pulse_hall():
+		persist()
+		show_result()
+
+
+func enter_xoa_trail() -> void:
+	if run.enter_xoa_trail():
 		persist()
 		show_result()
 
@@ -658,6 +683,26 @@ func draw_pulse_rewards() -> void:
 
 func claim_pulse_reward(id: String) -> void:
 	if run.claim_pulse_reward(id):
+		persist()
+		show_result()
+
+
+func draw_xoa_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"iron_hide": Goods.RELICS.iron_hide[1] + "\n" + carried,
+		"sell_iron_hide": "Nguyên thạch %d → %d. Giữ bảo vật đang mang." % [run.stones, run.stones + Run.XOA_HIDE_PRICE]}
+	var i := 0
+	for id in Run.XOA_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#26302b"), Color("#829780"))
+		text(card, Run.XOA_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 99), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 178, 454, 41), claim_xoa_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_xoa_reward(id: String) -> void:
+	if run.claim_xoa_reward(id):
 		persist()
 		show_result()
 

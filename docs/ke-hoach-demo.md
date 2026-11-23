@@ -1,5 +1,7 @@
 # Kế hoạch roguelike Godot · Vượt Thanh Mao
 
+Giữ mạch truyện Cổ Chân Nhân khi mở mỗi cảnh giới và địa bàn. Đối chiếu các chương tiếng Việt để chọn địa danh, chân nguyên, Cổ trùng, dị thú và quy tắc phúc địa. Ghi rõ phần chuyển thể dùng cho bản demo, gồm tình huống gặp địch, thông số, phần thưởng và luật theo lượt.
+
 Ba trận của chương đầu luyện ba kỹ năng theo thứ tự. Đọc vùng báo đòn, tận dụng địa hình, rồi quản lý chân nguyên trước trùm. Đợt đầu dùng hai tuyến đã có để thử địa hình và các kiểu dùng Cổ trước khi mở chương kế.
 
 | Màn | Thử thách và quyết định | Cổ hoặc vật phẩm xuất hiện |
@@ -40,6 +42,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 12. Mở Hẻm Hàn Phong, màn hai Tam chuyển, sau khi nhận thưởng Đầm Rễ Độc. Tận dụng các ô khuất sau đá khi gió đảo chiều.
 13. Mở Đài Trấn Ấn, màn ba Tam chuyển, sau khi nhận thưởng Hẻm Hàn Phong. Né Chấn Ấn và kết thúc lượt di chuyển trên ô ấn để phá giáp.
 14. Mở Điện Trấn Mạch, boss cuối Tam chuyển, sau khi nhận thưởng Đài Trấn Ấn. Luân phiên cự ly gần và xa để đối phó sóng chấn.
+15. Mở Tứ chuyển ở bãi đá chân núi Tam Xoa, ngoài cửa truyền thừa. Dùng địa hình để tránh cú húc của chó Thiết Giáp và đổi góc đánh.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -210,6 +213,27 @@ Phát lại Đài Trấn Ấn để lấy tài nguyên thật sau trận. So sá
 | Hộp tiếp tế cổ trận, mua Dưỡng mạch | 192/192 | 5–13 | 10,01 | 22,65 |
 
 Thạch Tủy nhanh hơn ở 113/192 cấu hình. Hộp nhanh hơn ở 50/192 và giữ nhiều sinh lực hơn ở 97/192. Bộ Nguyệt thuần cần 5–7 lượt với Hộp và 7–8 lượt với Thạch Tủy. Ba bộ thuần Hộ thể, Tửu và Ẩn có lợi thế về số lượt với Thạch Tủy. Đây là đường thắng tự động ưu tiên kết thúc sớm, và các ca thử dùng Hộp chưa mua Dưỡng mạch cũng đều có đường thắng. Kiểm thêm 32 lượt có nhật ký từ Suối Sấm, phủ bốn bộ thuần và các cặp lựa chọn từ Đầm Rễ Độc, Hẻm Hàn Phong, Đài Trấn Ấn. Phát lại được cả hai chiến lợi phẩm boss từ mọi lượt.
+
+## Bãi đá chân núi Tam Xoa
+
+Trong truyện, chân nguyên Tứ chuyển là hoàng kim. Chó Thiết Giáp có màu đen và sở trường phòng ngự. Khi bước vào truyền thừa Khuyển Vương, cổ sư chỉ dùng được Ngự Khuyển nhất chuyển trong số Cổ phàm mang vào. Trận ở bãi đá là tình huống do demo thêm ở bên ngoài phúc địa. Vị trí này cho phép tiếp tục dùng những bộ Cổ đang có. [Chương 362](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-362.html) · [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html) · [Chương 430](https://truyenfull.live/co-chan-nhan/chuong-430/)
+
+Sau khi nhận thưởng Điện Trấn Mạch, chọn **Sang Tứ chuyển** để nâng bản lưu v13 lên v14. Trước trận hồi tối đa 22 sinh lực và 2 chân nguyên, giữ sức chứa, bảo vật và vật phẩm đã nhận. Giao diện hiển thị chân nguyên hoàng kim bằng nhãn và màu vàng. Số ô và chi phí dùng Cổ vẫn theo hệ thống chiến đấu hiện tại.
+
+Chó Thiết Giáp có 132 sinh lực. Khi báo **Húc giáp**, nó khóa hướng Tây hoặc Đông theo vị trí người chơi. Cú húc gây 18 sát thương trên hàng phía trước và dừng trước tảng đá đầu tiên. Chó hồi thế một lượt sau cú húc, sau đó cắn hoặc áp sát. Hướng giữ giáp giữ nguyên đến đợt kế tiếp. Các đòn từ phía nó đang giữ giáp bị trừ tối đa 7 sát thương. Đòn từ cùng cột hoặc phía sau bỏ qua lớp chặn. Tay không từ những vị trí đó cộng thêm 4 sát thương. Hướng và lượng chặn hiển thị trên giao diện. Trận hiện dùng atlas thú bốn chân có sẵn với tông đen xám.
+
+Thắng có thể dùng da làm **Giáp da Thiết Giáp**. Đây là trang bị của bản chuyển thể, chiếm ô bảo vật. Mỗi trận, lần đầu còn chịu sát thương sau khi Thủ thế được chặn thêm tối đa 5. Đổi da cho đoàn buôn nhận 7 nguyên thạch và giữ bảo vật đang mang. Hai lựa chọn được lưu qua nhật ký và chỉ nhận được một lần.
+
+### Kiểm cân bằng Tam Xoa
+
+Phát lại trận ở Điện Trấn Mạch để lấy đúng sinh lực, chân nguyên, vật phẩm, bảo vật và thưởng Đài Trấn Ấn trước khi nhận chiến lợi phẩm boss. So sánh hai món từ cùng trạng thái cho 16 cặp Cổ, bốn tư chất và ba bố cục. Lối chọn Rương giữ bảo vật cũ nếu có.
+
+| Thưởng từ Điện Trấn Mạch | Có đường thắng | Lượt | Lượt trung bình | Sinh lực còn lại trung bình |
+| --- | --- | --- | --- | --- |
+| Châu Hoàn Nguyên | 192/192 | 7–14 | 9,95 | 26,94 |
+| Rương Trấn Mạch | 192/192 | 7–14 | 10,25 | 29,53 |
+
+Châu kích hoạt ở 126/192 đường thắng và giúp thắng sớm hơn ở 43 cấu hình ghép cặp. Rương giữ nhiều sinh lực hơn ở 54 cấu hình. Điểm kết thúc thấp nhất là 1 sinh lực với Châu và 11 với Rương trong phép tìm ưu tiên kết thúc sớm. Kiểm thêm 32 lượt có nhật ký từ Suối Sấm qua bốn bộ thuần. Phát lại được cả hai cách dùng da từ mỗi lượt.
 
 ## Đồ họa trong trận
 

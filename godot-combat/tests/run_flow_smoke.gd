@@ -501,6 +501,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_wind_pass()
 	await play_seal_altar()
 	await play_pulse_boss()
+	await play_xoa_trail()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -759,6 +760,9 @@ func play_pulse_boss() -> void:
 	check(cache.claim_pulse_reward("pulse_cache") and cache.stones == stones + Run.PULSE_CACHE_STONES
 		and cache.battle.leaves == leaves + Run.PULSE_CACHE_LEAVES and Run.restore(cache.snapshot()).pulse_award == "pulse_cache",
 		"The boss cache must persist both currencies")
+	check(cache.enter_xoa_trail() and cache.equip_build("moon_edge", "moon")
+		and cache.battle.relic == "wind_seal" and cache.battle.leaves == leaves + Run.PULSE_CACHE_LEAVES,
+		"The cache must bring its leaves and keep the prior relic at Tam Xoa")
 	await click_button("pulse_pearl")
 	await launch()
 	check(flow.run.phase == "rank_three_cleared" and flow.run.relic == "pulse_pearl" and flow.pulse_seal
@@ -772,6 +776,66 @@ func play_pulse_boss() -> void:
 	var empty := Rules.new({"qi": 1, "relic": flow.run.relic})
 	check(empty.take_turn("moon").has("error") and empty.relic_ready and empty.qi == 1,
 		"The refund must not let a player cast with insufficient Qi")
+
+
+func play_xoa_trail() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = Run.PULSE_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.phase == "rank_three_cleared" and flow.run.relic == "pulse_pearl",
+		"The v13 clear must keep its prize before entering the new rank")
+	flow.show_run()
+	await click_button("enter_xoa_trail")
+	await launch()
+	check(flow.run.version == Run.XOA_VERSION and flow.run.phase == "xoa_workshop" and not flow.run.enter_xoa_trail()
+		and not flow.run.claim_xoa_reward("iron_hide"), "The Tam Xoa trail must open once and lock its reward")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	var frontal := battle.preview_action("moon")
+	check(battle.tactic == "armored_hound" and battle.hound_facing == -1 and battle.intent.cells == flow.current.field.threatened
+		and battle.hero in battle.intent.cells and frontal.armor_block == Rules.HOUND_FRONT_ARMOR
+		and frontal.relic_qi == Goods.PULSE_PEARL_QI and battle.relic_ready,
+		"The forecast must show the opening rush, front armor and unspent pearl refund")
+	await capture("godot-v14-bai-da-tam-xoa.png")
+	var flank := Run.battle_for(Run.XOA_TRAIL, 0, 48, 4, 4, 0, {}, "armored_hound", true)
+	flank.hero = 13
+	flank.forecast()
+	check(flank.preview_action("strike").armor_block == 0
+		and flank.preview_action("strike").exposed_damage == Rules.HOUND_FLANK_STRIKE,
+		"A hit from the hound column must bypass front armor and add flank damage")
+	flank.hero = 22
+	flank.turn = 2
+	flank.forecast()
+	check(flank.hound_facing == -1 and not flank.hound_guards(flank.hero), "The hound must hold facing between rushes")
+	flank.turn = 4
+	flank.forecast()
+	check(flank.hound_facing == 1 and flank.intent.cells == [22, 23] and flank.hound_guards(flank.hero),
+		"A new rush must turn the armor and switch the danger lane")
+	var shelter := Run.battle_for(Run.XOA_TRAIL, 2, 48, 4, 4, 0, {}, "armored_hound", true)
+	check(shelter.intent.cells == [20, 19] and shelter.hero not in shelter.intent.cells,
+		"A boulder in the lane must stop the rush forecast")
+	await play_commands([[KEY_4], [KEY_3], [KEY_3], [KEY_1, 26]])
+	await launch()
+	battle = flow.run.battle
+	check(battle.hero == 26 and battle.intent.kind == "recover" and not battle.relic_ready,
+		"Moving out of the locked row and consuming the pearl must replay")
+	await play_commands([[KEY_4], [KEY_3], [KEY_2], [KEY_2], [KEY_3]])
+	check(flow.run.phase == "xoa_reward", "The hound victory must offer its hide")
+	await launch()
+	await capture("godot-v14-da-thiet-giap.png")
+	var sale: RefCounted = Run.restore(flow.run.snapshot())
+	var stones: int = sale.stones
+	check(sale.claim_xoa_reward("sell_iron_hide") and sale.stones == stones + Run.XOA_HIDE_PRICE and sale.relic == "pulse_pearl"
+		and Run.restore(sale.snapshot()).xoa_award == "sell_iron_hide", "Selling the hide must keep the old relic and add stones")
+	await click_button("iron_hide")
+	await launch()
+	check(flow.run.phase == "xoa_cleared" and flow.run.relic == "iron_hide"
+		and not flow.run.claim_xoa_reward("sell_iron_hide"), "Equipping the hide must persist and close the loot choice")
+	var trial := Rules.new({"relic": flow.run.relic})
+	check(trial.preview_action("moon").relic_block == 0 and trial.preview_action("guard").relic_block > 0 and trial.relic_ready,
+		"The hide must only protect a guarded hit and preview without mutation")
+	trial.take_turn("guard")
+	check(not trial.relic_ready, "The first guarded hit must consume the hide charge")
 
 
 func check_ambush_kit() -> void:
@@ -1087,5 +1151,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, two altar routes and training unlock")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa facing and both loot routes")
 	quit(1 if failed else 0)

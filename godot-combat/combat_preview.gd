@@ -79,6 +79,8 @@ func configure(current_run: RunData) -> void:
 		arena_room = 5
 	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
+	elif run.floor == RunData.XOA_FLOOR:
+		arena_room = 1
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
 
@@ -162,7 +164,8 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 
 func build_hud() -> void:
-	label("CỔ CHÂN NHÂN  /  THANH MAO SƠN", 36, 22, 600, 30, 17, GREEN)
+	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic == "armored_hound" else "THANH MAO SƠN"
+	label("CỔ CHÂN NHÂN  /  " + area, 36, 22, 600, 30, 17, GREEN)
 	if Goods.RELICS.has(state.relic):
 		relic_label = label("", 655, 10, 333, 31, 15, GOLD)
 		relic_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -180,6 +183,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 3"
 	elif run != null and run.floor == RunData.PULSE_FLOOR:
 		mode = "Tam chuyển · Boss cuối"
+	elif run != null and run.floor == RunData.XOA_FLOOR:
+		mode = "Tứ chuyển · Màn 1"
 	elif run != null:
 		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 		if run.floor >= RunData.RIDGE_FLOOR:
@@ -229,10 +234,12 @@ func build_hud() -> void:
 	hp_label = label("", 1054, 222, 94, 21, 16, GREEN)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hp_bar = bar(880, 248, 267, GREEN, Rules.MAX_HP)
-	label("Chân nguyên", 880, 263, 169, 22, 16, IVORY)
-	qi_label = label("", 1054, 263, 94, 22, 16, CYAN)
+	var gold_essence := state.tactic == "armored_hound"
+	var qi_tint := GOLD if gold_essence else CYAN
+	label("Chân nguyên hoàng kim" if gold_essence else "Chân nguyên", 880, 263, 169, 22, 16, IVORY)
+	qi_label = label("", 1054, 263, 94, 22, 16, qi_tint)
 	qi_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	qi_bar = bar(880, 290, 267, CYAN, state.max_qi)
+	qi_bar = bar(880, 290, 267, qi_tint, state.max_qi)
 
 	panel(860, 325, 306, 146, Color("#282a23"))
 	label(enemy_name, 880, 337, 190, 30, 21, GOLD, true)
@@ -325,6 +332,8 @@ func update_hud() -> void:
 		supplies.append("Sinh Cơ ×%d" % state.leaves)
 	if state.tactic == "seal_altar":
 		supplies.append("Vỡ giáp · %d lượt" % state.seal_turns if state.seal_turns > 0 else "Thạch Giáp · chặn %d" % Rules.ALTAR_ARMOR)
+	elif state.tactic == "armored_hound":
+		supplies.append("Thiết Giáp · %s" % ("phía Tây" if state.hound_facing < 0 else "phía Đông"))
 	wards_label.text = "    ".join(supplies)
 	if is_instance_valid(relic_label):
 		var status := " · Sẵn sàng" if state.relic_ready else " · Đã dùng"
@@ -345,6 +354,9 @@ func update_hud() -> void:
 				intent_name.text += " · Cuồng nộ"
 			if state.intent.get("pattern") == "row":
 				intent_copy.text = "Hàng %d · %d sát thương. Rời hàng để né." % [int(state.intent.row) + 1, state.intent.damage]
+			elif state.intent.get("pattern") == "hound_rush":
+				intent_copy.text = "Húc về %s · %d sát thương. Né sang hàng khác." % [
+					"Tây" if state.hound_facing < 0 else "Đông", state.intent.damage]
 			elif state.intent.kind == "shot":
 				intent_copy.text = "Hồ quang khóa ô %s · %d sát thương." % [Rules.cell_name(state.intent.cells[0]), state.intent.damage]
 			elif state.intent.kind == "flood":
@@ -486,16 +498,20 @@ func inspect_action(action: String) -> void:
 	elif result.jade_turns > 0:
 		pieces.append("Lớp ngọc %d · còn %d lượt" % [result.ward_strength, result.jade_turns])
 	if result.relic_block > 0:
-		pieces.append("Ngọc bài chặn %d" % result.relic_block)
+		pieces.append("%s chặn %d" % [Goods.RELICS[state.relic][0], result.relic_block])
 	if result.relic_damage > 0:
 		pieces.append("Nanh Tinh Anh +%d" % result.relic_damage)
 	if action != "move" and result.relic_qi > 0:
 		pieces.append("Châu Hoàn Nguyên hoàn %d chân nguyên" % result.relic_qi)
 	if result.exposed_damage > 0:
-		pieces.append("%s +%d" % ["Vỡ Thạch Giáp" if state.tactic == "seal_altar" else state.intent.name,
-			result.exposed_damage])
+		var opening: String = state.intent.name
+		if state.tactic == "seal_altar":
+			opening = "Vỡ Thạch Giáp"
+		elif state.tactic == "armored_hound":
+			opening = "Đánh sườn"
+		pieces.append("%s +%d" % [opening, result.exposed_damage])
 	if result.armor_block > 0:
-		pieces.append("Thạch Giáp chặn %d" % result.armor_block)
+		pieces.append("%s chặn %d" % ["Thiết Giáp" if state.tactic == "armored_hound" else "Thạch Giáp", result.armor_block])
 	if result.qi_drained > 0:
 		pieces.append("Độc rút %d chân nguyên" % result.qi_drained)
 	if result.receives > 0:
