@@ -498,6 +498,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	check(flow.run.phase == "chapter_cleared" and flow.boss_seal, "Victory or seal disappeared after reload")
 	await capture("godot-v9-an-tran-loi.png")
 	await play_poison_marsh()
+	await play_wind_pass()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -568,11 +569,70 @@ func play_poison_marsh() -> void:
 	check(tonic.claim_marsh_reward("marsh_tonic") and tonic.battle.leaves == old_leaves + Run.TONIC_LEAVES
 		and tonic.battle.hp == mini(Rules.MAX_HP, old_hp + Run.TONIC_HEAL) and tonic.battle.max_qi == old_qi,
 		"Tonic must grant recovery and leaves")
+	check(tonic.enter_wind_pass() and tonic.equip_build("moon_edge", "moon") and tonic.battle.max_qi == old_qi
+		and tonic.battle.leaves == old_leaves + Run.TONIC_LEAVES and tonic.battle.hp == Rules.MAX_HP,
+		"Entering the wind pass must carry the marsh tonic supplies")
 	await click_button("purifying_dew")
 	await launch()
 	check(flow.run.phase == "marsh_cleared" and flow.run.marsh_award == "purifying_dew" and flow.run.battle.max_qi == old_qi + 1
 		and flow.run.battle.qi == flow.run.battle.max_qi and not flow.run.claim_marsh_reward("marsh_tonic"),
 		"Dew must raise and refill capacity once across reload")
+
+
+func play_wind_pass() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	legacy.version = Run.MARSH_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.phase == "marsh_cleared" and flow.run.marsh_award == "purifying_dew",
+		"A v10 clear must keep its original reward")
+	flow.show_run()
+	await click_button("enter_wind_pass")
+	await launch()
+	check(flow.run.phase == "wind_workshop" and flow.run.version == Run.WIND_VERSION
+		and not flow.run.enter_wind_pass() and not flow.run.claim_wind_reward("wind_seal"), "The wind pass must open exactly once")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	check(battle.tactic == "wind_pass" and battle.max_qi == flow.run.profile.max_qi + 1 and battle.qi == battle.max_qi,
+		"Original dew capacity must reach the new fight")
+	check(battle.intent.kind == "wind" and battle.intent.direction == 1
+		and battle.intent.cells == flow.current.field.threatened and 26 not in battle.intent.cells
+		and battle.preview_action("move", 26).receives == 0 and battle.preview_action("move", 19).receives > 0,
+		"Only tiles downwind of a stone must shelter from the first gust")
+	await capture("godot-v11-hem-han-phong.png")
+	var doomed: RefCounted = Run.restore(flow.run.snapshot())
+	for i in range(28):
+		if doomed.phase == "battle":
+			doomed.perform("guard")
+	check(doomed.phase == "death" and not doomed.claim_wind_reward("wind_supplies")
+		and Run.restore(doomed.snapshot()).phase == "death", "A lost wind fight must not grant rewards")
+	await play_commands([[KEY_3], [KEY_1, 16], [KEY_7]])
+	await launch()
+	battle = flow.run.battle
+	check(battle.intent.kind == "wind" and battle.intent.direction == -1 and 26 in battle.intent.cells
+		and flow.current.field.wind_direction == -1, "Reload must preserve reversed wind and reversed shelter")
+	await play_commands([[KEY_4], [KEY_4], [KEY_3], [KEY_2]])
+	check(flow.run.phase == "wind_reward", "Winning the wind pass must open the reward choice")
+	await launch()
+	await capture("godot-v11-chien-loi-pham.png")
+	var supplies: RefCounted = Run.restore(flow.run.snapshot())
+	var departure: Dictionary = supplies.wind_reward_preview("wind_supplies")
+	check(supplies.claim_wind_reward("wind_supplies") and supplies.battle.leaves == departure.leaves
+		and supplies.battle.qi == departure.qi and Run.restore(supplies.snapshot()).wind_award == "wind_supplies",
+		"Wind supplies must survive replay")
+	await click_button("wind_seal")
+	await launch()
+	check(flow.run.phase == "wind_cleared" and flow.run.relic == "wind_seal" and not flow.run.claim_wind_reward("wind_supplies"),
+		"The seal must occupy the relic slot and prevent a second reward")
+	var kit := {"relic": flow.run.relic}
+	var full := Run.battle_for(Run.WIND_PASS, 0, 48, 4, 4, 0, kit, "wind_pass", true)
+	full.take_turn("move", 26)
+	check(full.relic_ready, "A full essence bar must not spend the wind seal")
+	var trial := Run.battle_for(Run.WIND_PASS, 0, 48, 1, 4, 0, kit, "wind_pass", true)
+	check(trial.preview_action("move", 19).relic_qi == 0
+		and trial.preview_action("move", 26).relic_qi == Goods.WIND_SEAL_QI and trial.relic_ready and trial.qi == 1,
+		"Preview must show the wind seal gain only when escaping, without consuming it")
+	trial.take_turn("move", 26)
+	check(trial.qi == 1 + Goods.WIND_SEAL_QI and not trial.relic_ready, "An actual escape must trigger the wind seal once")
 
 
 func check_ambush_kit() -> void:
@@ -888,5 +948,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy saves, elite rewards, Thunder Gate, poison marsh and reaction/reward replay")
+		print("Godot run passed: older replays, Rank III wind, both marsh rewards and wind seal")
 	quit(1 if failed else 0)

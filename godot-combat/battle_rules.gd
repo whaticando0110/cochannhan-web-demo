@@ -93,7 +93,7 @@ func _init(options: Dictionary = {}) -> void:
 	cracks = options.get("cracks", [])
 	brew_left = Gu.BREW_CHARGES if starter_gu == "brew" else 0
 	relic = options.get("relic", "")
-	relic_ready = relic in ["reed_boots", "jade_token", "elite_fang"]
+	relic_ready = relic in ["reed_boots", "jade_token", "elite_fang", "wind_seal"]
 	if relic == "essence_pin":
 		qi = mini(max_qi, qi + 1)
 	forecast()
@@ -193,6 +193,8 @@ func forecast() -> void:
 		forecast_thunder()
 	elif tactic == "marsh":
 		forecast_marsh(gap)
+	elif tactic == "wind_pass":
+		forecast_wind_pass(gap)
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
 	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
@@ -254,6 +256,28 @@ func forecast_marsh(gap: int) -> void:
 		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
 
 
+func forecast_wind_pass(gap: int) -> void:
+	if turn % 3 == 1:
+		@warning_ignore("integer_division")
+		var from_west := ((turn - 1) / 3) % 2 == 0
+		var cells: Array[int] = []
+		for row in range(ROWS):
+			for step in range(COLUMNS):
+				var column := step if from_west else COLUMNS - 1 - step
+				var cell := row * COLUMNS + column
+				if cell in rocks:
+					break
+				cells.append(cell)
+		intent = {"kind": "wind", "pattern": "wind", "name": heavy_name, "cells": cells,
+			"damage": heavy_damage, "direction": 1 if from_west else -1}
+	elif turn % 3 == 2 and gap <= 4 and ray_blocker(wolf, hero) < 0:
+		intent = {"kind": "ambush", "name": "Vồ qua gió", "cells": [hero], "damage": heavy_damage - 2}
+	elif gap == 1:
+		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
+	else:
+		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
+
+
 func cells_around_hero() -> Array[int]:
 	var cells: Array[int] = [hero]
 	for cell in neighbors(hero):
@@ -263,7 +287,7 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass"]
 
 
 func aim_can_be_lost() -> bool:
@@ -411,11 +435,16 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var concealment := veil_turns
 	var ready_relic := relic_ready
 	var set_trigger := false
+	var relic_qi := 0
 	match action:
 		"move":
 			extra_steps = 0
 			if relic == "reed_boots":
 				ready_relic = false
+			elif relic == "wind_seal" and ready_relic and hero in intent.cells and target not in intent.cells:
+				relic_qi = mini(Goods.WIND_SEAL_QI, max_qi - qi)
+				qi_after += relic_qi
+				ready_relic = relic_qi == 0
 		"strike":
 			set_trigger = counter_ready or boosted > 0
 			var bonus := counter_bonus() if counter_ready else Gu.BREW_STRIKE_BONUS if boosted > 0 else 0
@@ -502,7 +531,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
 		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
 		"relic_ready": ready_relic, "relic_block": relic_block, "relic_damage": relic_damage,
-		"exposed_damage": exposed_damage, "qi_drained": qi_drained}
+		"exposed_damage": exposed_damage, "qi_drained": qi_drained, "relic_qi": relic_qi}
 
 
 func take_turn(action: String, target: int = -1) -> Dictionary:
@@ -534,7 +563,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		"move":
 			hero = target
 			notes.append("Bạn di chuyển đến %s." % cell_name(hero))
-			if used_relic:
+			if preview.relic_qi > 0:
+				notes.append("Ấn Dẫn Phong hồi %d chân nguyên." % preview.relic_qi)
+			elif used_relic:
 				notes.append("Giày cỏ lau đã hỗ trợ bước đầu.")
 		"strike", "moon", "moon_edge":
 			var damage: int = preview.dealt

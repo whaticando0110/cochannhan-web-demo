@@ -215,6 +215,8 @@ func show_result() -> void:
 		section = "NHỊ CHUYỂN    /    NHÁNH TINH ANH"
 	if run.floor == Run.MARSH_FLOOR or run.phase == "marsh_workshop":
 		section = "TAM CHUYỂN    /    MÀN 1"
+	if run.floor == Run.WIND_FLOOR or run.phase == "wind_workshop":
+		section = "TAM CHUYỂN    /    MÀN 2"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
@@ -261,7 +263,16 @@ func show_result() -> void:
 			description = "Đã vượt màn đầu Tam chuyển. Chọn một phần thưởng để giữ trong lượt chơi."
 		"marsh_cleared":
 			title = "Vượt qua Đầm Rễ Độc"
-			description = "Đã nhận %s. Chiến lợi phẩm đã được ghi vào lượt chơi này." % Run.MARSH_REWARDS[run.marsh_award]
+			description = "Đã nhận %s. Đường lên Hẻm Hàn Phong đã mở." % Run.MARSH_REWARDS[run.marsh_award]
+		"wind_workshop":
+			title = Run.WIND_PASS.name
+			description = "Gió cắt đổi hướng sau mỗi đợt. Tìm ô khuất ở sau đá theo chiều gió, rồi né cú vồ nhắm."
+		"wind_reward":
+			title = "Chiến lợi phẩm Hẻm Hàn Phong"
+			description = "Đã vượt màn hai Tam chuyển. Chọn bảo vật hoặc tiếp tế cho lượt chơi."
+		"wind_cleared":
+			title = "Vượt qua Hẻm Hàn Phong"
+			description = "Đã nhận %s." % Run.WIND_REWARDS[run.wind_award]
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -292,12 +303,14 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
 	elif run.phase == "marsh_reward":
 		draw_marsh_rewards()
+	elif run.phase == "wind_reward":
+		draw_wind_rewards()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -342,6 +355,11 @@ func show_result() -> void:
 				climb.name = "enter_marsh"
 				climb.grab_focus()
 		elif run.phase == "marsh_cleared":
+			draw_vitals(355)
+			var head_up := button(menu, "Tới Hẻm Hàn Phong", Rect2(432, 480, 310, 54), enter_wind_pass)
+			head_up.name = "enter_wind_pass"
+			head_up.grab_focus()
+		elif run.phase == "wind_cleared":
 			draw_vitals(355)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
@@ -409,6 +427,12 @@ func enter_boss() -> void:
 
 func enter_marsh() -> void:
 	if run.enter_marsh():
+		persist()
+		show_result()
+
+
+func enter_wind_pass() -> void:
+	if run.enter_wind_pass():
 		persist()
 		show_result()
 
@@ -500,6 +524,31 @@ func draw_marsh_rewards() -> void:
 
 func claim_marsh_reward(id: String) -> void:
 	if run.claim_marsh_reward(id):
+		persist()
+		show_result()
+
+
+func draw_wind_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"wind_seal": Goods.RELICS.wind_seal[1] + "\n" + carried,
+		"wind_supplies": "Hồi tối đa %d chân nguyên và nhận %d Sinh Cơ Diệp. Giữ bảo vật đang mang." %
+		[Run.WIND_SUPPLY_QI, Run.WIND_SUPPLY_LEAVES]}
+	var i := 0
+	for id in Run.WIND_REWARDS:
+		var next: Dictionary = run.wind_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 289), Color("#1c2b2e"), Color("#6d9295"))
+		text(card, Run.WIND_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 116), 18)
+		text(card, "Chân nguyên %d/%d → %d/%d    ·    Sinh Cơ Diệp %d → %d" %
+			[run.battle.qi, run.battle.max_qi, next.qi, run.battle.max_qi, run.battle.leaves, next.leaves],
+			Rect2(20, 194, 452, 38), 17, GREEN)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 234, 454, 41), claim_wind_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_wind_reward(id: String) -> void:
+	if run.claim_wind_reward(id):
 		persist()
 		show_result()
 

@@ -37,6 +37,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 9. Thêm Ổ Điện Lang vào điểm dừng sau Suối Sấm ở lượt v8. Thắng trận phụ mở một lựa chọn chiến lợi phẩm rồi đưa người chơi về Hẻm Đá.
 10. Mở Lôi Nha Đài ở lượt v9 sau Hẻm Đá Phục Kích. Cả hai đường dùng chung điểm chuẩn bị. Thắng boss nhận Ấn Trấn Lôi và mở trận luyện riêng.
 11. Mở Đầm Rễ Độc, màn đầu Tam chuyển, sau Lôi Nha Đài. Hai cụm hồ phun độc luân phiên. Chọn một phần thưởng tăng sức chứa hoặc tiếp tế sau trận.
+12. Mở Hẻm Hàn Phong, màn hai Tam chuyển, sau khi nhận thưởng Đầm Rễ Độc. Tận dụng các ô khuất sau đá khi gió đảo chiều.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -144,6 +145,27 @@ Thử 16 cặp Cổ, bốn bậc tư chất và ba bố cục đầm. Phép tìm
 Ở lối qua lều, Nguyệt thuần thắng sau 6–7 lượt. Hộ thể, Tửu và Ẩn thuần đều thắng sau 9 lượt, giảm một lượt so với bản thử chưa có cửa phản công Hở hàm. Sinh lực thấp nhất của Hộ thể thuần trên đường thắng tăng từ 4 lên 15. Tửu thuần có trường hợp chỉ còn 2 sinh lực khi chọn kết thúc sớm.
 
 Chạy thêm 12 lượt thực từ sau Suối Sấm với bốn bộ thuần trên cả ba lối và phát lại hai lựa chọn thưởng từ mỗi lượt. Cả 48 ca vào đầm với 31 sinh lực, 4 chân nguyên, túi trống và Nguyệt Quang chưa luyện đều có đường thắng trong 7–10 lượt.
+
+## Hẻm Hàn Phong
+
+Sau khi nhận phần thưởng Đầm Rễ Độc, chọn **Tới Hẻm Hàn Phong**. Lượt v10 nâng lên v11 tại đây. Trước trận, người chơi hồi tối đa 24 sinh lực và 3 chân nguyên, giữ phần thưởng Đầm Rễ Độc cùng bảo vật và vật phẩm, rồi chọn bộ Cổ. Điện Lang Hàn Phong có 120 sinh lực. Có ba bố cục đá theo mã lượt.
+
+Đầu mỗi chu kỳ ba lượt, gió quét dọc từng hàng từ Tây sang Đông hoặc từ Đông sang Tây và gây 19 sát thương. Tảng đá đầu tiên trên đường gió che toàn bộ ô còn lại phía sau trong hàng đó. Mũi tên xanh lam đánh dấu vùng chịu đòn. Đợt kế tiếp đổi chiều, nên vị trí trú cũng thay đổi. Ở lượt sau đợt gió, Điện Lang vồ vào ô hiện tại của người chơi nếu trong tầm bốn ô và có đường ngắm, gây 17 sát thương rồi hồi thế. Nếu thiếu tầm hoặc đường ngắm, Điện Lang áp sát hoặc cắn người đứng kề.
+
+Thắng trận, **Ấn Dẫn Phong** chiếm ô bảo vật. Trong mỗi trận, lần Di chuyển đầu tiên từ ô đang bị báo đòn sang ô an toàn khi còn thiếu chân nguyên hồi tối đa 2 chân nguyên. Chọn **Túi Hàn Dược** để giữ bảo vật hiện có, hồi tối đa 3 chân nguyên và nhận 2 Sinh Cơ Diệp. Phần thưởng chỉ nhận một lần và được phát lại đúng khi tải bản lưu.
+
+### Kiểm cân bằng Hẻm Hàn Phong
+
+Phát lại đường thắng Đầm Rễ Độc trước khi chọn thưởng, rồi thử cả hai món trên cùng đầu vào cho 16 cặp Cổ, bốn tư chất và ba bố cục. Phép tìm đường ưu tiên kết thúc sớm rồi chọn đường giữ sinh lực cao nhất trong các đường tìm được ở độ sâu đó.
+
+| Thưởng từ Đầm Rễ Độc | Có đường thắng | Số lượt | Lượt trung bình | Sinh lực còn lại trung bình |
+| --- | --- | --- | --- | --- |
+| Tinh Lộ Tịnh Mạch | 192/192 | 4–19 | 11,67 | 18,12 |
+| Cao giải độc | 192/192 | 7–16 | 11,87 | 24,81 |
+
+Tinh Lộ nhanh hơn ở 77/192 cặp so sánh. Cao giải độc kết thúc với nhiều sinh lực hơn ở 120/192 cặp và dùng ít nhất một Sinh Cơ Diệp trong 42 ca. Bộ Ẩn thuần cần 15–19 lượt với Tinh Lộ và 14–16 lượt với Cao giải độc. Đường thắng thấp nhất còn một sinh lực với Tinh Lộ và bốn với Cao giải độc. Số liệu mô tả các đường thắng tìm được từ những đầu vào đã thử.
+
+Kiểm thêm 24 lượt có nhật ký từ sau Suối Sấm đến Hẻm Hàn Phong, gồm bốn bộ thuần, ba lộ trình trước Lôi Nha Đài và hai phần thưởng Đầm Rễ Độc. Cả 24 lượt thắng. Phát lại được từng lựa chọn trong hai phần thưởng Hẻm Hàn Phong sau mỗi lượt.
 
 ## Đồ họa trong trận
 

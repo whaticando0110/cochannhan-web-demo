@@ -75,6 +75,8 @@ func configure(current_run: RunData) -> void:
 		arena_room = 2
 	elif run.floor == RunData.MARSH_FLOOR:
 		arena_room = 4
+	elif run.floor == RunData.WIND_FLOOR:
+		arena_room = 5
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
 
@@ -170,6 +172,8 @@ func build_hud() -> void:
 		mode = "Nhánh tinh anh"
 	elif run != null and run.floor == RunData.MARSH_FLOOR:
 		mode = "Tam chuyển · Màn 1"
+	elif run != null and run.floor == RunData.WIND_FLOOR:
+		mode = "Tam chuyển · Màn 2"
 	elif run != null:
 		mode = "Màn %d / %d" % [run.floor + 1, RunData.FLOORS.size()]
 		if run.floor >= RunData.RIDGE_FLOOR:
@@ -340,10 +344,13 @@ func update_hud() -> void:
 			elif state.intent.kind == "fall":
 				intent_copy.text = "Đá rơi vào ô nứt · %d sát thương." % state.intent.damage
 			elif state.intent.kind == "ambush":
-				var scope := "Nhắm vào ô bạn đang đứng" if state.tactic == "marsh" else "Vồ vùng quanh bạn"
+				var scope := "Nhắm vào ô bạn đang đứng" if state.tactic in ["marsh", "wind_pass"] else "Vồ vùng quanh bạn"
 				intent_copy.text = "%s · %d sát thương." % [scope, state.intent.damage]
 			elif state.intent.kind == "poison":
 				intent_copy.text = "Ô vàng lục · %d sát thương · −1 CN nếu mất sinh lực." % state.intent.damage
+			elif state.intent.kind == "wind":
+				var direction := "Tây → Đông" if state.intent.direction > 0 else "Đông → Tây"
+				intent_copy.text = "%s · %d sát thương. Nấp sau đá." % [direction, state.intent.damage]
 			elif state.intent.kind == "thunder":
 				var pattern := "Cả hàng và cột" if state.intent.cross else "Hàng đang đứng"
 				intent_copy.text = "%s · %d sát thương. Rời vùng tím." % [pattern, state.intent.damage]
@@ -405,7 +412,10 @@ func show_hint() -> void:
 	if busy or not state.result.is_empty():
 		return
 	if selecting:
-		hint_label.text = "Ô xanh né được đòn. Ô có dấu báo đòn vẫn có thể bị đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
+		if state.intent.kind == "wind":
+			hint_label.text = "Ô lục an toàn. Ô có mũi tên nằm trong luồng gió. Bấm ô hoặc dùng phím mũi tên + Enter."
+		else:
+			hint_label.text = "Ô xanh né được đòn. Ô có dấu báo đòn vẫn có thể bị đánh. Bấm ô hoặc dùng phím mũi tên + Enter."
 	else:
 		if state.tactic == "ford":
 			hint_label.text = "Đi được qua nước nông. Ô nước chuyển tím khi có điện. Vách đá chặn đòn đánh xa."
@@ -515,8 +525,10 @@ func inspect_cell(cell: int) -> void:
 		outcome = "Ra khỏi vùng đánh · né được đòn"
 	else:
 		outcome = "Giữ nguyên sinh lực trong lượt này"
-	var drain := " · mất %d chân nguyên" % preview.qi_drained if preview.qi_drained > 0 else ""
-	hint_label.text = "%s · %d bước · %s%s" % [name, preview.steps, outcome, drain]
+	var qi_note := " · mất %d chân nguyên" % preview.qi_drained if preview.qi_drained > 0 else ""
+	if preview.relic_qi > 0:
+		qi_note = " · Ấn Dẫn Phong hồi %d chân nguyên" % preview.relic_qi
+	hint_label.text = "%s · %d bước · %s%s" % [name, preview.steps, outcome, qi_note]
 
 
 func choose(action: String) -> void:
