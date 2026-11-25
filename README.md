@@ -49,11 +49,11 @@ Tại **Gò cỏ úa**, ba chó hoang áp sát từ ba phía. Ra lệnh cho chó
 
 Ở **Hố đá dưới gò cỏ**, dùng vị trí hẻm giữa hai vách đá để chặn sáu chó hoang. Hai con khỏe tới trước, bốn con bị thương tới sau. Chó đồng minh mang nguyên thương thế từ vòng hai.
 
-Ngoài phúc địa, quầy vẫn bán lá và bảo vật, đồng thời có **Tiểu Quang Cổ** để hợp luyện. Một Nguyệt Quang và hai Tiểu Quang thành Nguyệt Mang. Dùng Nguyệt Mang cùng Tiểu Quang còn lại để phối **Liên Nguyệt**. Khi mang bộ có Nguyệt Mang, phím `8` dùng sát chiêu một lần mỗi trận.
+Ngoài phúc địa, quầy vẫn bán lá và bảo vật, đồng thời có **Tiểu Quang Cổ** để hợp luyện. Một Nguyệt Quang và hai Tiểu Quang thành Nguyệt Mang. Dùng Nguyệt Mang cùng Tiểu Quang còn lại để phối **Liên Nguyệt**. Khi trang bị Nguyệt Mang đã sở hữu và còn Tiểu Quang trong Sổ Cổ, phím `8` dùng Liên Nguyệt một lần mỗi trận, tốn 4 chân nguyên để gây 42 sát thương cơ bản ở tầm 5 ô.
 
 Mở **Sổ Cổ** để xem số còn lại và nguồn nhận của từng Cổ. Quầy bán thêm **Ngọc Bì Cổ** với 3 nguyên thạch. Nhận **2 Tiểu Quang Cổ** từ chiến lợi phẩm Sườn đá Mù Sương và **1 Bạch Thỉ Cổ** ở Bãi Đá Suối Sấm trước khi đi tiếp. Mỗi chiến lợi phẩm nhận một lần trong lượt chơi.
 
-Ngoài trận, mở **Sổ Cổ** để hợp luyện **1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc**. Có Bạch Ngọc và Tiểu Quang sở hữu thì có thể phối **Bạch Quang Hộ Thể**. Mang Bạch Ngọc trong bộ Cổ, nhấn `8` để dùng sát chiêu một lần mỗi trận, tốn 3 chân nguyên và chặn tối đa 9 sát thương mỗi đòn, trong hai đòn hoặc ba lượt.
+Ngoài trận, mở **Sổ Cổ** để hợp luyện **1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc**. Có Bạch Ngọc và Tiểu Quang sở hữu thì có thể phối **Bạch Quang Hộ Thể**. Mang Bạch Ngọc trong bộ Cổ, nhấn `8` để dùng sát chiêu một lần mỗi trận, tốn 3 chân nguyên và chặn tối đa 9 sát thương mỗi đòn, trong hai đòn hoặc ba lượt. Hai sát chiêu dùng chung ô `8` theo Cổ Nhị chuyển đã chọn. Tiểu Quang là Cổ phụ trợ trong Sổ, vẫn giữ nguyên số lượng qua các trận.
 
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 

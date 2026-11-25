@@ -47,7 +47,7 @@ func click_button(name: String) -> void:
 	await process_frame
 
 
-func select_kit(recipe: String, starter: String) -> void:
+func select_kit(recipe: String, starter: String, expected_art: String = "") -> void:
 	for choice in [["workshop_recipe", Gu.RECIPES.find(recipe)], ["workshop_starter", Gu.STARTERS.find(starter)]]:
 		var input := flow.find_child(choice[0], true, false) as OptionButton
 		check(input != null and choice[1] in range(input.item_count), "Missing workshop selection for " + str(choice[0]))
@@ -55,6 +55,11 @@ func select_kit(recipe: String, starter: String) -> void:
 			return
 		input.select(choice[1])
 		input.item_selected.emit(choice[1])
+	if not expected_art.is_empty():
+		var slot := flow.find_child("workshop_art_slot", true, false) as Label
+		check(slot != null and slot.text.contains(expected_art) and slot.text.contains("Phụ trợ: Tiểu Quang Cổ"),
+			"The workshop must show the equipped art, full cost and support Gu in one slot")
+		await capture("godot-owned-art-%s.png" % recipe)
 	await click_button("equip_confirm")
 
 
@@ -341,7 +346,7 @@ func play_gu_trade() -> void:
 		"A v18 save with a purchase and refinement must rebuild the same inventory and receipts")
 	await capture("godot-v18-quay-co.png")
 	await click_button("leave_shop")
-	await select_kit("moon_edge", "moon")
+	await select_kit("moon_edge", "moon", "Liên Nguyệt · %d CN" % Gu.MOON_LINK_COST)
 	var battle: Rules = flow.run.battle
 	check(battle.moon_link_equipped and flow.current.actions.has("moon_link"),
 		"The new art must appear with Nguyệt Mang in a normal fight")
@@ -358,6 +363,11 @@ func play_gu_trade() -> void:
 	check(battle.moon_link_used and battle.wolf_hp == before_hp - Gu.MOON_LINK_DAMAGE
 		and battle.qi == before_qi - Gu.MOON_LINK_COST and not battle.unavailable("moon_link").is_empty(),
 		"Liên Nguyệt damage, cost and charge must all replay")
+	var v18_battle: Dictionary = flow.run.snapshot().duplicate(true)
+	v18_battle.version = Run.GU_SHOP_VERSION
+	var old_battle := Run.restore(v18_battle) as Run
+	check(old_battle != null and old_battle.battle.moon_link_used and old_battle.battle.wolf_hp == battle.wolf_hp
+		and old_battle.battle.qi == battle.qi, "A v18 combat record must replay Liên Nguyệt with the same damage and cost")
 	flow.run = Run.restore(before_trade)
 	flow.persist()
 	flow.show_run()
@@ -469,7 +479,7 @@ func play_white_jade_recipe() -> void:
 	var learned: Run = Run.restore(flow.run.snapshot()) as Run
 	check(learned.equip_build("moon_edge", "moon") and not learned.battle.white_light_equipped,
 		"The art must require Bạch Ngọc in the current kit")
-	await select_kit("white_jade", "jade_skin")
+	await select_kit("white_jade", "jade_skin", "%s · %d CN" % [Gu.WHITE_LIGHT_NAME, Gu.WHITE_LIGHT_COST])
 	var battle: Rules = flow.run.battle
 	check(battle.white_light_equipped and flow.current.actions.has("white_light"), "Bạch Ngọc must unlock the trained art in battle")
 	var peek := battle.preview_action("white_light")
@@ -1545,6 +1555,57 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		await capture("godot-ket-qua-tuyen.png")
 
 
+func check_owned_art_slots() -> void:
+	var profile := Awakening.profile_for("huyen-bao", 12)
+	for starter: String in Gu.STARTERS:
+		for recipe: String in ["moon_edge", "white_jade"]:
+			var run := Run.new(profile, 0)
+			run.moon_link_known = true
+			run.white_light_known = true
+			run.owned_gu["small_light"] = 1
+			check(run.art_for_build(recipe).is_empty(), "The workshop loan must not unlock an art")
+			run.owned_gu["moon_edge"] = 1
+			run.owned_gu["white_jade"] = 1
+			run.owned_gu["small_light"] = 0
+			check(run.art_for_build(recipe).is_empty(), "The art must still require Tiểu Quang after learning")
+			run.owned_gu["small_light"] = 1
+			var stock := run.owned_gu.duplicate()
+			run.phase = "ambush_workshop"
+			check(run.equip_build(recipe, starter)
+				and run.battle.moon_link_equipped == (recipe == "moon_edge")
+				and run.battle.white_light_equipped == (recipe == "white_jade")
+				and run.battle.starter_gu == starter and run.owned_gu == stock,
+				"One owned art must fit alongside any starter without spending the support Gu")
+
+	var shot := Rules.new({"refined_gu": "moon_edge", "moon_link": true, "wolf_hp": 100,
+		"wolf_cell": 22, "rocks": [], "qi": Gu.MOON_LINK_COST - 1})
+	shot.hero = 17
+	check(shot.unavailable("moon_link").contains("chân nguyên"), "Liên Nguyệt must require its full cost")
+	shot.qi = Gu.MOON_LINK_COST
+	check(shot.preview_action("moon_link").get("dealt", -1) == Gu.MOON_LINK_DAMAGE, "Liên Nguyệt must reach five tiles")
+	shot.wolf = 23
+	check(shot.unavailable("moon_link").contains("ngoài tầm") and shot.unavailable("moon_edge").is_empty(),
+		"Nguyệt Mang must retain its longer range")
+	shot.moon_mark = true
+	check(shot.preview_action("moon_edge").get("dealt", -1) == Gu.MOON_LINK_DAMAGE and Gu.MOON_EDGE_COST < Gu.MOON_LINK_COST,
+		"A marked Nguyệt Mang must retain its cheaper follow-up")
+
+	for kit: Array in [["moon_edge", "moon_link", Gu.MOON_LINK_COST], ["white_jade", "white_light", Gu.WHITE_LIGHT_COST]]:
+		var options := {"refined_gu": kit[0], "moon_link": true, "white_light": true,
+			"wolf_cell": 18, "qi": kit[2] - 1, "relic": "pulse_pearl", "rocks": []}
+		var battle := Rules.new(options)
+		check(battle.take_turn(kit[1]).has("error") and battle.qi == kit[2] - 1 and battle.relic_ready,
+			"Châu Hoàn Nguyên must not pay an up-front cost")
+		battle.qi = kit[2]
+		battle.take_turn(kit[1])
+		check(battle.qi == Goods.PULSE_PEARL_QI and not battle.relic_ready
+			and battle.take_turn(kit[1]).has("error"), "An equipped art must pay and receive the one-time refund once")
+		options.tactic = "kennel"
+		battle = Rules.new(options)
+		check(battle.unavailable(kit[1]).contains("phong cấm") and not Pack.new().unavailable(kit[1]).is_empty(),
+			"Khuyển Vương must keep the two outside arts sealed")
+
+
 func check_white_light_balance() -> void:
 	var options := {"refined_gu": "white_jade", "starter_gu": "jade_skin", "jade_skin": true,
 		"revised_ward": true, "white_light": true, "wolf_cell": 18, "qi": 3}
@@ -1589,6 +1650,7 @@ func exercise() -> void:
 	DirAccess.make_dir_recursive_absolute(data)
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
 	check_gu_and_tactics()
+	check_owned_art_slots()
 	check_white_light_balance()
 	check_third_save()
 	check_rank_two_gu()

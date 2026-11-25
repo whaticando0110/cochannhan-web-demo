@@ -1029,6 +1029,12 @@ func leave_waypoint_shop() -> void:
 		show_result()
 
 
+func workshop_gu_label(id: String) -> String:
+	var gu: Dictionary = Gu.GU[id]
+	var ownership := "Sở hữu" if run.owned_gu.get(id, 0) > 0 else "Cấp sẵn"
+	return "%s · %s · %s" % [gu.name, Gu.FAMILIES[gu.family], ownership]
+
+
 func draw_workshop() -> void:
 	var revised := run.revised_ward_rules()
 	var count := run.workshop_size()
@@ -1036,17 +1042,19 @@ func draw_workshop() -> void:
 	var recipes: Array = []
 	var starters: Array = []
 	for i in range(count):
-		var refined: Dictionary = Gu.GU[Gu.RECIPES[i]]
-		var basic: Dictionary = Gu.GU[Gu.STARTERS[i]]
-		recipes.append("%s  ·  %s" % [refined.name, Gu.FAMILIES[refined.family]])
-		starters.append("%s  ·  %s" % [basic.name, Gu.FAMILIES[basic.family]])
+		var refined_id: String = Gu.RECIPES[i]
+		var starter_id: String = Gu.STARTERS[i]
+		recipes.append(workshop_gu_label(refined_id))
+		starters.append(workshop_gu_label(starter_id))
 	var recipe := dropdown(card, "workshop_recipe", "Cổ Nhị chuyển", recipes,
 		maxi(0, Gu.RECIPES.find(run.battle.refined_gu)), Rect2(24, 18, 450, 46))
 	var starter := dropdown(card, "workshop_starter", "Cổ Nhất chuyển", starters,
 		maxi(0, Gu.STARTERS.find(run.battle.starter_gu)), Rect2(528, 18, 454, 46))
 	var blend := text(card, "", Rect2(24, 126, 948, 32), 24, GOLD, true)
 	var stats := text(card, "", Rect2(24, 170, 956, 54), 17)
-	var synergy := text(card, "", Rect2(24, 228, 952, 34), 17, GREEN)
+	var synergy := text(card, "", Rect2(24, 222, 952, 23), 16, GREEN)
+	var art_slot := text(card, "", Rect2(24, 246, 952, 23), 16, GOLD)
+	art_slot.name = "workshop_art_slot"
 	var refresh := func(_index: int):
 		var advanced_id: String = Gu.RECIPES[recipe.selected]
 		var first_id: String = Gu.STARTERS[starter.selected]
@@ -1054,14 +1062,13 @@ func draw_workshop() -> void:
 		blend.text = "Phối hệ" if family.is_empty() else "Bộ " + str(Gu.FAMILIES[family])
 		stats.text = "%s\n%s" % [Gu.equip_description(advanced_id, revised), Gu.equip_description(first_id, revised)]
 		synergy.text = Gu.synergy_text(family, revised)
-		if run.moon_link_known and advanced_id == "moon_edge":
-			if not synergy.text.is_empty():
-				synergy.text += " · "
-			synergy.text += "Phím 8 dùng Liên Nguyệt."
-		if run.white_light_known and advanced_id == "white_jade" and run.owned_gu.small_light > 0:
-			if not synergy.text.is_empty():
-				synergy.text += " · "
-			synergy.text += "Phím 8 dùng Bạch Quang Hộ Thể."
+		match run.art_for_build(advanced_id):
+			"moon_link":
+				art_slot.text = "Ô sát chiêu 8 · Liên Nguyệt · %d CN · Phụ trợ: Tiểu Quang Cổ" % Gu.MOON_LINK_COST
+			"white_light":
+				art_slot.text = "Ô sát chiêu 8 · %s · %d CN · Phụ trợ: Tiểu Quang Cổ" % [Gu.WHITE_LIGHT_NAME, Gu.WHITE_LIGHT_COST]
+			_:
+				art_slot.text = "Ô sát chiêu 8 · Trống"
 	recipe.item_selected.connect(refresh)
 	starter.item_selected.connect(refresh)
 	refresh.call(0)

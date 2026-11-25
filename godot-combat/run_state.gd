@@ -1026,6 +1026,17 @@ func leave_waypoint() -> void:
 	phase = "ford_workshop" if floor == RIDGE_FLOOR else "ambush_workshop"
 
 
+func art_for_build(recipe: String) -> String:
+	if owned_gu.small_light <= 0 or owned_gu.get(recipe, 0) <= 0:
+		return ""
+	match recipe:
+		"moon_edge":
+			return "moon_link" if moon_link_known else ""
+		"white_jade":
+			return "white_light" if white_light_known else ""
+	return ""
+
+
 func equip_build(recipe: String, starter: String) -> bool:
 	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop", "nodo_workshop"]:
 		return false
@@ -1033,10 +1044,10 @@ func equip_build(recipe: String, starter: String) -> bool:
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
 		return false
 	var vitals := workshop_vitals()
+	var art := art_for_build(recipe)
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
 		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves,
-		"relic": relic, "strike_bonus": strike_bonus, "moon_link": moon_link_known and recipe == "moon_edge",
-		"white_light": white_light_known and recipe == "white_jade" and owned_gu.get("white_jade", 0) > 0 and owned_gu.small_light > 0}
+		"relic": relic, "strike_bonus": strike_bonus, "moon_link": art == "moon_link", "white_light": art == "white_light"}
 	match phase:
 		"ford_workshop":
 			floor = FORD_FLOOR
