@@ -330,6 +330,8 @@ func build_hud() -> void:
 		descriptions.append(["scale_veil", "7   Ẩn Lân"])
 	if state.moon_link_equipped:
 		descriptions.append(["moon_link", "8   Liên Nguyệt\n−%d CN · 1 lần/trận" % Gu.MOON_LINK_COST])
+	elif state.white_light_equipped:
+		descriptions.append(["white_light", "8   Bạch Quang\n−%d CN · 1 lần/trận" % Gu.WHITE_LIGHT_COST])
 	if state is Pack:
 		descriptions.sort_custom(func(a: Array, b: Array): return a[1] < b[1])
 	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
@@ -395,7 +397,9 @@ func update_hud() -> void:
 		hound_target.disabled = lead_target.disabled or state.live_hound() < 0
 		field.set_aim(state.attack_cell(attack_target("strike")))
 	var supplies: PackedStringArray = []
-	if state.jade_turns > 0:
+	if state.white_light_hits > 0:
+		supplies.append("Bạch Quang · %d đòn · %d lượt" % [state.white_light_hits, state.jade_turns])
+	elif state.jade_turns > 0:
 		supplies.append("Ngọc %d · %d lượt" % [state.ward_strength, state.jade_turns])
 	if state.moon_mark:
 		supplies.append("Có Nguyệt Ấn")
@@ -684,6 +688,8 @@ func inspect_action(action: String) -> void:
 		pieces.append("Lớp ngọc chặn %d" % result.absorbed)
 	elif result.jade_turns > 0:
 		pieces.append("Lớp ngọc %d · còn %d lượt" % [result.ward_strength, result.jade_turns])
+	if result.white_light_hits > 0:
+		pieces.append("Bạch Quang còn %d lần chặn đến hết %d lượt" % [result.white_light_hits, result.jade_turns])
 	if result.relic_block > 0:
 		pieces.append("%s chặn %d" % [Goods.RELICS[state.relic][0], result.relic_block])
 	if result.relic_damage > 0:
@@ -885,8 +891,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		choose(key_actions[event.keycode])
 	elif event.keycode == KEY_7 and not state.refined_gu.is_empty():
 		choose(state.refined_gu)
-	elif event.keycode == KEY_8 and state.moon_link_equipped:
-		choose("moon_link")
+	elif event.keycode == KEY_8 and (state.moon_link_equipped or state.white_light_equipped):
+		choose("white_light" if state.white_light_equipped else "moon_link")
 	elif event.keycode == KEY_R and run == null:
 		reset_battle()
 	else:

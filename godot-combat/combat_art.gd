@@ -30,6 +30,7 @@ const ICONS := {
 const CASTS := {
 	"jade_skin": {"texture": JADE, "row": 0, "ms": [80, 80, 90, 90, 85, 85], "cue": 250},
 	"white_jade": {"texture": WHITE_JADE, "row": 0, "ms": [75, 80, 90, 95, 100, 100], "cue": 245},
+	"white_light": {"texture": WHITE_JADE, "row": 0, "ms": [75, 80, 90, 95, 100, 100], "cue": 245},
 	"vital_leaf": {"texture": LEAF, "row": 0, "ms": [75, 80, 85, 95, 95, 90, 80, 80], "cue": 240},
 	"brew": {"texture": BREW, "row": 0, "ms": [80, 85, 90, 95, 95, 95], "cue": 255},
 	"four_flavors": {"texture": FOUR_FLAVORS, "row": 0, "ms": [80, 85, 90, 95, 95, 95], "cue": 255},

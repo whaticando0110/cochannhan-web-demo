@@ -529,7 +529,7 @@ func open_gu_book() -> void:
 	back.name = "close_gu_book"
 	back.grab_focus()
 	text(menu, "LƯỢT CHƠI HIỆN TẠI", Rect2(96, 60, 650, 41), 19, GREEN)
-	text(menu, "Sổ Cổ sở hữu", Rect2(92, 115, 1012, 92), 56, GOLD, true)
+	text(menu, "Sổ Cổ sở hữu", Rect2(92, 105, 1012, 76), 56, GOLD, true)
 
 	var owned: Dictionary = run.owned_gu
 	var sources := {}
@@ -547,37 +547,61 @@ func open_gu_book() -> void:
 		var count := int(owned.get(id, 0))
 		types += int(count > 0)
 		total += count
-	text(menu, "%d loại · %d Cổ đang sở hữu" % [types, total], Rect2(96, 215, 1008, 37), 23)
+	text(menu, "%d loại · %d Cổ đang sở hữu" % [types, total], Rect2(96, 181, 520, 36), 23)
+	var learned: PackedStringArray = []
+	if run.moon_link_known:
+		learned.append("Liên Nguyệt")
+	if run.white_light_known:
+		learned.append(Gu.WHITE_LIGHT_NAME)
+	if not learned.is_empty():
+		text(menu, "Sát chiêu đã phối · " + ", ".join(learned), Rect2(606, 181, 498, 36), 16, GOLD)
 	text(menu, "Bộ Cổ cấp sẵn ở xưởng dùng để chọn chiến đấu. Sổ ghi các Cổ đã thật sự nhận hoặc dùng.",
-		Rect2(96, 254, 1008, 34), 17, GREEN)
+		Rect2(96, 216, 1008, 33), 17, GREEN)
 
-	var shelf := panel(menu, Rect2(96, 307, 1008, 369), Color("#1a2b25"), Color("#586c54"))
+	var shelf := panel(menu, Rect2(96, 255, 1008, 331), Color("#1a2b25"), Color("#586c54"))
 	text(shelf, "CỔ TRÙNG", Rect2(20, 11, 235, 27), 15, GOLD)
 	text(shelf, "BẬC", Rect2(260, 11, 113, 27), 15, GOLD)
 	text(shelf, "CÒN", Rect2(376, 11, 62, 27), 15, GOLD)
 	text(shelf, "NGUỒN ĐÃ NHẬN", Rect2(455, 11, 530, 27), 15, GOLD)
-	var y := 44
+	var y := 41
 	for id: String in Gu.BOOK_ORDER:
 		if not sources.has(id):
 			continue
 		var record: Dictionary = Gu.GU[id]
 		var count := int(owned.get(id, 0))
 		var tint := PALE if count > 0 else Color("#9aab9e")
-		var row := panel(shelf, Rect2(13, y, 982, 48), Color("#20332a"), Color("#2b4436"))
+		var row := panel(shelf, Rect2(13, y, 982, 38), Color("#20332a"), Color("#2b4436"))
 		row.name = "gu_row_" + id
 		var origins: PackedStringArray = []
 		for source: String in sources[id]:
 			origins.append("%s ×%d" % [source, sources[id][source]])
-		text(row, record.name, Rect2(7, 1, 235, 46), 20, tint)
-		text(row, "Nhị chuyển" if record.rank == 2 else "Nhất chuyển", Rect2(247, 1, 113, 46), 16, tint)
-		text(row, str(count), Rect2(363, 1, 62, 46), 20, tint)
-		text(row, "  ·  ".join(origins), Rect2(442, 2, 532, 44), 15, tint)
-		y += 52
+		text(row, record.name, Rect2(7, 1, 235, 36), 19, tint)
+		text(row, "Nhị chuyển" if record.rank == 2 else "Nhất chuyển", Rect2(247, 1, 113, 36), 16, tint)
+		text(row, str(count), Rect2(363, 1, 62, 36), 19, tint)
+		text(row, "  ·  ".join(origins), Rect2(442, 1, 532, 36), 15, tint)
+		y += 40
+	var cards := [
+		["refine_owned_jade", "Hợp luyện Bạch Ngọc", "1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc."],
+		["study_white_light", "Phối " + Gu.WHITE_LIGHT_NAME, "Phối Bạch Ngọc với Tiểu Quang. Giữ cả hai Cổ."],
+	]
+	for index in range(cards.size()):
+		var recipe: Array = cards[index]
+		var card := panel(menu, Rect2(96 + index * 512, 598, 496, 101), Color("#1a2b25"), Color("#586c54"))
+		var reason := run.book_unavailable(recipe[0])
+		text(card, recipe[2] if reason.is_empty() else reason, Rect2(15, 8, 467, 31), 16, PALE)
+		var apply := button(card, recipe[1], Rect2(15, 46, 466, 39), use_book_recipe.bind(recipe[0]))
+		apply.name = recipe[0]
+		apply.disabled = not reason.is_empty()
 	var recent: Dictionary = run.gu_receipts.back()
-	text(menu, "Gần nhất · %s %+d · %s" % [Gu.GU[recent.gu].name, recent.change, recent.source],
-		Rect2(96, 691, 700, 38), 17, GREEN)
-	if run.moon_link_known:
-		text(menu, "Sát chiêu đã phối · Liên Nguyệt", Rect2(800, 691, 304, 38), 17, GOLD)
+	var last := "Gần nhất · %s %+d · %s" % [Gu.GU[recent.gu].name, recent.change, recent.source]
+	status = text(menu, last, Rect2(96, 707, 1008, 36), 16, GREEN)
+	report_save_problem()
+
+
+func use_book_recipe(id: String) -> void:
+	if run.commit_book_action(id):
+		persist()
+		open_gu_book()
 
 
 func choose_reward(id: String) -> void:
@@ -1034,6 +1058,10 @@ func draw_workshop() -> void:
 			if not synergy.text.is_empty():
 				synergy.text += " · "
 			synergy.text += "Phím 8 dùng Liên Nguyệt."
+		if run.white_light_known and advanced_id == "white_jade" and run.owned_gu.small_light > 0:
+			if not synergy.text.is_empty():
+				synergy.text += " · "
+			synergy.text += "Phím 8 dùng Bạch Quang Hộ Thể."
 	recipe.item_selected.connect(refresh)
 	starter.item_selected.connect(refresh)
 	refresh.call(0)

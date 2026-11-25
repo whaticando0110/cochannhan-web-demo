@@ -48,6 +48,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 18. Chỉ huy chó ấy trên Gò cỏ úa và dùng Ngự Khuyển mới trước khi ba chó hoang khép vòng vây.
 19. Xuống hố đá ở vòng ba, giữ đàn bị thương qua sáu chó hoang. Thử mua Cổ, hợp luyện và tạo sát chiêu ở quầy ngoài phúc địa.
 20. Cho mở Sổ Cổ sở hữu, bổ sung nguồn nhận từ quầy và chiến lợi phẩm Nhị chuyển.
+21. Hợp luyện Bạch Ngọc ngay trong Sổ Cổ, thử sát chiêu phòng hộ chặn hai đòn.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -274,15 +275,15 @@ Khung đứng đo theo vùng ảnh có alpha rõ ở cỡ chơi. Chó hoang thư
 
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v19 | Mốc tiếp |
+| Phần | Đã chơi được trong v20 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
-| Mua và nhận Cổ | Sổ ghi số Cổ còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Mở bí phương Bạch Ngọc từ Ngọc Bì và Bạch Thỉ. |
-| Luyện Cổ | Dùng 1 Nguyệt Quang và 2 Tiểu Quang để nhận 1 Nguyệt Mang. Mẻ thử thành công cố định để kiểm luồng. Chọn bộ cấp sẵn ở xưởng vẫn dùng được cho lượt cũ. | Thêm nguyên liệu và giá hợp luyện cho Bạch Ngọc. Cân bằng lại đường đi khi chuyển dần sang bộ Cổ sở hữu. |
-| Tạo sát chiêu | Liên Nguyệt phối Nguyệt Mang với Tiểu Quang còn lại. Quy tắc demo là 42 sát thương, tầm 5 ô và 4 chân nguyên, dùng một lần mỗi trận khi mang Nguyệt Mang. | Thử một sát chiêu khác vai trò công kích, rồi so chi phí, ô mang và sức mạnh giữa các bộ trước khi mở thêm. |
+| Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
+| Luyện Cổ | Hai bí phương sở hữu đã chơi được là Nguyệt Mang tại quầy và Bạch Ngọc trong Sổ Cổ. Mẻ thử thành công cố định. | Cân bằng lại đường đi khi chuyển dần sang bộ Cổ sở hữu. |
+| Tạo sát chiêu | Liên Nguyệt dùng công kích. Bạch Quang Hộ Thể phối Bạch Ngọc với Tiểu Quang để chắn hai đòn. Mỗi chiêu dùng một lần mỗi trận với bộ Cổ tương ứng. | So chi phí, ô mang và sức mạnh giữa các bộ trước khi mở thêm. |
 | Truyền thừa | Ba vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Mốc hiện tại kết ở màn kết quả hố đá. | Nối một mốc tiến sâu có lựa chọn đối thủ và đàn thú. Sau đó tách luật Tín Vương và Bạo Vương thành hai nhánh riêng. |
 
-Đi theo thứ tự hợp luyện thêm một hệ, cân bằng sát chiêu, rồi mở nhánh truyền thừa mới. Kiểm cả người chơi có Cổ sở hữu lẫn người chọn bộ cấp sẵn trong giai đoạn chuyển tiếp.
+Đi theo thứ tự cân bằng các bộ có Cổ sở hữu, bổ sung bí phương, rồi mở nhánh truyền thừa mới. Kiểm cả người chơi có Cổ sở hữu lẫn người chọn bộ cấp sẵn trong giai đoạn chuyển tiếp.
 
 Bí phương Nguyệt Mang lấy từ chương 98. Liên Nguyệt là sát chiêu riêng của demo, dùng nguyên tắc phối hợp nhiều Cổ trong truyện. Giá, tầm, sát thương và cách hành động trên lưới là số của trò chơi. [Chương 98](https://truyenhh3d.com/truyen/co-chan-nhan/chuong-98) · [Chương 719](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-719.html)
 
@@ -294,7 +295,26 @@ Sổ mở từ màn kết quả, quầy, xưởng hoặc trận đang chơi. Nú
 - Sau khi thắng Sườn đá Mù Sương, nhận túi gồm 2 Tiểu Quang. Sau khi thắng Bãi Đá Suối Sấm, nhận hộp chứa 1 Bạch Thỉ. Hai phần thưởng được thiết kế cho demo. Người chơi chọn **Nhận chiến lợi phẩm** ở kết quả trước khi đi tiếp. Mỗi phần chỉ nhận được một lần trong lượt.
 - Sổ phát lại từ nhật ký, gồm Nguyệt Quang đầu lượt, giao dịch, chiến lợi phẩm, đợt hợp luyện và Ngự Khuyển nhận hoặc dùng trong Khuyển Vương. Mở sổ không nâng bản lưu. Nhận chiến lợi phẩm mới hoặc mua Ngọc Bì ở quầy nâng bản lưu lên v19. Khi nâng từ v4–v6, nhật ký vẫn phát lại các màn trước lúc nhận thưởng theo luật cũ.
 
-Ngọc Bì và Bạch Thỉ là hai thành phần của Bạch Ngọc trong truyện. Demo hiện mở nguồn nhận cho hai Cổ này để dùng ở bước hợp luyện tiếp theo. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html)
+Ngọc Bì và Bạch Thỉ là hai thành phần của Bạch Ngọc trong truyện. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html)
+
+## Hợp luyện Bạch Ngọc và Bạch Quang Hộ Thể
+
+Từ màn kết quả Bãi Đá Suối Sấm, nhận Bạch Thỉ rồi mở **Sổ Cổ** trước khi vào trận tiếp. Hợp luyện tiêu đúng một Ngọc Bì và một Bạch Thỉ, nhận một Bạch Ngọc nhị chuyển. Bản thử dùng kết quả cố định, với nguyên liệu dựa vào bí phương chương 98. Chương 99 mô tả việc dùng nanh Lợn Rừng Vương để tăng xác suất thành công trong lần luyện của Phương Nguyên. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html) · [Chương 99](https://truyenhoan.com/co-chan-nhan/chuong-99.html)
+
+**Bạch Quang Hộ Thể** là sát chiêu riêng của demo. Chọn phối từ Bạch Ngọc và Tiểu Quang đang sở hữu. Hai Cổ được giữ cả khi phối lẫn sau khi dùng. Mang Bạch Ngọc trong bộ chiến đấu để dùng phím `8`. Một lần mỗi trận, tốn 3 chân nguyên. Lớp phòng hộ chặn tối đa 9 sát thương mỗi đòn, trong hai đòn hoặc ba lượt tính từ lúc thi triển. Nó thay phiên với các lớp ngọc thường và không kích hoạt Phản đòn. Sổ cho đọc giữa trận và trong phúc địa, còn thao tác hợp luyện và phối chiêu dành cho điểm chuẩn bị bên ngoài.
+
+Kịch bản cân bằng sau dùng cùng hai hành động. Hành động đầu là chiêu phòng thủ trong cột. Hành động kế là đánh tay không nếu còn đòn thứ hai. Các ô ghi tổng sinh lực mất trong hai hành động ở luật Nhị chuyển hiện tại.
+
+| Sát thương đến | Thủ thế | Ngọc Bì | Bạch Ngọc | Bạch Quang |
+| --- | ---: | ---: | ---: | ---: |
+| 8 rồi 8 | 11 | 11 | 8 | 0 |
+| 18 rồi 18 | 24 | 31 | 25 | 18 |
+| Một đòn 24 | 8 | 19 | 13 | 15 |
+| 24 rồi 8 | 16 | 27 | 21 | 15 |
+
+Một phép tìm đường thắng ở Hẻm Đá Phục Kích và Lôi Nha Đài dùng ba bố cục và bốn Cổ Nhất chuyển đi cùng Bạch Ngọc. Cả 24 cấu hình có đường thắng khi có hoặc không có sát chiêu. Khi yêu cầu dùng Bạch Quang ít nhất một lần, cả 24 vẫn có đường thắng. Đường có dùng chiêu giữ nhiều sinh lực hơn đường đối chiếu ở 18 cấu hình. Đây là so sánh các đường mô phỏng, với thứ tự hành động có thể khác nhau.
+
+Phát lại bản lưu v19 nâng lên v20 ở thao tác hợp luyện. Kiểm từng lượng nhập xuất, điều kiện sở hữu, trần hai lần chặn, hết hạn, cấp phím theo bộ Cổ và tải lại sau khi dùng chiêu.
 
 ## Đồ họa trong trận
 

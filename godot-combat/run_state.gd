@@ -5,7 +5,9 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 19
+const CURRENT_VERSION := 20
+const WHITE_JADE_VERSION := 20
+const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light"]
 const GU_BOOK_VERSION := 19
 const GU_SHOP_VERSION := 18
 const RIDGE_FLOOR := 3
@@ -189,6 +191,7 @@ var hound_gu: int:
 	get:
 		return owned_gu.get("dog_control", 0)
 var moon_link_known := false
+var white_light_known := false
 var outside_battle: Rules
 
 
@@ -289,6 +292,7 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
 		"refined_gu": arsenal.get("refined_gu", ""), "starter_gu": arsenal.get("starter_gu", ""),
 		"strike_bonus": arsenal.get("strike_bonus", 0), "moon_link": arsenal.get("moon_link", false),
+		"white_light": arsenal.get("white_light", false),
 		"revised_ward": revised_ward, "relic": arsenal.get("relic", "")})
 
 
@@ -503,6 +507,40 @@ func revised_ward_rules() -> bool:
 func change_owned_gu(id: String, quantity: int, source: String) -> void:
 	owned_gu[id] = int(owned_gu.get(id, 0)) + quantity
 	gu_receipts.append({"gu": id, "change": quantity, "source": source})
+
+
+func book_unavailable(id: String) -> String:
+	if floor >= KENNEL_FLOOR:
+		return "Chờ rời phúc địa."
+	if phase in ["battle", "death"]:
+		return "Chỉ thao tác khi đang chuẩn bị ngoài trận."
+	match id:
+		"refine_owned_jade":
+			if owned_gu.get("jade_skin", 0) < 1 or owned_gu.get("white_boar", 0) < 1:
+				return "Cần 1 Ngọc Bì và 1 Bạch Thỉ."
+		"study_white_light":
+			if white_light_known:
+				return "Đã phối thành sát chiêu."
+			if owned_gu.get("white_jade", 0) < 1 or owned_gu.small_light < 1:
+				return "Cần Bạch Ngọc và Tiểu Quang sở hữu."
+		_:
+			return "Bí phương này chưa có trong sổ."
+	return ""
+
+
+func commit_book_action(id: String) -> bool:
+	if not book_unavailable(id).is_empty():
+		return false
+	version = maxi(version, WHITE_JADE_VERSION)
+	if id == "refine_owned_jade":
+		var source := "Hợp luyện Bạch Ngọc"
+		change_owned_gu("jade_skin", -1, source)
+		change_owned_gu("white_boar", -1, source)
+		change_owned_gu("white_jade", 1, source)
+	else:
+		white_light_known = true
+	journal.append([id])
+	return true
 
 
 func gu_loot() -> Dictionary:
@@ -997,7 +1035,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 	var vitals := workshop_vitals()
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
 		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves,
-		"relic": relic, "strike_bonus": strike_bonus, "moon_link": moon_link_known and recipe == "moon_edge"}
+		"relic": relic, "strike_bonus": strike_bonus, "moon_link": moon_link_known and recipe == "moon_edge",
+		"white_light": white_light_known and recipe == "white_jade" and owned_gu.get("white_jade", 0) > 0 and owned_gu.small_light > 0}
 	match phase:
 		"ford_workshop":
 			floor = FORD_FLOOR
@@ -1065,7 +1104,7 @@ static func restore(saved: Variant) -> RefCounted:
 	if saved.has("chapter_rules"):
 		var schema := int(saved.version)
 		var valid_rules := finite_integer(saved.chapter_rules, 4, mini(6, schema - 1))
-		if not valid_rules or schema not in [5, 6, GU_BOOK_VERSION]:
+		if not valid_rules or (schema not in [5, 6] and schema < GU_BOOK_VERSION):
 			return null
 		rules_version = int(saved.chapter_rules)
 	var run = load("res://run_state.gd").new(profile_data, int(saved.seed), rules_version)
@@ -1076,6 +1115,10 @@ static func restore(saved: Variant) -> RefCounted:
 			if command[0] != "equip" or not command[1] is String or not command[2] is String or not run.equip_build(command[1], command[2]):
 				return null
 		elif command.size() == 1:
+			if command[0] in GU_BOOK_ACTIONS:
+				if not run.commit_book_action(command[0]):
+					return null
+				continue
 			var committed: bool
 			match run.phase:
 				"route":

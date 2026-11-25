@@ -60,6 +60,9 @@ var moon_equipped := true
 var refined_gu := ""
 var moon_link_equipped := false
 var moon_link_used := false
+var white_light_equipped := false
+var white_light_used := false
+var white_light_hits := 0
 var build_family := ""
 var moon_mark := false
 var ward_strength := 0
@@ -109,6 +112,7 @@ func _init(options: Dictionary = {}) -> void:
 	moon_equipped = options.get("moon_equipped", true)
 	refined_gu = options.get("refined_gu", "")
 	moon_link_equipped = refined_gu == "moon_edge" and options.get("moon_link", false)
+	white_light_equipped = refined_gu == "white_jade" and options.get("white_light", false)
 	var starter := "moon" if moon_equipped else "jade_skin" if jade_skin else ""
 	starter_gu = options.get("starter_gu", starter)
 	if starter_gu.is_empty():
@@ -507,10 +511,19 @@ func unavailable(action: String, target: int = -1) -> String:
 		"white_jade":
 			if refined_gu != action:
 				return "Bạch Ngọc Cổ chưa được trang bị."
-			if jade_turns > 0 and ward_strength >= white_jade_absorb():
-				return "Lớp Bạch Ngọc vẫn còn hiệu lực."
+			if jade_turns > 0 and (ward_strength >= white_jade_absorb() or white_light_hits > 0):
+				return "Lớp phòng hộ vẫn còn hiệu lực."
 			if qi < white_jade_cost():
 				return "Cần %d chân nguyên để dùng Bạch Ngọc Cổ." % white_jade_cost()
+		"white_light":
+			if not white_light_equipped:
+				return "Cần phối Bạch Quang Hộ Thể và mang Bạch Ngọc."
+			if white_light_used:
+				return "Bạch Quang Hộ Thể đã dùng trong trận này."
+			if jade_turns > 0:
+				return "Chờ lớp phòng hộ hiện tại tan."
+			if qi < Gu.WHITE_LIGHT_COST:
+				return "Cần %d chân nguyên để mở Bạch Quang Hộ Thể." % Gu.WHITE_LIGHT_COST
 		"brew":
 			if starter_gu != action:
 				return "Tửu Trùng chưa được trang bị."
@@ -582,6 +595,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var healed := 0
 	var ward := jade_turns
 	var protection := ward_strength
+	var light_hits := white_light_hits
 	var attack := action in ["strike", "moon", "moon_edge", "moon_link"]
 	var aim := attack_cell(target) if attack else wolf
 	var hits_hound := attack and aim != wolf
@@ -639,6 +653,11 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			qi_after -= white_jade_cost()
 			ward = Gu.WHITE_JADE_TURNS
 			protection = white_jade_absorb() + (Gu.WHITE_JADE_BONUS if set_trigger else 0)
+		"white_light":
+			qi_after -= Gu.WHITE_LIGHT_COST
+			ward = Gu.WHITE_LIGHT_TURNS
+			protection = Gu.WHITE_LIGHT_ABSORB
+			light_hits = Gu.WHITE_LIGHT_HITS
 		"brew":
 			qi_after = mini(max_qi, qi + Gu.BREW_QI)
 			brew_setup = build_family == "brew"
@@ -702,9 +721,14 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			damage = ceili(damage * (1.0 - GUARD_REDUCTION))
 		if ward > 0:
 			absorbed = mini(protection, damage)
-			ward = 0
-			if absorbed > 0 and build_family == "ward" and protection >= white_jade_absorb():
-				counter = true
+			if light_hits > 0:
+				light_hits -= 1
+				if light_hits == 0:
+					ward = 0
+			else:
+				ward = 0
+				if absorbed > 0 and build_family == "ward" and protection >= white_jade_absorb():
+					counter = true
 		if relic == "jade_token" and ready_relic and damage > absorbed:
 			relic_block = mini(Goods.TOKEN_BLOCK, damage - absorbed)
 			ready_relic = false
@@ -714,8 +738,9 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		receives = mini(hp + healed, damage - absorbed - relic_block)
 	var qi_drained := int(receives > 0 and intent.kind == "poison" and qi_after > 0)
 	qi_after -= qi_drained
+	var ward_left := maxi(0, ward - 1) if not ends_fight else 0
 	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
-		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if not ends_fight else 0,
+		"healed": healed, "absorbed": absorbed, "jade_turns": ward_left, "white_light_hits": light_hits if ward_left > 0 else 0,
 		"target_cell": aim, "hits_hound": hits_hound, "interrupts": interrupts, "stops_hound": stops_hound,
 		"ward_strength": protection, "moon_mark": mark and dealt < defender_hp, "set_trigger": set_trigger,
 		"counter_ready": counter and not ends_fight, "brew_ready": brew_setup, "strong_strikes": boosted,
@@ -741,6 +766,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	var action_qi: int = qi + preview.qi_drained
 	pulse_open = intent.kind == "core_wave" and action == "move" and hero in intent.cells and target not in intent.cells
 	jade_turns = preview.jade_turns
+	white_light_hits = preview.white_light_hits
 	ward_strength = preview.ward_strength if jade_turns > 0 else 0
 	var had_mark := hound_mark if preview.hits_hound else moon_mark
 	if preview.hits_hound:
@@ -804,6 +830,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			notes.append("Ngọc Bì Cổ tạo một lớp bảo hộ.")
 		"white_jade":
 			notes.append("Bạch Ngọc tạo lớp chặn %d sát thương." % preview.ward_strength)
+		"white_light":
+			white_light_used = true
+			notes.append("Bạch Quang Hộ Thể chặn tối đa %d sát thương mỗi đòn." % Gu.WHITE_LIGHT_ABSORB)
 		"brew":
 			brew_left -= 1
 			notes.append("Tửu Trùng hồi %d chân nguyên." % (action_qi - previous_qi))
@@ -893,6 +922,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	else:
 		intent = {}
 		jade_turns = 0
+		white_light_hits = 0
 		ward_strength = 0
 		moon_mark = false
 		hound_mark = false

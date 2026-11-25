@@ -623,7 +623,8 @@ func enemy_contact(exchange: Dictionary, point: Vector2, guarding: bool, recoil:
 		return
 	if exchange.absorbed > 0 and Art.CONTACTS.has(ward_kind):
 		play_effect(Art.CONTACTS[ward_kind], hero_point, 112, face)
-		ward_kind = ""
+		if rules.white_light_hits == 0:
+			ward_kind = ""
 	if exchange.hero_damage > 0:
 		var caption := "Chặn %d  /  −%d" % [exchange.absorbed, exchange.hero_damage] if exchange.absorbed > 0 else ""
 		impact(point, exchange.hero_damage, false, guarding, caption)
@@ -673,6 +674,8 @@ func gu_contact(exchange: Dictionary) -> void:
 	match exchange.action:
 		"jade_skin", "white_jade":
 			ward_kind = exchange.action
+		"white_light":
+			ward_kind = "white_jade"
 		"vital_leaf":
 			impact(hero_point + Vector2(0, -16), 0, false, true, "+%d" % exchange.healed)
 		"brew", "four_flavors":

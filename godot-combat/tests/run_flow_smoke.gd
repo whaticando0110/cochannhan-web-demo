@@ -405,6 +405,9 @@ func play_gu_book(ridge_save: Dictionary) -> void:
 		and flow.find_child("gu_row_small_light", true, false) != null
 		and flow.find_child("gu_row_brew", true, false) == null,
 		"The book must show purchased and looted Gu and exclude the loaned kit")
+	var blocked := flow.find_child("refine_owned_jade", true, false) as Button
+	check(blocked != null and blocked.disabled and not flow.run.commit_book_action("refine_owned_jade"),
+		"The book cannot complete recipes during battle")
 	await click_button("close_gu_book")
 	check(flow.run.battle.turn == before_turn and flow.run.journal.size() == before_journal,
 		"Reading the book during a fight must not submit an action")
@@ -420,11 +423,73 @@ func play_gu_book(ridge_save: Dictionary) -> void:
 	await click_button("open_gu_book")
 	check(flow.find_child("gu_row_white_boar", true, false) != null, "The book must show both combat rewards")
 	await capture("godot-v19-so-co.png")
-	await click_button("close_gu_book")
+	await play_white_jade_recipe()
 	await click_button("enter_pass")
 	await click_button("merchant")
 	check(flow.run.shop_unavailable("buy_jade_skin").contains("Đã có Ngọc Bì") and not flow.run.buy("buy_jade_skin"),
 		"The second shop must not sell a duplicate owned copy")
+
+
+func play_white_jade_recipe() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	check(legacy.version == Run.GU_BOOK_VERSION, "The jade recipe test must start with an actual v19 journal")
+	var wallet: int = flow.run.stones
+	var qi: int = flow.run.battle.qi
+	var hp: int = flow.run.battle.hp
+	var missing: Run = Run.restore(legacy) as Run
+	missing.owned_gu.white_boar = 0
+	var owned_before := missing.owned_gu.duplicate()
+	var entries := missing.journal.size()
+	check(not missing.commit_book_action("refine_owned_jade") and missing.owned_gu == owned_before
+		and missing.journal.size() == entries, "Missing ingredients must leave the whole ledger unchanged")
+	check(not flow.run.commit_book_action("study_white_light"), "A loaned Bạch Ngọc must not unlock the art")
+	await click_button("refine_owned_jade")
+	check(flow.current.name == "GuBook" and flow.find_child("gu_row_white_jade", true, false) != null
+		and flow.run.owned_gu.jade_skin == 0 and flow.run.owned_gu.white_boar == 0 and flow.run.owned_gu.white_jade == 1
+		and flow.run.stones == wallet and flow.run.battle.qi == qi and flow.run.battle.hp == hp,
+		"Refining in the book must consume the two Gu and only those Gu")
+	await launch()
+	check(flow.run.version == Run.WHITE_JADE_VERSION and flow.run.owned_gu.white_jade == 1
+		and flow.run.gu_receipts.count({"gu": "white_jade", "change": 1, "source": "Hợp luyện Bạch Ngọc"}) == 1
+		and not flow.run.commit_book_action("refine_owned_jade"), "Save must rebuild a single crafting result")
+	await click_button("open_gu_book")
+	await click_button("study_white_light")
+	await capture("godot-v20-so-co.png")
+	await launch()
+	check(flow.run.white_light_known and flow.run.owned_gu.small_light == 2 and flow.run.owned_gu.white_jade == 1
+		and not flow.run.commit_book_action("study_white_light"), "The art must be learned once without consuming either Gu")
+	var forged: Dictionary = flow.run.snapshot().duplicate(true)
+	forged.journal.append(["refine_owned_jade"])
+	check(Run.restore(forged) == null, "A repeated crafting command must not replay with missing materials")
+	forged = flow.run.snapshot().duplicate(true)
+	forged.version = Run.GU_BOOK_VERSION
+	check(Run.restore(forged) == null, "A v19 header must not accept the new recipe")
+	await click_button("enter_pass")
+	await click_button("camp")
+	var learned: Run = Run.restore(flow.run.snapshot()) as Run
+	check(learned.equip_build("moon_edge", "moon") and not learned.battle.white_light_equipped,
+		"The art must require Bạch Ngọc in the current kit")
+	await select_kit("white_jade", "jade_skin")
+	var battle: Rules = flow.run.battle
+	check(battle.white_light_equipped and flow.current.actions.has("white_light"), "Bạch Ngọc must unlock the trained art in battle")
+	var peek := battle.preview_action("white_light")
+	var before_qi := battle.qi
+	var before_hp := battle.hp
+	await shoot(KEY_8)
+	await launch()
+	battle = flow.run.battle
+	check(battle.white_light_used and battle.qi == before_qi - Gu.WHITE_LIGHT_COST
+		and battle.hp == before_hp - int(peek.receives) and battle.white_light_hits == peek.white_light_hits
+		and battle.jade_turns == peek.jade_turns and flow.current.actions.white_light.disabled
+		and flow.run.owned_gu.white_jade == 1 and flow.run.owned_gu.small_light == 2,
+		"Reload must restore the ward, its charge and the still-owned Gu")
+	await capture("godot-v20-bach-quang.png")
+	var action_count: int = flow.run.journal.size()
+	check(flow.run.perform("white_light").has("error") and flow.run.journal.size() == action_count,
+		"The second cast must be rejected without writing a turn")
+	flow.run = Run.restore(legacy)
+	flow.persist()
+	flow.show_run()
 
 
 func play_waypoints(ridge_save: Dictionary) -> void:
@@ -1480,11 +1545,51 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		await capture("godot-ket-qua-tuyen.png")
 
 
+func check_white_light_balance() -> void:
+	var options := {"refined_gu": "white_jade", "starter_gu": "jade_skin", "jade_skin": true,
+		"revised_ward": true, "white_light": true, "wolf_cell": 18, "qi": 3}
+	var skills := ["guard", "jade_skin", "white_jade", "white_light"]
+	var scenarios := [[8, 8, [11, 11, 8, 0]], [18, 18, [24, 31, 25, 18]],
+		[24, 0, [8, 19, 13, 15]], [24, 8, [16, 27, 21, 15]]]
+	for scenario: Array in scenarios:
+		for index in range(skills.size()):
+			var battle := Rules.new(options)
+			battle.intent = {"kind": "strike", "name": "Đòn thử", "damage": scenario[0], "cells": [battle.hero]}
+			var peek := battle.preview_action(skills[index])
+			check(not peek.has("error") and not battle.white_light_used and battle.hp == Rules.MAX_HP,
+				"Preview must leave the shield, charge and HP unspent")
+			var initial := battle.take_turn(skills[index])
+			var continued := 0
+			if scenario[1] > 0:
+				battle.intent = {"kind": "strike", "name": "Đòn thử", "damage": scenario[1], "cells": [battle.hero]}
+				continued = battle.take_turn("strike").hero_damage
+			check(initial.hero_damage + continued == scenario[2][index],
+				"Defense balance drifted for %s against %s" % [skills[index], scenario.slice(0, 2)])
+			if skills[index] == "white_light":
+				check(not battle.counter_ready and not battle.unavailable("white_light").is_empty()
+					and (scenario[1] == 0 or battle.white_light_hits == 0),
+					"The art must expire after two contacts and cannot grant the ward counter or repeat")
+	var battle := Rules.new(options)
+	battle.intent = {"kind": "recover", "name": "Hồi thế", "damage": 0, "cells": []}
+	battle.take_turn("jade_skin")
+	check(battle.unavailable("white_light").contains("phòng hộ"), "The art must not stack onto a current ward")
+	battle = Rules.new(options)
+	battle.qi = 2
+	check(battle.unavailable("white_light").contains("chân nguyên"), "The art must require its full cost")
+	battle.qi = 3
+	for action: String in ["white_light", "guard", "guard"]:
+		battle.intent = {"kind": "recover", "name": "Hồi thế", "damage": 0, "cells": []}
+		battle.take_turn(action)
+	check(battle.white_light_used and battle.white_light_hits == 0 and battle.jade_turns == 0,
+		"Unused blocks must expire after three turns, including the cast turn")
+
+
 func exercise() -> void:
 	var data := ProjectSettings.globalize_path("res://build")
 	DirAccess.make_dir_recursive_absolute(data)
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
 	check_gu_and_tactics()
+	check_white_light_balance()
 	check_third_save()
 	check_rank_two_gu()
 	check_ford_gu()
@@ -1588,5 +1693,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, purchases and loot, Liên Nguyệt and three Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, refining Bạch Ngọc, both arts and three Khuyển Vương trials")
 	quit(1 if failed else 0)

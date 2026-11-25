@@ -15,7 +15,7 @@ const GU := {
 	"scale_veil": {"name": "Ẩn Lân Cổ", "family": "veil", "rank": 2},
 }
 const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
-const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "dog_control"]
+const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "white_jade", "dog_control"]
 const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
 const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
 const MOON_LINK_COST := 4
@@ -25,6 +25,11 @@ const MOON_EDGE_RANGE := 6
 const MOON_EDGE_COST := 3
 const MOON_EDGE_DAMAGE := 30
 const MOON_MARK_BONUS := 12
+const WHITE_LIGHT_NAME := "Bạch Quang Hộ Thể"
+const WHITE_LIGHT_COST := 3
+const WHITE_LIGHT_ABSORB := 9
+const WHITE_LIGHT_HITS := 2
+const WHITE_LIGHT_TURNS := 3
 const WHITE_JADE_COST := 2
 const WHITE_JADE_ABSORB := 8
 const WHITE_JADE_BONUS := 4
