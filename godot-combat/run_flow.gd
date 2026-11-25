@@ -230,7 +230,7 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor in [Run.KENNEL_FLOOR, Run.KENNEL_TWO_FLOOR] or run.phase in ["kennel_gate", "kennel_ready"]:
+	if run.floor in [Run.KENNEL_FLOOR, Run.KENNEL_TWO_FLOOR, Run.KENNEL_THREE_FLOOR] or run.phase in ["kennel_gate", "kennel_ready"]:
 		section = "TỨ CHUYỂN    /    TRUYỀN THỪA KHUYỂN VƯƠNG"
 	elif run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
 		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
@@ -342,6 +342,9 @@ func show_result() -> void:
 		"kennel_two_cleared":
 			title = "Vượt vòng hai Khuyển Vương"
 			description = "Đàn chó hoang đã bị dẹp. Những con còn theo bạn giữ nguyên thương thế."
+		"kennel_three_cleared":
+			title = "Vượt vòng ba Khuyển Vương"
+			description = "Đã dẹp sáu chó hoang ở hố đá. Đàn chó sống sót được lưu với thương thế hiện tại."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -351,7 +354,7 @@ func show_result() -> void:
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
-			if run.floor == Run.KENNEL_TWO_FLOOR and run.battle.hp > 0:
+			if run.floor in [Run.KENNEL_TWO_FLOOR, Run.KENNEL_THREE_FLOOR] and run.battle.hp > 0:
 				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
 		"complete":
 			title = "Vượt qua " + str(floor.name)
@@ -477,7 +480,7 @@ func show_result() -> void:
 			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
 			enter.name = "enter_kennel_two"
 			enter.grab_focus()
-		elif run.phase == "kennel_two_cleared":
+		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared"]:
 			var pack := run.battle as Run.Pack
 			var rows: PackedStringArray = []
 			for id in pack.living_dogs(true):
@@ -485,7 +488,12 @@ func show_result() -> void:
 				rows.append("%s · %d/%d sinh lực" % [pack.actor_name(id), dog.hp, dog.max_hp])
 			text(menu, "     |     ".join(rows), Rect2(96, 308, 1008, 43), 22, GOLD)
 			text(menu, "Ngự Khuyển Cổ còn lại ×%d" % run.hound_gu, Rect2(96, 368, 1008, 40), 19, GREEN)
-	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
+			if run.phase == "kennel_two_cleared":
+				text(menu, "Vòng ba · Lùi xuống hố đá để chặn đàn chó đông hơn.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Xuống hố đá", Rect2(432, 480, 310, 54), advance_kennel.bind("third"))
+				enter.name = "enter_kennel_three"
+				enter.grab_focus()
+	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
 	report_save_problem()
 
 
@@ -779,6 +787,8 @@ func advance_kennel(step: String) -> void:
 			changed = run.enter_kennel()
 		"second":
 			changed = run.enter_kennel_two()
+		"third":
+			changed = run.enter_kennel_three()
 	if changed:
 		persist()
 		show_run()
@@ -850,22 +860,38 @@ func draw_shop() -> void:
 	var offers := [
 		["buy_leaf", "Sinh Cơ Diệp", "Hồi tối đa %d sinh lực khi dùng một lá trong trận." % Rules.LEAF_HEAL],
 		["buy_relic", for_sale[0], for_sale[1]],
+		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Dùng để hợp luyện hoặc phối thành sát chiêu."],
 	]
 	for i in range(offers.size()):
 		var offer: Array = offers[i]
 		var id: String = offer[0]
-		var card := panel(menu, Rect2(96 + i * 513, 308, 495, 218), Color("#1a2b25"), Color("#586c54"))
-		text(card, offer[1], Rect2(18, 15, 459, 42), 28, GOLD, true)
-		text(card, offer[2], Rect2(18, 69, 459, 58), 18)
+		var card := panel(menu, Rect2(96 + i * 342, 298, 324, 202), Color("#1a2b25"), Color("#586c54"))
+		text(card, offer[1], Rect2(16, 12, 292, 42), 25, GOLD, true)
+		text(card, offer[2], Rect2(16, 54, 292, 60), 16)
 		var reason := run.shop_unavailable(id)
 		var price := "Giá %d nguyên thạch" % run.shop_price(id)
-		text(card, price if reason.is_empty() else reason, Rect2(18, 125, 459, 28), 17, GREEN)
+		text(card, price if reason.is_empty() else reason, Rect2(16, 113, 292, 37), 15, GREEN)
 		var exchange := id == "buy_relic" and run.shop_price(id) == Goods.RELIC_TRADE_PRICE
-		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(18, 159, 459, 43), buy_waypoint_item.bind(id))
+		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(16, 151, 292, 37), buy_waypoint_item.bind(id))
 		purchase.name = id
 		purchase.disabled = not reason.is_empty()
-	draw_waypoint_vitals(541)
-	var exit_shop := button(menu, "Rời quầy", Rect2(844, 607, 260, 49), leave_waypoint_shop)
+	var stock := run.owned_gu
+	text(menu, "Kho Cổ riêng · Nguyệt Quang ×%d  ·  Tiểu Quang ×%d  ·  Nguyệt Mang ×%d" % [
+		stock.moon, stock.small_light, stock.moon_edge], Rect2(96, 503, 1008, 35), 18, GOLD)
+	var work := [
+		["refine_owned_moon", "Hợp luyện Nguyệt Mang", "Dùng 1 Nguyệt Quang và 2 Tiểu Quang."],
+		["study_moon_link", "Phối sát chiêu Liên Nguyệt", "Dùng Nguyệt Mang và Tiểu Quang phối hợp trong trận."],
+	]
+	for i in range(work.size()):
+		var recipe: Array = work[i]
+		var x := 96 + i * 512
+		var reason := run.gu_work_unavailable(recipe[0])
+		var action := button(menu, recipe[1], Rect2(x, 543, 420, 39), buy_waypoint_item.bind(recipe[0]))
+		action.name = recipe[0]
+		action.disabled = not reason.is_empty()
+		text(menu, recipe[2] if reason.is_empty() else reason, Rect2(x, 583, 492, 30), 15, PALE)
+	draw_waypoint_vitals(615)
+	var exit_shop := button(menu, "Rời quầy", Rect2(844, 662, 260, 42), leave_waypoint_shop)
 	exit_shop.name = "leave_shop"
 
 
@@ -884,7 +910,7 @@ func choose_waypoint(id: String) -> void:
 
 
 func buy_waypoint_item(id: String) -> void:
-	if run.buy(id):
+	if run.commit_shop_action(id):
 		persist()
 		show_result()
 
@@ -920,6 +946,10 @@ func draw_workshop() -> void:
 		blend.text = "Phối hệ" if family.is_empty() else "Bộ " + str(Gu.FAMILIES[family])
 		stats.text = "%s\n%s" % [Gu.equip_description(advanced_id, revised), Gu.equip_description(first_id, revised)]
 		synergy.text = Gu.synergy_text(family, revised)
+		if run.moon_link_known and advanced_id == "moon_edge":
+			if not synergy.text.is_empty():
+				synergy.text += " · "
+			synergy.text += "Phím 8 dùng Liên Nguyệt."
 	recipe.item_selected.connect(refresh)
 	starter.item_selected.connect(refresh)
 	refresh.call(0)

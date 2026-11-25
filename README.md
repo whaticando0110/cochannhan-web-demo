@@ -47,6 +47,10 @@ Tại **cột sáng vàng của Khuyển Vương**, luyện hóa Ngự Khuyển 
 
 Tại **Gò cỏ úa**, ba chó hoang áp sát từ ba phía. Ra lệnh cho chó vòng đầu bằng `2` để di chuyển hoặc `5` để táp. Dùng `3` chọn một chó hoang để thu phục. Sau khi thu phục, chọn chó A hoặc B trên sân, ở bảng bên phải hoặc đổi bằng `6`. Sân báo trước ô bị táp và giữ nguyên sinh lực còn lại của các chó sống khi qua vòng.
 
+Ở **Hố đá dưới gò cỏ**, dùng vị trí hẻm giữa hai vách đá để chặn sáu chó hoang. Hai con khỏe tới trước, bốn con bị thương tới sau. Chó đồng minh mang nguyên thương thế từ vòng hai.
+
+Ngoài phúc địa, quầy vẫn bán lá và bảo vật, đồng thời có **Tiểu Quang Cổ** để hợp luyện. Một Nguyệt Quang và hai Tiểu Quang thành Nguyệt Mang. Dùng Nguyệt Mang cùng Tiểu Quang còn lại để phối **Liên Nguyệt**. Khi mang bộ có Nguyệt Mang, phím `8` dùng sát chiêu một lần mỗi trận.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
 Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)

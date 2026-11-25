@@ -3,6 +3,7 @@ extends RefCounted
 const GU := {
 	"moon": {"name": "Nguyệt Quang Cổ", "family": "lunar", "rank": 1},
 	"moon_edge": {"name": "Nguyệt Mang Cổ", "family": "lunar", "rank": 2},
+	"moon_link": {"name": "Liên Nguyệt", "family": "lunar", "rank": 2},
 	"jade_skin": {"name": "Ngọc Bì Cổ", "family": "ward", "rank": 1},
 	"white_jade": {"name": "Bạch Ngọc Cổ", "family": "ward", "rank": 2},
 	"brew": {"name": "Tửu Trùng", "family": "brew", "rank": 1},
@@ -13,6 +14,9 @@ const GU := {
 const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
 const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
 const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
+const MOON_LINK_COST := 4
+const MOON_LINK_RANGE := 5
+const MOON_LINK_DAMAGE := 42
 const MOON_EDGE_RANGE := 6
 const MOON_EDGE_COST := 3
 const MOON_EDGE_DAMAGE := 30

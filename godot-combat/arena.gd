@@ -24,6 +24,7 @@ const REU_CAST = preload("res://assets/ao-reu-combat.png")
 const REU_GUARD = preload("res://assets/ao-reu-guard.png")
 const ORIGIN := Vector2(39, 35)
 const TILE := Vector2(91, 82)
+const ORDINARY_DOG_SPAN := 56.0
 const GREEN := Color("#a9e2bb")
 const AMBER := Color("#efae82")
 
@@ -222,6 +223,7 @@ func paint_tiles() -> void:
 	var marsh := rules != null and rules.tactic == "marsh"
 	var wind_pass := rules != null and rules.tactic == "wind_pass"
 	var kennel := rules != null and rules.tactic in ["kennel", "kennel_pack"]
+	var pit := rules is Pack and (rules as Pack).round_number == 3
 	for cell in range(Rules.ROWS * Rules.COLUMNS):
 		var point := Rules.grid(cell)
 		var rect := Rect2(ORIGIN + Vector2(point) * TILE, TILE)
@@ -248,6 +250,9 @@ func paint_tiles() -> void:
 			var ground: Texture2D = KENNEL_GRASS if kennel else [TRAIL, MULCH, STONE][mini(room, 2)]
 			var sample := ground.get_width() / 8.0
 			draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), Color(shade, shade, shade * .88) * (Color("#d8c996") if rules is Pack else Color.WHITE))
+		if pit and cell == Pack.PIT_CELL:
+			draw_rect(rect, Color("#31332680"))
+			draw_line(rect.position + Vector2(0, TILE.y - 3), rect.end - Vector2(0, 3), Color("#9f9077"), 3)
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rock:
 			if rules.uses_cover():
@@ -464,7 +469,7 @@ func _draw() -> void:
 	else:
 		var wolf_size := 142 if rules.tactic in ["den", "marsh", "wind_pass", "armored_hound"] else 118
 		if rules.tactic == "kennel":
-			wolf_size = 77
+			wolf_size = int(ORDINARY_DOG_SPAN)
 			wolf_tint = Color("#c6c7bc")
 		var face := rules.hound_facing if rules.tactic == "armored_hound" else -direction
 		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, face, wolf_tint)
@@ -519,14 +524,14 @@ func paint_pack() -> void:
 		var tone := GREEN if dog.allied else AMBER
 		var face: int = dog.get("face", 1 if center.x <= hero_point.x else -1)
 		actor_ring(center, tone)
-		atlas_frame(WOLF, 4, 4, dog.frame, center + Vector2(0, 11), 78, face,
+		atlas_frame(WOLF, 4, 4, dog.frame, center + Vector2(0, 9), ORDINARY_DOG_SPAN, face,
 			Color("#bfcabd") if dog.allied else Color("#d6c3aa") if id != 3 else Color("#c4c4bb"))
 		var hp_y := maxf(ORIGIN.y + 15.0, center.y - 39.0)
 		var hp_bar := Rect2(Vector2(center.x - 22, hp_y), Vector2(44, 4))
 		draw_rect(hp_bar, Color("#16211b"))
 		hp_bar.size.x *= float(dog.hp) / float(dog.max_hp)
 		draw_rect(hp_bar, tone)
-		var marker := ("A" if id == 0 else "B") if dog.allied else str(id)
+		var marker := ("A" if id == 0 else "B") if dog.allied else str(pack.wild_label(id))
 		draw_string(ThemeDB.fallback_font, Vector2(center.x - 12, hp_y - 5), marker,
 			HORIZONTAL_ALIGNMENT_CENTER, 24, 14, tone)
 
@@ -760,8 +765,8 @@ func play_exchange(exchange: Dictionary) -> void:
 		stone_prepared = false
 	elif exchange.action == "bind_hound":
 		await play_binding()
-	elif exchange.action in ["moon", "moon_edge"]:
-		await cast(aimed_at, exchange.action == "moon_edge", exchange.set_trigger)
+	elif exchange.action in ["moon", "moon_edge", "moon_link"]:
+		await cast(aimed_at, exchange.action != "moon", exchange.set_trigger or exchange.action == "moon_link")
 		mark_visible = rules.moon_mark
 	elif exchange.action == "strike":
 		var rally := hero_point
@@ -783,9 +788,10 @@ func play_exchange(exchange: Dictionary) -> void:
 	if not has_cast_art:
 		exchange_cue.emit("player_contact")
 	if exchange.wolf_damage > 0 or exchange.hound_damage > 0:
-		if exchange.action == "moon_edge":
-			var clip: Dictionary = Art.CONTACTS.marked_edge if exchange.set_trigger else Art.CONTACTS.moon_edge
-			play_effect(clip, aimed_at + Vector2(0, 12), 94 if exchange.set_trigger else 78, direction)
+		if exchange.action in ["moon_edge", "moon_link"]:
+			var empowered: bool = exchange.set_trigger or exchange.action == "moon_link"
+			var clip: Dictionary = Art.CONTACTS.marked_edge if empowered else Art.CONTACTS.moon_edge
+			play_effect(clip, aimed_at + Vector2(0, 12), 94 if empowered else 78, direction)
 		impact(aimed_at, exchange.wolf_damage + exchange.hound_damage, true)
 		var hit := create_tween()
 		if exchange.hound_damage > 0:

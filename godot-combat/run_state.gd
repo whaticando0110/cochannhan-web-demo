@@ -5,7 +5,8 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 17
+const CURRENT_VERSION := 18
+const GU_SHOP_VERSION := 18
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -27,6 +28,8 @@ const KENNEL_FLOOR := 13
 const KENNEL_VERSION := 16
 const KENNEL_TWO_FLOOR := 14
 const KENNEL_TWO_VERSION := 17
+const KENNEL_THREE_FLOOR := 15
+const KENNEL_THREE_VERSION := 18
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -117,6 +120,9 @@ const KENNEL_TRIAL := {"name": "Bãi cỏ phúc địa", "enemy": "Chó hoang", 
 	"bite": 11, "hp": 32, "heavy": "Táp", "pace": 2,
 	"rooms": [[4, 11, 27, 35], [3, 19, 26, 37], [5, 12, 20, 35]]}
 const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
+const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
+const SMALL_LIGHT_BUNDLE := 3
+const SMALL_LIGHT_PRICE := 4
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -167,6 +173,8 @@ var pulse_rite := false
 var xoa_award := ""
 var strike_bonus := 0
 var hound_gu := 0
+var owned_gu := {"moon": 1, "small_light": 0, "moon_edge": 0}
+var moon_link_known := false
 var outside_battle: Rules
 
 
@@ -203,6 +211,8 @@ func stage_at(index: int) -> Dictionary:
 			return KENNEL_TRIAL
 		KENNEL_TWO_FLOOR:
 			return KENNEL_TWO
+		KENNEL_THREE_FLOOR:
+			return KENNEL_THREE
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -264,7 +274,7 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
 		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
 		"refined_gu": arsenal.get("refined_gu", ""), "starter_gu": arsenal.get("starter_gu", ""),
-		"strike_bonus": arsenal.get("strike_bonus", 0),
+		"strike_bonus": arsenal.get("strike_bonus", 0), "moon_link": arsenal.get("moon_link", false),
 		"revised_ward": revised_ward, "relic": arsenal.get("relic", "")})
 
 
@@ -302,6 +312,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			hound_gu = 1
 		elif floor == KENNEL_TWO_FLOOR:
 			phase = "kennel_two_cleared"
+		elif floor == KENNEL_THREE_FLOOR:
+			phase = "kennel_three_cleared"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -737,6 +749,23 @@ func enter_kennel_two() -> bool:
 	return true
 
 
+func enter_kennel_three() -> bool:
+	if phase != "kennel_two_cleared":
+		return false
+	var previous := battle as Pack
+	var companions: Array[Dictionary] = [previous.dogs[0]]
+	if previous.bound_id >= 0:
+		companions.append(previous.dogs[previous.bound_id])
+	version = maxi(version, KENNEL_THREE_VERSION)
+	floor = KENNEL_THREE_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.PIT_BOARD.size()
+	battle = Pack.new({"round": 3, "hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_three"])
+	return true
+
+
 func workshop_size() -> int:
 	if version >= 6 or phase == "ambush_workshop":
 		return 4
@@ -832,11 +861,13 @@ func shop_relic() -> String:
 func shop_price(id: String) -> int:
 	if id == "buy_leaf":
 		return Goods.LEAF_PRICE
+	if id == "buy_small_light":
+		return SMALL_LIGHT_PRICE
 	return Goods.RELIC_TRADE_PRICE if not relic.is_empty() and relic != shop_relic() else Goods.RELIC_PRICE
 
 
 func shop_unavailable(id: String) -> String:
-	if phase != "shop" or id not in ["buy_leaf", "buy_relic"]:
+	if phase != "shop" or id not in ["buy_leaf", "buy_relic", "buy_small_light"]:
 		return "Món hàng không còn được bán."
 	if visited_shop.has(id):
 		return "Đã mua món này tại quầy."
@@ -855,10 +886,49 @@ func buy(id: String) -> bool:
 	visited_shop[id] = true
 	if id == "buy_leaf":
 		stop.leaves += 1
+	elif id == "buy_small_light":
+		version = maxi(version, GU_SHOP_VERSION)
+		owned_gu.small_light += SMALL_LIGHT_BUNDLE
 	else:
 		relic = shop_relic()
 	journal.append([id])
 	return true
+
+
+func gu_work_unavailable(id: String) -> String:
+	if phase != "shop":
+		return "Cần tới quầy trước."
+	match id:
+		"refine_owned_moon":
+			if owned_gu.moon == 0 or owned_gu.small_light < 2:
+				return "Cần 1 Nguyệt Quang và 2 Tiểu Quang."
+		"study_moon_link":
+			if moon_link_known:
+				return "Đã phối thành sát chiêu."
+			if owned_gu.moon_edge == 0 or owned_gu.small_light == 0:
+				return "Cần có Nguyệt Mang và 1 Tiểu Quang."
+		_:
+			return "Bí phương không có tại quầy."
+	return ""
+
+
+func commit_shop_action(id: String) -> bool:
+	match id:
+		"leave_shop":
+			return leave_shop()
+		"refine_owned_moon", "study_moon_link":
+			if not gu_work_unavailable(id).is_empty():
+				return false
+			version = maxi(version, GU_SHOP_VERSION)
+			if id == "refine_owned_moon":
+				owned_gu.moon -= 1
+				owned_gu.small_light -= 2
+				owned_gu.moon_edge += 1
+			else:
+				moon_link_known = true
+			journal.append([id])
+			return true
+	return buy(id)
 
 
 func leave_shop() -> bool:
@@ -883,7 +953,7 @@ func equip_build(recipe: String, starter: String) -> bool:
 	var vitals := workshop_vitals()
 	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
 		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves,
-		"relic": relic, "strike_bonus": strike_bonus}
+		"relic": relic, "strike_bonus": strike_bonus, "moon_link": moon_link_known and recipe == "moon_edge"}
 	match phase:
 		"ford_workshop":
 			floor = FORD_FLOOR
@@ -967,7 +1037,7 @@ static func restore(saved: Variant) -> RefCounted:
 				"waypoint":
 					committed = run.choose_waypoint(command[0])
 				"shop":
-					committed = run.leave_shop() if command[0] == "leave_shop" else run.buy(command[0])
+					committed = run.commit_shop_action(command[0])
 				"elite_reward":
 					committed = run.claim_elite_reward(command[0])
 				"chapter_cleared":
@@ -1004,6 +1074,8 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_kennel" and run.enter_kennel()
 				"kennel_cleared":
 					committed = command[0] == "enter_kennel_two" and run.enter_kennel_two()
+				"kennel_two_cleared":
+					committed = command[0] == "enter_kennel_three" and run.enter_kennel_three()
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

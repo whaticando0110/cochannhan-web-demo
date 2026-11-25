@@ -46,6 +46,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 16. Nối trại tạm và trận cổ sư Nô đạo trên đường núi Tam Xoa. Chuẩn bị tiếp tế, chọn mục tiêu và đọc lệnh khuyển thú.
 17. Qua cột sáng vàng và thu phục chó hoang đầu tiên trong truyền thừa Khuyển Vương.
 18. Chỉ huy chó ấy trên Gò cỏ úa và dùng Ngự Khuyển mới trước khi ba chó hoang khép vòng vây.
+19. Xuống hố đá ở vòng ba, giữ đàn bị thương qua sáu chó hoang. Thử mua Cổ, hợp luyện và tạo sát chiêu ở quầy ngoài phúc địa.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -260,7 +261,29 @@ Trong truyện, ba chó hoang xông lên từ ba phía. Phương Nguyên sai ch�
 
 **Gò cỏ úa** lấy chó, sinh lực và chân nguyên từ kết quả vòng đầu. Khi chọn vào vòng hai, bản lưu v16 nâng lên v17. Không Khiếu có một Ngự Khuyển Cổ để dùng cho một chó hoang trong tầm 2 ô, đường phóng thông, tốn 1 chân nguyên. Chó đổi phe ngay, giữ thương thế và bỏ đòn đã báo ở phía địch. Người chơi chọn chó A hoặc B rồi ra lệnh đi tối đa 2 ô, hoặc áp một ô để táp. Các hành động này là quy đổi theo lượt của demo.
 
-Mỗi chó hoang dự báo áp sát hoặc khóa một ô để táp. Chó đồng minh có thể chặn đường. Người chơi có thể rời ô bị khóa, điều chó ra chỗ khác hoặc dùng Ngự Khuyển để cắt một đòn. Vòng kết thúc khi dẹp hết chó hoang, giữ lại từng con sống với sinh lực thực tế. Nhật ký phát lại thứ tự lệnh, vị trí, phe, sinh lực và số Cổ còn. Vòng hai kết ở màn kết quả.
+Mỗi chó hoang dự báo áp sát hoặc khóa một ô để táp. Chó đồng minh có thể chặn đường. Người chơi có thể rời ô bị khóa, điều chó ra chỗ khác hoặc dùng Ngự Khuyển để cắt một đòn. Vòng kết thúc khi dẹp hết chó hoang, giữ lại từng con sống với sinh lực thực tế. Nhật ký phát lại thứ tự lệnh, vị trí, phe, sinh lực và số Cổ còn. Từ kết quả vòng hai, chọn **Xuống hố đá**.
+
+## Vòng ba Khuyển Vương · Hố đá dưới gò cỏ
+
+Chương 424 kể Phương Nguyên bị sáu chó hoang vây. Hắn xuống hố, dựa lưng vào vách và xếp hai chó đã bị thương ở trước. Hai con khỏe của địch đến đầu tiên, bốn con bị thương đến chậm hơn. [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html)
+
+Bản lưu v17 nâng lên v18 khi xuống hố. Demo bắt đầu ở thế dựa vách và mở lối phía trước để sắp đội hình. Sáu đối thủ hiện trên sân. Hai con khỏe hành động ngay, bốn con bị thương bắt đầu ở lượt ba và bốn. Cổ sư, chó còn sống và Cổ còn lại lấy đúng từ vòng hai. Không có Cổ cấp thêm ở cửa hố. Vòng ba vẫn áp dụng luật phong cấm. Thắng lưu thương thế của từng chó sống sót.
+
+Khung đứng đo theo vùng ảnh có alpha rõ ở cỡ chơi. Chó hoang thường cao khoảng 23 px tính cả đuôi. Huyền bào và Áo rêu cao khoảng 65–66 px. Giữ vòng phe và thanh sinh lực để đọc được từng con khi chúng chen ở lối hẹp. Các thú lớn như chó Thiết Giáp và Cuồng Điện Lang có cỡ riêng.
+
+## Kiểm tra cơ chế và thứ tự làm tiếp
+
+| Phần | Đã chơi được trong v18 | Mốc tiếp |
+| --- | --- | --- |
+| Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
+| Mua Cổ | Quầy bán 3 Tiểu Quang với 4 nguyên thạch, mỗi điểm dừng mua được một lần. Kho Cổ riêng được dựng lại từ nhật ký. | Mở sổ Cổ sở hữu, thêm mặt hàng ngoài hệ Nguyệt và nguồn nhận Cổ qua chiến lợi phẩm. |
+| Luyện Cổ | Dùng 1 Nguyệt Quang và 2 Tiểu Quang để nhận 1 Nguyệt Mang. Mẻ thử thành công cố định để kiểm luồng. Chọn bộ cấp sẵn ở xưởng vẫn dùng được cho lượt cũ. | Thêm nguyên liệu và giá hợp luyện cho Bạch Ngọc. Cân bằng lại đường đi khi chuyển dần sang bộ Cổ sở hữu. |
+| Tạo sát chiêu | Liên Nguyệt phối Nguyệt Mang với Tiểu Quang còn lại. Quy tắc demo là 42 sát thương, tầm 5 ô và 4 chân nguyên, dùng một lần mỗi trận khi mang Nguyệt Mang. | Thử một sát chiêu khác vai trò công kích, rồi so chi phí, ô mang và sức mạnh giữa các bộ trước khi mở thêm. |
+| Truyền thừa | Ba vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Mốc hiện tại kết ở màn kết quả hố đá. | Nối một mốc tiến sâu có lựa chọn đối thủ và đàn thú. Sau đó tách luật Tín Vương và Bạo Vương thành hai nhánh riêng. |
+
+Đi theo thứ tự hoàn thiện kho Cổ và nguồn nhận, hợp luyện thêm một hệ, cân bằng sát chiêu, rồi mở nhánh truyền thừa mới. Kiểm cả người chơi có Cổ sở hữu lẫn người chọn bộ cấp sẵn trong giai đoạn chuyển tiếp.
+
+Bí phương Nguyệt Mang lấy từ chương 98. Liên Nguyệt là sát chiêu riêng của demo, dùng nguyên tắc phối hợp nhiều Cổ trong truyện. Giá, tầm, sát thương và cách hành động trên lưới là số của trò chơi. [Chương 98](https://truyenhh3d.com/truyen/co-chan-nhan/chuong-98) · [Chương 719](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-719.html)
 
 ## Đồ họa trong trận
 

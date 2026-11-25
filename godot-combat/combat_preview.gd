@@ -86,7 +86,7 @@ func configure(current_run: RunData) -> void:
 		arena_room = 5
 	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
-	elif run.floor in [RunData.KENNEL_FLOOR, RunData.KENNEL_TWO_FLOOR]:
+	elif run.floor in [RunData.KENNEL_FLOOR, RunData.KENNEL_TWO_FLOOR, RunData.KENNEL_THREE_FLOOR]:
 		arena_room = 0
 	elif run.floor in [RunData.XOA_FLOOR, RunData.NODO_FLOOR]:
 		arena_room = 1
@@ -193,7 +193,7 @@ func build_hud() -> void:
 	elif run != null and run.floor == RunData.PULSE_FLOOR:
 		mode = "Tam chuyển · Boss cuối"
 	elif state is Pack:
-		mode = "Khuyển Vương · Vòng 2"
+		mode = "Khuyển Vương · Vòng %d" % (state as Pack).round_number
 	elif run != null and run.floor == RunData.KENNEL_FLOOR:
 		mode = "Khuyển Vương · Vòng 1"
 	elif run != null and run.floor == RunData.NODO_FLOOR:
@@ -323,6 +323,8 @@ func build_hud() -> void:
 		descriptions.append(["four_flavors", "7   Tứ Vị Tửu Trùng\nTay không +%d · −%d CN" % [Gu.BREW_STRIKE_BONUS, Gu.FOUR_FLAVORS_COST]])
 	elif state.refined_gu == "scale_veil":
 		descriptions.append(["scale_veil", "7   Ẩn Lân"])
+	if state.moon_link_equipped:
+		descriptions.append(["moon_link", "8   Liên Nguyệt\n−%d CN · 1 lần/trận" % Gu.MOON_LINK_COST])
 	if state is Pack:
 		descriptions.sort_custom(func(a: Array, b: Array): return a[1] < b[1])
 	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
@@ -369,7 +371,7 @@ func aim_enemy(hound: bool) -> void:
 
 
 func attack_target(action: String) -> int:
-	if aiming_at_hound and action in ["strike", "moon", "moon_edge"]:
+	if aiming_at_hound and action in ["strike", "moon", "moon_edge", "moon_link"]:
 		return state.live_hound()
 	return -1
 
@@ -509,8 +511,14 @@ func update_pack_hud(pack: Pack) -> void:
 	var threats: PackedStringArray = []
 	for cell: int in state.intent.get("cells", []):
 		threats.append(Rules.cell_name(cell))
-	intent_copy.text = "Còn %d chó hoang đang áp sát." % pack.living_dogs(false).size() \
-		if threats.is_empty() else "Ô bị nhắm táp · %s" % ", ".join(threats)
+	var wild_count := pack.living_dogs(false).size()
+	var delayed: int = wild_count - state.intent.get("orders", []).size()
+	if not threats.is_empty():
+		intent_copy.text = "Ô bị nhắm táp · %s" % ", ".join(threats)
+	elif pack.round_number == 3 and delayed > 0 and state.result.is_empty():
+		intent_copy.text = "%d con áp sát, %d con bị thương đến sau." % [wild_count - delayed, delayed]
+	else:
+		intent_copy.text = "Còn %d chó hoang trên sân." % wild_count
 	report_label.text = "\n".join(report.slice(0, 3))
 	for action: String in actions:
 		var reason := pack.unavailable(pack_action(action))
@@ -787,6 +795,8 @@ func choose(action: String) -> void:
 
 
 func shot_range(action: String) -> int:
+	if action == "moon_link" and state.moon_link_equipped:
+		return Gu.MOON_LINK_RANGE
 	if action == "bind_hound":
 		return Rules.BIND_RANGE
 	if action == "moon_edge" and state.refined_gu == action:
@@ -866,6 +876,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		choose(key_actions[event.keycode])
 	elif event.keycode == KEY_7 and not state.refined_gu.is_empty():
 		choose(state.refined_gu)
+	elif event.keycode == KEY_8 and state.moon_link_equipped:
+		choose("moon_link")
 	elif event.keycode == KEY_R and run == null:
 		reset_battle()
 	else:

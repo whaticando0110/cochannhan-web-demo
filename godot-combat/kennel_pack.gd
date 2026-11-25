@@ -6,6 +6,8 @@ const DOG_STEPS := 2
 const ALLY_BITE := 11
 const WILD_BITE := 6
 const DOG_HP := 18
+const PIT_CELL := 35
+const PIT_FLANKS := [26, 28]
 const LEAD_MOVE := "lead_move"
 const LEAD_BITE := "lead_bite"
 const BOUND_MOVE := "bound_move"
@@ -16,20 +18,42 @@ const BOARD := [
 	{"rocks": [12, 20, 26, 28], "wild": [5, 17, 38]},
 ]
 
+const PIT_BOARD := [
+	{"rocks": [9, 14, 25, 29, 32, 33, 34, 36, 37, 38, 39], "wild": [10, 12, 0, 2, 4, 7]},
+	{"rocks": [8, 15, 25, 29, 32, 33, 34, 36, 37, 38, 39], "wild": [9, 14, 1, 3, 5, 6]},
+	{"rocks": [10, 13, 25, 29, 32, 33, 34, 36, 37, 38, 39], "wild": [11, 12, 0, 1, 6, 7]},
+]
+
+var round_number := 2
 var dogs: Array[Dictionary] = []
 var bound_id := NO_ACTOR
 var gu_left := 1
 
 
 func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
-	var board: Dictionary = BOARD[layout]
+	round_number = vitals.get("round", 2)
+	var board: Dictionary = PIT_BOARD[layout] if round_number == 3 else BOARD[layout]
 	super({"hp": vitals.get("hp", MAX_HP), "qi": vitals.get("qi", MAX_QI),
 		"max_qi": vitals.get("max_qi", MAX_QI), "rocks": board.rocks,
 		"moon_equipped": false, "tactic": "kennel_pack"})
-	hero = 19
-	dogs.append({"cell": 18, "hp": vitals.get("dog_hp", 32), "max_hp": vitals.get("dog_max", 32), "allied": true})
-	for cell in board.wild:
-		dogs.append({"cell": cell, "hp": DOG_HP, "max_hp": DOG_HP, "allied": false})
+	if round_number == 3:
+		hero = PIT_CELL
+		gu_left = vitals.get("gu_left", 0)
+		var companions: Array = vitals.get("companions", [])
+		for index in range(companions.size()):
+			var dog: Dictionary = companions[index]
+			dogs.append({"cell": PIT_FLANKS[index], "hp": dog.hp, "max_hp": dog.max_hp, "allied": true})
+		if companions.size() == 2:
+			bound_id = 1
+		for index in range(board.wild.size()):
+			var injury := index >= 2
+			dogs.append({"cell": board.wild[index], "hp": 8 if injury else DOG_HP, "max_hp": DOG_HP,
+				"allied": false, "wake_turn": 3 + (index % 2) if injury else 1})
+	else:
+		hero = 19
+		dogs.append({"cell": 18, "hp": vitals.get("dog_hp", 32), "max_hp": vitals.get("dog_max", 32), "allied": true})
+		for cell in board.wild:
+			dogs.append({"cell": cell, "hp": DOG_HP, "max_hp": DOG_HP, "allied": false})
 	forecast()
 
 
@@ -40,7 +64,11 @@ func actor_name(id: int) -> String:
 		return "Chó vòng đầu"
 	if id == bound_id:
 		return "Chó mới"
-	return "Chó hoang %d" % id
+	return "Chó hoang %d" % wild_label(id)
+
+
+func wild_label(id: int) -> int:
+	return id - int(round_number == 3 and dogs.size() == 8)
 
 
 func actor_cell(id: int) -> int:
@@ -89,6 +117,8 @@ func forecast() -> void:
 	var cells: Array[int] = []
 	var allies := living_dogs(true)
 	for id in living_dogs(false):
+		if turn < int(dogs[id].get("wake_turn", 1)):
+			continue
 		var from := actor_cell(id)
 		var target := HERO_ID
 		var gap := distance(from, hero)

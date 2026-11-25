@@ -58,6 +58,8 @@ var heavy_count := 0
 var recovering := false
 var moon_equipped := true
 var refined_gu := ""
+var moon_link_equipped := false
+var moon_link_used := false
 var build_family := ""
 var moon_mark := false
 var ward_strength := 0
@@ -106,6 +108,7 @@ func _init(options: Dictionary = {}) -> void:
 	hound_hp = hound_max
 	moon_equipped = options.get("moon_equipped", true)
 	refined_gu = options.get("refined_gu", "")
+	moon_link_equipped = refined_gu == "moon_edge" and options.get("moon_link", false)
 	var starter := "moon" if moon_equipped else "jade_skin" if jade_skin else ""
 	starter_gu = options.get("starter_gu", starter)
 	if starter_gu.is_empty():
@@ -469,7 +472,7 @@ func unavailable(action: String, target: int = -1) -> String:
 	if tactic == "kennel" and action not in ["move", "guard"]:
 		return "Phúc địa đang phong cấm bộ Cổ và đòn đánh của cổ sư."
 	var aim := attack_cell(target)
-	if action in ["strike", "moon", "moon_edge"] and aim != wolf and (aim < 0 or aim != live_hound()):
+	if action in ["strike", "moon", "moon_edge", "moon_link"] and aim != wolf and (aim < 0 or aim != live_hound()):
 		return "Chọn một đối thủ còn trên sân."
 	match action:
 		"move":
@@ -486,6 +489,12 @@ func unavailable(action: String, target: int = -1) -> String:
 			if refined_gu != action:
 				return "Nguyệt Mang Cổ chưa được trang bị."
 			return shot_unavailable(action, Gu.MOON_EDGE_COST, Gu.MOON_EDGE_RANGE, aim)
+		"moon_link":
+			if not moon_link_equipped:
+				return "Cần hợp thành Liên Nguyệt và mang Nguyệt Mang."
+			if moon_link_used:
+				return "Liên Nguyệt đã dùng trong trận này."
+			return shot_unavailable(action, Gu.MOON_LINK_COST, Gu.MOON_LINK_RANGE, aim)
 		"guard":
 			pass
 		"jade_skin":
@@ -573,7 +582,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var healed := 0
 	var ward := jade_turns
 	var protection := ward_strength
-	var attack := action in ["strike", "moon", "moon_edge"]
+	var attack := action in ["strike", "moon", "moon_edge", "moon_link"]
 	var aim := attack_cell(target) if attack else wolf
 	var hits_hound := attack and aim != wolf
 	var defender_hp := hound_hp if hits_hound else wolf_hp
@@ -614,6 +623,9 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			dealt = Gu.MOON_EDGE_DAMAGE + (Gu.MOON_MARK_BONUS if set_trigger else 0)
 			qi_after = qi - Gu.MOON_EDGE_COST
 			mark = false
+		"moon_link":
+			dealt = Gu.MOON_LINK_DAMAGE
+			qi_after -= Gu.MOON_LINK_COST
 		"bind_hound":
 			qi_after -= BIND_COST
 		"guard":
@@ -753,7 +765,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 				notes.append("Ấn Dẫn Phong hồi %d chân nguyên." % preview.relic_qi)
 			elif used_relic:
 				notes.append("Giày cỏ lau đã hỗ trợ bước đầu.")
-		"strike", "moon", "moon_edge":
+		"strike", "moon", "moon_edge", "moon_link":
+			if action == "moon_link":
+				moon_link_used = true
 			var damage: int = preview.dealt
 			if preview.hits_hound:
 				hound_hp -= damage

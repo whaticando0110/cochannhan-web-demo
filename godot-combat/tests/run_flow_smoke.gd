@@ -305,6 +305,48 @@ func play_rank_two() -> void:
 	await play_waypoints(current_save)
 
 
+func play_gu_trade() -> void:
+	var before_trade: Dictionary = flow.run.snapshot().duplicate(true)
+	var wallet: int = flow.run.stones
+	check(not flow.run.commit_shop_action("refine_owned_moon") and not flow.run.commit_shop_action("study_moon_link"),
+		"Recipes must require the actual Gu in the pouch")
+	await click_button("buy_small_light")
+	await launch()
+	check(flow.run.version == Run.GU_SHOP_VERSION and flow.run.owned_gu.small_light == Run.SMALL_LIGHT_BUNDLE
+		and flow.run.stones == wallet - Run.SMALL_LIGHT_PRICE and not flow.run.buy("buy_small_light")
+		and not flow.run.buy("buy_leaf"), "Buying Gu must cost actual stones and duplicate purchases must be rejected")
+	await click_button("refine_owned_moon")
+	await launch()
+	check(flow.run.owned_gu == {"moon": 0, "small_light": 1, "moon_edge": 1}
+		and not flow.run.commit_shop_action("refine_owned_moon"), "Refining must consume one Nguyệt Quang and two Tiểu Quang once")
+	await click_button("study_moon_link")
+	await launch()
+	check(flow.run.moon_link_known and flow.run.owned_gu.small_light == 1
+		and not flow.run.commit_shop_action("study_moon_link"), "The learned combination must save without consuming its components")
+	await capture("godot-v18-quay-co.png")
+	await click_button("leave_shop")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	check(battle.moon_link_equipped and flow.current.actions.has("moon_link"),
+		"The new art must appear with Nguyệt Mang in a normal fight")
+	for step in range(3):
+		if battle.unavailable("moon_link").is_empty():
+			break
+		await shoot(KEY_4)
+	var before_hp := battle.wolf_hp
+	var before_qi := battle.qi
+	check(battle.unavailable("moon_link").is_empty(), "The test must reach a valid line for Liên Nguyệt")
+	await shoot(KEY_8)
+	await launch()
+	battle = flow.run.battle
+	check(battle.moon_link_used and battle.wolf_hp == before_hp - Gu.MOON_LINK_DAMAGE
+		and battle.qi == before_qi - Gu.MOON_LINK_COST and not battle.unavailable("moon_link").is_empty(),
+		"Liên Nguyệt damage, cost and charge must all replay")
+	flow.run = Run.restore(before_trade)
+	flow.persist()
+	flow.show_run()
+
+
 func play_waypoints(ridge_save: Dictionary) -> void:
 	flow.run = Run.restore(ridge_save)
 	flow.show_run()
@@ -328,6 +370,7 @@ func play_waypoints(ridge_save: Dictionary) -> void:
 	check(cheap.buy("buy_leaf") and not cheap.buy("buy_leaf") and not cheap.buy("buy_relic")
 		and cheap.workshop_vitals().leaves == base.leaves + 1, "Shop allowed a repeat sale or purchase without enough stones")
 	await capture("godot-v7-quay-doi-do.png")
+	await play_gu_trade()
 	await click_button("buy_relic")
 	await launch()
 	check(flow.run.phase == "shop" and flow.run.relic == "reed_boots" and flow.run.stones == 0
@@ -506,6 +549,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_nodo_road()
 	await play_kennel_trial()
 	await play_kennel_two()
+	await play_kennel_three()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -1019,6 +1063,40 @@ func play_kennel_two() -> void:
 	await capture("godot-v17-vuot-vong-hai.png")
 
 
+func play_kennel_three() -> void:
+	var original: Pack = flow.run.battle as Pack
+	var old: Dictionary = flow.run.snapshot().duplicate(true)
+	check(old.version == Run.KENNEL_TWO_VERSION, "Round two must still load before entering the new arena")
+	await click_button("enter_kennel_three")
+	await launch()
+	var pack := flow.run.battle as Pack
+	check(flow.run.version == Run.KENNEL_THREE_VERSION and pack.round_number == 3 and pack.hp == original.hp
+		and pack.hero == Pack.PIT_CELL and pack.gu_left == 0 and pack.living_dogs(false).size() == 6,
+		"The third round carries the caster into the pit with six enemies and no fresh Gu")
+	check(pack.dogs[0].hp == original.dogs[0].hp and pack.dogs[1].hp == original.dogs[original.bound_id].hp
+		and pack.intent.orders.size() == 2 and pack.unavailable("moon_link").contains("phong cấm"),
+		"The two wounded allies must carry over, and only the two healthy wild dogs act first")
+	await capture("godot-v18-ho-da.png")
+	await play_commands([[KEY_5, 10], [KEY_5, 20]])
+	var halfway := pack.dogs.duplicate(true)
+	var intent := pack.intent.duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	check(pack.dogs == halfway and pack.intent == intent and pack.turn == 3 and pack.intent.orders.size() == 4,
+		"Loading must preserve the wounded pack and the staggered four-dog approach")
+	key(KEY_6)
+	await play_commands([[KEY_5, 20]])
+	key(KEY_6)
+	await play_commands([[KEY_5, 11], [KEY_5, 11], [KEY_5, 11], [KEY_5, 18], [KEY_5, 3]])
+	var final_pack := pack.dogs.duplicate(true)
+	check(flow.run.phase == "kennel_three_cleared" and pack.living_dogs(false).is_empty()
+		and pack.living_dogs(true).size() == 2, "The pit can be cleared with both wounded dogs")
+	await launch()
+	check(flow.run.phase == "kennel_three_cleared" and (flow.run.battle as Pack).dogs == final_pack,
+		"The third round result must restore both survivors exactly")
+	await capture("godot-v18-vuot-ho-da.png")
+
+
 func check_pack_rules() -> void:
 	var pack := Pack.new({"qi": 1})
 	pack.rocks = [11]
@@ -1426,5 +1504,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes and both Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes shop Gu crafting, Liên Nguyệt and three Khuyển Vương trials")
 	quit(1 if failed else 0)
