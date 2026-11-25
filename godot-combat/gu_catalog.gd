@@ -15,7 +15,7 @@ const GU := {
 	"scale_veil": {"name": "Ẩn Lân Cổ", "family": "veil", "rank": 2},
 }
 const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
-const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "white_jade", "dog_control"]
+const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "white_jade", "brew", "four_flavors", "dog_control"]
 const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
 const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
 const MOON_LINK_COST := 4

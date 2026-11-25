@@ -275,15 +275,15 @@ Khung đứng đo theo vùng ảnh có alpha rõ ở cỡ chơi. Chó hoang thư
 
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v20 | Mốc tiếp |
+| Phần | Đã chơi được trong v21 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
 | Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
-| Luyện Cổ | Hai bí phương sở hữu đã chơi được là Nguyệt Mang tại quầy và Bạch Ngọc trong Sổ Cổ. Mẻ thử thành công cố định. | Cân bằng lại đường đi khi chuyển dần sang bộ Cổ sở hữu. |
+| Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc và Tứ Vị Tửu Trùng trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở thêm bí phương cho hệ Ẩn. |
 | Tạo sát chiêu | Liên Nguyệt và Bạch Quang Hộ Thể dùng chung ô 8, chỉ cấp theo Cổ Nhị chuyển cùng Tiểu Quang đang sở hữu. Đã so chi phí và hiệu quả đến Đường núi Tam Xoa. | Dùng cùng cấu trúc ô khi mở sát chiêu cho hệ khác. |
 | Truyền thừa | Ba vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Mốc hiện tại kết ở màn kết quả hố đá. | Nối một mốc tiến sâu có lựa chọn đối thủ và đàn thú. Sau đó tách luật Tín Vương và Bạo Vương thành hai nhánh riêng. |
 
-Sau đối chiếu hai bộ có Cổ sở hữu, bước tiếp theo là bổ sung bí phương rồi mở nhánh truyền thừa mới. Khi mở thêm bí phương, kiểm cả bộ sở hữu và bộ cấp sẵn.
+Sau mốc Tứ Vị Tửu Trùng, tiếp tục kiểm bí phương hệ Ẩn và mở nhánh truyền thừa mới. Mỗi lần thêm bí phương, kiểm cả bộ sở hữu và bộ cấp sẵn.
 
 Bí phương Nguyệt Mang lấy từ chương 98. Liên Nguyệt là sát chiêu riêng của demo, dùng nguyên tắc phối hợp nhiều Cổ trong truyện. Giá, tầm, sát thương và cách hành động trên lưới là số của trò chơi. [Chương 98](https://truyenhh3d.com/truyen/co-chan-nhan/chuong-98) · [Chương 719](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-719.html)
 
@@ -330,6 +330,16 @@ Trang bị một Cổ Nhị chuyển và một Cổ Nhất chuyển. Ô sát chi
 - Bài thử Bạch Quang bắt đầu với 18 sinh lực, 4 chân nguyên, 1 Sinh Cơ Diệp và ưu tiên giữ lá khi so các đường cùng số lượt. Sát chiêu được chọn ở 23/108 cấu hình. Có 19 cấu hình chặn được sát thương, trong đó có những lượt chặn đủ 18. Các phép thử tìm đường trong một số trạng thái cố định. Kết quả dùng để so vai trò trong chiến đấu, chưa đo tỷ lệ thắng của người chơi.
 
 Giữ giá, tầm, sát thương và phòng hộ hiện có. Kiểm thêm mức đủ chân nguyên trước khi Châu Hoàn Nguyên hoàn phí, phát lại nhật ký v18 có Liên Nguyệt và tải lại lớp phòng hộ của v20.
+
+## Hợp luyện Tứ Vị Tửu Trùng
+
+Chương 121 mô tả hai Tửu Trùng được hợp luyện với rượu Dương Mai chua, rượu mật Hoàng Kim ngọt, rượu Khổ Bối đắng và Bạch Lương dịch cay. Thành phẩm tinh luyện chân nguyên Nhị chuyển và giúp tăng một tiểu cảnh giới. [Chương 121](https://truyenhoan.com/co-chan-nhan/chuong-121.html)
+
+Trong demo, cả hai quầy bán gói 2 Tửu Trùng giá 4 nguyên thạch và một bộ bốn rượu giá 2 nguyên thạch. Có thể mua gói Tửu Trùng ở điểm dừng đầu rồi mua rượu sau khi thắng Bãi Đá Suối Sấm, hoặc để dành đủ 6 nguyên thạch mua cả hai ở quầy sau. Quầy ghi bốn tên rượu, còn Sổ theo dõi nguyên bộ trong mục nguyên liệu. Hợp luyện ngoài trận dùng trọn cả hai thành phần và thêm 1 Tứ Vị Tửu Trùng vào sở hữu. Giá, nguồn mua, mẻ thành công cố định và hiệu ứng chiến đấu dưới đây thuộc thiết kế demo.
+
+Nhấn phím `7` với Tứ Vị trang bị để dùng hiệu ứng Tinh nguyên hiện có. Có thể ghép với Tửu Trùng cấp sẵn hoặc Cổ Nhất chuyển hệ khác. Không cấp thêm sát chiêu ô `8`. Quầy từ chối nếu đã mua món ở điểm dừng này hoặc thiếu nguyên thạch. Sổ chặn hợp luyện khi thiếu nguyên liệu, đang giao chiến hoặc còn trong phúc địa Khuyển Vương.
+
+Bản lưu cũ không tự nhận nguyên liệu. Giao dịch mới nâng nhật ký lên v21. Khi tải lại, số rượu và Cổ được khôi phục bằng giao dịch đã ghi, gồm cả lượt hợp luyện và hiệu ứng trong trận.
 
 ## Đồ họa trong trận
 

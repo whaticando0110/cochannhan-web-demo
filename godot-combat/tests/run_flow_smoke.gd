@@ -502,8 +502,77 @@ func play_white_jade_recipe() -> void:
 	flow.show_run()
 
 
+func play_owned_brew(ridge_save: Dictionary) -> void:
+	var legacy := ridge_save.duplicate(true)
+	legacy.version = Run.WHITE_JADE_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.version == Run.WHITE_JADE_VERSION and flow.run.wine_sets == 0
+		and flow.run.owned_gu.get("brew", 0) == 0, "Old saves must not be granted recipe materials")
+	flow.persist()
+	flow.show_run()
+	await click_button("cross_ford")
+	await click_button("merchant")
+	await capture("godot-v21-quay-ruou.png")
+	var wine_first := Run.restore(flow.run.snapshot()) as Run
+	check(wine_first.buy("buy_wine_set") and wine_first.wine_sets == 1
+		and wine_first.stones == Goods.RIDGE_STONES - Run.WINE_SET_PRICE
+		and not wine_first.buy("buy_brew") and not wine_first.commit_book_action("refine_owned_brew"),
+		"Buying wine first must pay its own price and require the Gu pair")
+	await click_button("buy_brew")
+	await launch()
+	check(flow.run.version == Run.FOUR_FLAVORS_VERSION and flow.run.owned_gu.brew == Run.BREW_BUNDLE
+		and flow.run.stones == 0 and not flow.run.buy("buy_brew") and not flow.run.buy("buy_wine_set"),
+		"Buying the Gu pair must charge the wallet once and leave the wine unpaid")
+	var old_header: Dictionary = flow.run.snapshot().duplicate(true)
+	old_header.version = Run.WHITE_JADE_VERSION
+	check(Run.restore(old_header) == null, "A v20 header must reject the new shop transaction")
+	await click_button("open_gu_book")
+	var refine := flow.find_child("refine_owned_brew", true, false) as Button
+	check(refine != null and refine.disabled and not flow.run.commit_book_action("refine_owned_brew"),
+		"The pair alone must not complete the recipe")
+	await click_button("close_gu_book")
+	await click_button("leave_shop")
+	await select_kit("four_flavors", "brew")
+	await play_commands([[KEY_3], [KEY_7], [KEY_1, 19], [KEY_1, 21], [KEY_2], [KEY_2], [KEY_1, 14], [KEY_2], [KEY_2]])
+	check(flow.run.can_enter_pass() and flow.run.stones == Goods.FORD_STONES
+		and flow.run.owned_gu.get("four_flavors", 0) == 0 and flow.run.owned_gu.brew == Run.BREW_BUNDLE,
+		"The loaned version must keep the old path winnable without altering the Sổ Cổ")
+	await click_button("enter_pass")
+	await click_button("merchant")
+	await click_button("buy_wine_set")
+	await launch()
+	check(flow.run.wine_sets == 1 and flow.run.stones == 0 and not flow.run.buy("buy_wine_set"),
+		"Save and reload must keep the wine set, charge and per-shop limit")
+	await click_button("open_gu_book")
+	await capture("godot-v21-bi-phuong-tu-vi.png")
+	await click_button("refine_owned_brew")
+	await launch()
+	check(flow.run.wine_sets == 0 and flow.run.owned_gu.brew == 0 and flow.run.owned_gu.four_flavors == 1
+		and flow.run.gu_receipts.count({"gu": "brew", "change": -Run.BREW_BUNDLE, "source": "Hợp luyện Tứ Vị Tửu Trùng"}) == 1
+		and not flow.run.commit_book_action("refine_owned_brew"), "Refining must consume both materials, persist and reject a duplicate")
+	var replay: Dictionary = flow.run.snapshot().duplicate(true)
+	replay.journal.append(["refine_owned_brew"])
+	check(Run.restore(replay) == null, "The journal must reject a forged second refinement")
+	await click_button("open_gu_book")
+	await capture("godot-v21-so-co-tu-vi.png")
+	await click_button("close_gu_book")
+	await click_button("leave_shop")
+	var choices := flow.find_child("workshop_recipe", true, false) as OptionButton
+	check(choices != null and choices.get_item_text(Gu.RECIPES.find("four_flavors")).contains("Sở hữu"),
+		"The crafted Gu must be shown as owned at the workshop")
+	await select_kit("four_flavors", "brew")
+	var charge: int = flow.run.battle.qi
+	await shoot(KEY_7)
+	await launch()
+	check(flow.run.battle.strong_strikes == 1 and flow.run.battle.build_family == "brew"
+		and flow.run.battle.qi == charge - Gu.FOUR_FLAVORS_COST
+		and flow.run.owned_gu.four_flavors == 1 and flow.run.owned_gu.brew == 0,
+		"The owned result must keep the existing combat effect, including after reload")
+
+
 func play_waypoints(ridge_save: Dictionary) -> void:
 	await play_gu_book(ridge_save)
+	await play_owned_brew(ridge_save)
 	flow.run = Run.restore(ridge_save)
 	flow.show_run()
 	check(flow.run.stones == Goods.RIDGE_STONES, "Winning the ridge must pay once")
@@ -1555,6 +1624,22 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		await capture("godot-ket-qua-tuyen.png")
 
 
+func check_owned_brew_recipe() -> void:
+	var run := Run.new(Awakening.profile_for("huyen-bao", 12), 0)
+	run.phase = "ford_workshop"
+	run.wine_sets = 1
+	run.owned_gu["brew"] = 1
+	check(not run.commit_book_action("refine_owned_brew") and run.wine_sets == 1 and run.owned_gu.brew == 1,
+		"One Tửu Trùng and the wine cannot complete the recipe")
+	run.owned_gu.brew = Run.BREW_BUNDLE
+	run.phase = "battle"
+	check(not run.commit_book_action("refine_owned_brew"), "The recipe must be sealed during a fight")
+	run.phase = "kennel_ready"
+	run.floor = Run.KENNEL_FLOOR
+	check(not run.commit_book_action("refine_owned_brew") and run.wine_sets == 1 and run.owned_gu.brew == Run.BREW_BUNDLE,
+		"The recipe must remain sealed in Khuyển Vương")
+
+
 func check_owned_art_slots() -> void:
 	var profile := Awakening.profile_for("huyen-bao", 12)
 	for starter: String in Gu.STARTERS:
@@ -1650,6 +1735,7 @@ func exercise() -> void:
 	DirAccess.make_dir_recursive_absolute(data)
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
 	check_gu_and_tactics()
+	check_owned_brew_recipe()
 	check_owned_art_slots()
 	check_white_light_balance()
 	check_third_save()
@@ -1755,5 +1841,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, refining Bạch Ngọc, both arts and three Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, refining Bạch Ngọc and Tứ Vị, both arts and three Khuyển Vương trials")
 	quit(1 if failed else 0)

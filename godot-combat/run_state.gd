@@ -5,9 +5,10 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 20
+const CURRENT_VERSION := 21
+const FOUR_FLAVORS_VERSION := 21
 const WHITE_JADE_VERSION := 20
-const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light"]
+const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light", "refine_owned_brew"]
 const GU_BOOK_VERSION := 19
 const GU_SHOP_VERSION := 18
 const RIDGE_FLOOR := 3
@@ -126,9 +127,12 @@ const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
 const SMALL_LIGHT_BUNDLE := 3
 const SMALL_LIGHT_PRICE := 4
+const BREW_BUNDLE := 2
+const WINE_SET_PRICE := 2
 const GU_SHOP_STOCK := {
 	"buy_small_light": {"gu": "small_light", "count": SMALL_LIGHT_BUNDLE, "price": SMALL_LIGHT_PRICE, "version": GU_SHOP_VERSION},
 	"buy_jade_skin": {"gu": "jade_skin", "count": 1, "price": 3, "version": GU_BOOK_VERSION},
+	"buy_brew": {"gu": "brew", "count": BREW_BUNDLE, "price": 4, "version": FOUR_FLAVORS_VERSION},
 }
 const GU_LOOT := {
 	RIDGE_FLOOR: {"gu": "small_light", "count": 2, "detail": "Túi Cổ mắc trong khe đá sau trận."},
@@ -184,6 +188,7 @@ var pulse_rite := false
 var xoa_award := ""
 var strike_bonus := 0
 var owned_gu := {"moon": 1, "small_light": 0, "moon_edge": 0}
+var wine_sets := 0
 var gu_receipts: Array[Dictionary] = [{"gu": "moon", "change": 1, "source": "Khởi đầu lượt chơi"}]
 var gu_loot_claimed := {}
 var chapter_rules_before_book := 0
@@ -523,6 +528,9 @@ func book_unavailable(id: String) -> String:
 				return "Đã phối thành sát chiêu."
 			if owned_gu.get("white_jade", 0) < 1 or owned_gu.small_light < 1:
 				return "Cần Bạch Ngọc và Tiểu Quang sở hữu."
+		"refine_owned_brew":
+			if owned_gu.get("brew", 0) < BREW_BUNDLE or wine_sets < 1:
+				return "Tửu Trùng %d/%d · Bộ rượu %d/1" % [owned_gu.get("brew", 0), BREW_BUNDLE, wine_sets]
 		_:
 			return "Bí phương này chưa có trong sổ."
 	return ""
@@ -531,14 +539,22 @@ func book_unavailable(id: String) -> String:
 func commit_book_action(id: String) -> bool:
 	if not book_unavailable(id).is_empty():
 		return false
-	version = maxi(version, WHITE_JADE_VERSION)
-	if id == "refine_owned_jade":
-		var source := "Hợp luyện Bạch Ngọc"
-		change_owned_gu("jade_skin", -1, source)
-		change_owned_gu("white_boar", -1, source)
-		change_owned_gu("white_jade", 1, source)
-	else:
-		white_light_known = true
+	match id:
+		"refine_owned_jade":
+			version = maxi(version, WHITE_JADE_VERSION)
+			var source := "Hợp luyện Bạch Ngọc"
+			change_owned_gu("jade_skin", -1, source)
+			change_owned_gu("white_boar", -1, source)
+			change_owned_gu("white_jade", 1, source)
+		"study_white_light":
+			version = maxi(version, WHITE_JADE_VERSION)
+			white_light_known = true
+		"refine_owned_brew":
+			version = maxi(version, FOUR_FLAVORS_VERSION)
+			var source := "Hợp luyện Tứ Vị Tửu Trùng"
+			wine_sets -= 1
+			change_owned_gu("brew", -BREW_BUNDLE, source)
+			change_owned_gu("four_flavors", 1, source)
 	journal.append([id])
 	return true
 
@@ -939,13 +955,15 @@ func shop_relic() -> String:
 func shop_price(id: String) -> int:
 	if id == "buy_leaf":
 		return Goods.LEAF_PRICE
+	if id == "buy_wine_set":
+		return WINE_SET_PRICE
 	if GU_SHOP_STOCK.has(id):
 		return GU_SHOP_STOCK[id].price
 	return Goods.RELIC_TRADE_PRICE if not relic.is_empty() and relic != shop_relic() else Goods.RELIC_PRICE
 
 
 func shop_unavailable(id: String) -> String:
-	if phase != "shop" or (id not in ["buy_leaf", "buy_relic"] and not GU_SHOP_STOCK.has(id)):
+	if phase != "shop" or (id not in ["buy_leaf", "buy_relic", "buy_wine_set"] and not GU_SHOP_STOCK.has(id)):
 		return "Món hàng không còn được bán."
 	if visited_shop.has(id):
 		return "Đã mua món này tại quầy."
@@ -966,6 +984,9 @@ func buy(id: String) -> bool:
 	visited_shop[id] = true
 	if id == "buy_leaf":
 		stop.leaves += 1
+	elif id == "buy_wine_set":
+		version = maxi(version, FOUR_FLAVORS_VERSION)
+		wine_sets += 1
 	elif GU_SHOP_STOCK.has(id):
 		var offer: Dictionary = GU_SHOP_STOCK[id]
 		version = maxi(version, offer.version)
