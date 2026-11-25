@@ -43,6 +43,8 @@ Sau khi nhận thưởng Điện Trấn Mạch, chọn **Sang Tứ chuyển**. N
 
 Sau bãi đá, **trại tạm Tam Xoa** cho chọn nghỉ lấy sức hoặc đổi 6 nguyên thạch lấy 2 Sinh Cơ Diệp. Trên **Đường núi Tam Xoa**, chọn đánh cổ sư Nô đạo để ngắt lệnh, hoặc hạ khuyển thú trước. Cả hai chiếm ô riêng và có thể chắn đường phóng Cổ. Khi khuyển đã khóa ô, di chuyển để né hoặc thủ thế. Thắng mở đường đến cửa truyền thừa.
 
+Tại **cột sáng vàng của Khuyển Vương**, luyện hóa Ngự Khuyển Cổ nhất chuyển rồi bước vào vòng đầu. Phúc địa phong cấm bộ Cổ chiến đấu và bảo vật. Tiến vào tầm hai ô có đường thông, dùng phím `3` để thu phục chó hoang bằng 1 chân nguyên. Chó giữ nguyên sinh lực và cùng một Ngự Khuyển Cổ mới trở thành phần chuẩn bị cho vòng tiếp theo.
+
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 
 Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)

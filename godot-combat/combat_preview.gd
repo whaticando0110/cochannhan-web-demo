@@ -82,6 +82,8 @@ func configure(current_run: RunData) -> void:
 		arena_room = 5
 	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
+	elif run.floor == RunData.KENNEL_FLOOR:
+		arena_room = 0
 	elif run.floor in [RunData.XOA_FLOOR, RunData.NODO_FLOOR]:
 		arena_room = 1
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
@@ -167,7 +169,7 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 
 func build_hud() -> void:
-	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic in ["armored_hound", "nodo"] else "THANH MAO SƠN"
+	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic in ["armored_hound", "nodo", "kennel"] else "THANH MAO SƠN"
 	label("CỔ CHÂN NHÂN  /  " + area, 36, 22, 600, 30, 17, GREEN)
 	if Goods.RELICS.has(state.relic):
 		relic_label = label("", 655, 10, 333, 31, 15, GOLD)
@@ -186,6 +188,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 3"
 	elif run != null and run.floor == RunData.PULSE_FLOOR:
 		mode = "Tam chuyển · Boss cuối"
+	elif run != null and run.floor == RunData.KENNEL_FLOOR:
+		mode = "Khuyển Vương · Vòng 1"
 	elif run != null and run.floor == RunData.NODO_FLOOR:
 		mode = "Tứ chuyển · Màn 2"
 	elif run != null and run.floor == RunData.XOA_FLOOR:
@@ -239,7 +243,7 @@ func build_hud() -> void:
 	hp_label = label("", 1054, 222, 94, 21, 16, GREEN)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hp_bar = bar(880, 248, 267, GREEN, Rules.MAX_HP)
-	var gold_essence := state.tactic in ["armored_hound", "nodo"]
+	var gold_essence := state.tactic in ["armored_hound", "nodo", "kennel"]
 	var qi_tint := GOLD if gold_essence else CYAN
 	label("Chân nguyên hoàng kim" if gold_essence else "Chân nguyên", 880, 263, 169, 22, 16, IVORY)
 	qi_label = label("", 1054, 263, 94, 22, 16, qi_tint)
@@ -274,8 +278,11 @@ func build_hud() -> void:
 
 	var descriptions := [
 		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
-		["strike", "2   Tay không\n%d sát thương · +1 CN" % (Rules.STRIKE_DAMAGE + state.strike_bonus)],
 	]
+	if state.tactic == "kennel":
+		descriptions.append(["bind_hound", "3   Ngự Khuyển Cổ\nTầm %d ô · −%d CN" % [Rules.BIND_RANGE, Rules.BIND_COST]])
+	else:
+		descriptions.append(["strike", "2   Tay không\n%d sát thương · +1 CN" % (Rules.STRIKE_DAMAGE + state.strike_bonus)])
 	if state.moon_equipped:
 		descriptions.append(["moon", "3   Nguyệt Quang\nTầm %d ô · −%d CN" % [Rules.MOON_RANGE, Rules.MOON_COST]])
 	elif state.starter_gu == "brew":
@@ -383,7 +390,7 @@ func update_hud() -> void:
 	match state.result:
 		Rules.VICTORY:
 			intent_name.text = "Thắng trận"
-			intent_copy.text = "Bạn đã hạ %s." % enemy_name
+			intent_copy.text = "Chó hoang đã theo lệnh bạn." if state.tactic == "kennel" else "Bạn đã hạ %s." % enemy_name
 		Rules.DEFEAT:
 			intent_name.text = "Bạn đã gục"
 			intent_copy.text = "Chọn Chơi lại trận hoặc nhấn R." if run == null else "Lượt chơi đã kết thúc."
@@ -492,6 +499,8 @@ func show_hint() -> void:
 	else:
 		if state.tactic == "ford":
 			hint_label.text = "Đi được qua nước nông. Ô nước chuyển tím khi có điện. Vách đá chặn đòn đánh xa."
+		elif state.tactic == "kennel":
+			hint_label.text = "Áp sát hoặc Thủ thế chờ chó đến gần. Phím 3 để thu phục khi đường phóng thông."
 		elif state.tactic == "nodo":
 			var aim := "Khuyển thú" if aiming_at_hound else "Cổ sư Nô đạo"
 			hint_label.text = "Đang nhắm %s. Bấm đối thủ trên sân hoặc trong bảng bên phải để đổi mục tiêu." % aim
@@ -524,6 +533,9 @@ func inspect_action(action: String) -> void:
 	var result := state.preview_action(action, attack_target(action))
 	if result.has("error"):
 		hint_label.text = result.error
+		return
+	if action == "bind_hound":
+		hint_label.text = "Thu phục ngay · giữ nguyên sinh lực chó hoang · còn %d chân nguyên" % result.qi
 		return
 	var pieces: PackedStringArray = []
 	if result.dealt > 0:
@@ -645,6 +657,8 @@ func choose(action: String) -> void:
 
 
 func shot_range(action: String) -> int:
+	if action == "bind_hound":
+		return Rules.BIND_RANGE
 	if action == "moon_edge" and state.refined_gu == action:
 		return Gu.MOON_EDGE_RANGE
 	return Rules.MOON_RANGE if action == "moon" and state.moon_equipped else 0
@@ -697,6 +711,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	var third := state.starter_gu if state.starter_gu in ["brew", "stone_veil"] else "moon"
+	if state.tactic == "kennel":
+		third = "bind_hound"
 	var key_actions := {KEY_1: "move", KEY_2: "strike", KEY_3: third,
 		KEY_4: "guard", KEY_5: "jade_skin", KEY_6: "vital_leaf"}
 	if key_actions.has(event.keycode):

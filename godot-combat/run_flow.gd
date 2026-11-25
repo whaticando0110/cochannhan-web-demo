@@ -230,7 +230,9 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
+	if run.floor == Run.KENNEL_FLOOR or run.phase in ["kennel_gate", "kennel_ready"]:
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA KHUYỂN VƯƠNG"
+	elif run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
 		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
 	elif run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
 		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
@@ -328,6 +330,15 @@ func show_result() -> void:
 		"nodo_cleared":
 			title = "Qua đường núi Tam Xoa"
 			description = "Đã giành được lối lên cửa truyền thừa. Đoàn buôn nhắc chuẩn bị Ngự Khuyển Cổ trước khi vào phúc địa."
+		"kennel_gate":
+			title = "Cột sáng Khuyển Vương"
+			description = "Đoàn buôn tặng bạn một Ngự Khuyển Cổ nhất chuyển để đáp công dẹp đường."
+		"kennel_ready":
+			title = "Cột sáng Khuyển Vương"
+			description = "Ngự Khuyển Cổ đã vào Không Khiếu. Cột sáng vàng dẫn vào vòng đầu."
+		"kennel_cleared":
+			title = "Vượt vòng đầu Khuyển Vương"
+			description = "Chó hoang đã theo lệnh bạn. Phúc địa ban thêm một Ngự Khuyển Cổ nhất chuyển."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -374,6 +385,8 @@ func show_result() -> void:
 		draw_xoa_rewards()
 	elif run.phase == "xoa_camp":
 		draw_nodo_camp()
+	elif run.phase in ["kennel_gate", "kennel_ready"]:
+		draw_kennel_gate()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -448,6 +461,13 @@ func show_result() -> void:
 			camp.grab_focus()
 		elif run.phase == "nodo_cleared":
 			draw_vitals(355)
+			var gate := button(menu, "Tới cột sáng vàng", Rect2(432, 480, 310, 54), advance_kennel.bind("gate"))
+			gate.name = "reach_kennel_gate"
+			gate.grab_focus()
+		elif run.phase == "kennel_cleared":
+			text(menu, "Chó hoang · %d/%d sinh lực     |     Ngự Khuyển Cổ ×%d" % [
+				run.battle.wolf_hp, run.battle.wolf_max, run.hound_gu], Rect2(96, 308, 1008, 43), 22, GOLD)
+			text(menu, "Đã lưu chó hoang và Cổ cho vòng kế tiếp.", Rect2(96, 368, 1008, 40), 19, GREEN)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -729,6 +749,55 @@ func enter_xoa_camp() -> void:
 	if run.enter_xoa_camp():
 		persist()
 		show_result()
+
+
+func advance_kennel(step: String) -> void:
+	var changed: bool
+	match step:
+		"gate":
+			changed = run.reach_kennel_gate()
+		"refine":
+			changed = run.refine_hound_gu()
+		"enter":
+			changed = run.enter_kennel()
+	if changed:
+		persist()
+		show_run()
+
+
+func draw_kennel_gate() -> void:
+	var ready := run.phase == "kennel_ready"
+	var card := panel(menu, Rect2(96, 316, 1008, 272), Color("#202922"), Color("#847550"))
+	var art := Control.new()
+	art.position = Vector2(16, 13)
+	art.size = Vector2(238, 244)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(art)
+	art.draw.connect(func():
+		art.draw_rect(Rect2(Vector2.ZERO, art.size), Color("#151c18"))
+		for layer in range(5):
+			var inset := layer * 9.0
+			art.draw_colored_polygon(PackedVector2Array([Vector2(63 + inset, 14), Vector2(175 - inset, 14),
+				Vector2(150 - inset * .45, 196), Vector2(88 + inset * .45, 196)]), Color(1, .79, .29, .09))
+		for i in range(18):
+			var height := float((i * 67) % 170) + 15.0
+			var drift := float((i * 31) % 94) - 47.0
+			art.draw_rect(Rect2(119 + drift * (1.0 - height / 440), height, 2, 4), Color("#ecbd6580"))
+		art.draw_set_transform(Vector2(119, 202), 0.0, Vector2(1, .22))
+		art.draw_arc(Vector2.ZERO, 81, 0, TAU, 48, Color("#5f5232"), 2, true)
+		art.draw_arc(Vector2(0, -7), 58, 0, TAU, 48, Color("#e8bc66"), 2, true)
+		art.draw_set_transform(Vector2.ZERO)
+	)
+	text(card, "Luật vòng đầu", Rect2(297, 20, 654, 53), 30, GOLD, true)
+	text(card, "Chỉ Ngự Khuyển Cổ được thôi động. Bộ Cổ chiến đấu và bảo vật sẽ nằm yên cho đến khi rời phúc địa.",
+		Rect2(299, 77, 647, 63), 19)
+	var advice := "Chờ chó hoang vào tầm hoặc tìm góc phóng qua đá. Vào cửa với ít nhất 1 chân nguyên." if ready else (
+		"Luyện hóa Ngự Khuyển trước khi chạm vào cột sáng.")
+	text(card, advice, Rect2(299, 145, 647, 51), 18, GREEN)
+	var enter := button(card, "Bước vào cột sáng" if ready else "Luyện hóa Ngự Khuyển", Rect2(298, 211, 350, 44),
+		advance_kennel.bind("enter" if ready else "refine"))
+	enter.name = "enter_kennel" if ready else "refine_hound_gu"
+	enter.grab_focus()
 
 
 func draw_nodo_camp() -> void:

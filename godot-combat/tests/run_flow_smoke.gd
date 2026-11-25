@@ -503,6 +503,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_pulse_boss()
 	await play_xoa_trail()
 	await play_nodo_road()
+	await play_kennel_trial()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -910,6 +911,90 @@ func play_nodo_road() -> void:
 		"The camp, target choices and victory must replay in the saved run")
 
 
+func play_kennel_trial() -> void:
+	var saved_v15: Dictionary = flow.run.snapshot().duplicate(true)
+	check(saved_v15.version == Run.NODO_VERSION, "The road remains v15 before going to the pillar")
+	var legacy: RefCounted = Run.restore(saved_v15)
+	check(legacy != null and legacy.phase == "nodo_cleared" and not legacy.enter_kennel()
+		and not legacy.refine_hound_gu(), "A v15 win must restore at the road with both gate actions locked")
+	var old_relic: String = flow.run.battle.relic
+	var old_leaves: int = flow.run.battle.leaves
+	var old_refined: String = flow.run.battle.refined_gu
+	await click_button("reach_kennel_gate")
+	await launch()
+	check(flow.run.phase == "kennel_gate" and flow.run.version == Run.KENNEL_VERSION and flow.run.hound_gu == 0
+		and not flow.run.enter_kennel(), "Entering Tam Xoa must upgrade the save and require refining the first Gu")
+	await capture("godot-v16-cot-sang-khuyen-vuong.png")
+	await click_button("refine_hound_gu")
+	await launch()
+	check(flow.run.phase == "kennel_ready" and flow.run.hound_gu == 1 and not flow.run.refine_hound_gu(),
+		"Refining the key must persist and must be single-use")
+	await click_button("enter_kennel")
+	await launch()
+	var battle: Rules = flow.run.battle
+	check(flow.run.floor == Run.KENNEL_FLOOR and battle.tactic == "kennel" and flow.run.outside_battle.relic == old_relic
+		and flow.run.outside_battle.leaves == old_leaves and flow.run.outside_battle.refined_gu == old_refined
+		and battle.relic.is_empty() and battle.leaves == 0 and battle.refined_gu.is_empty(),
+		"The aperture must lock outside equipment while preserving it in the run")
+	check(flow.current.actions.has("bind_hound") and flow.current.actions.size() == 3
+		and battle.unavailable("strike").contains("phong cấm")
+		and battle.unavailable("moon_edge").contains("phong cấm"), "Only movement, guarding and the proper Gu are available")
+	var journal_size: int = flow.run.journal.size()
+	check(flow.run.perform("bind_hound").has("error") and flow.run.journal.size() == journal_size,
+		"A bind out of range must be harmless")
+	for step in range(5):
+		if battle.unavailable("bind_hound").is_empty():
+			break
+		await play_commands([[KEY_4]])
+	var position := battle.wolf
+	var health := battle.wolf_hp
+	var before_qi := battle.qi
+	await launch()
+	battle = flow.run.battle
+	check(battle.wolf == position and battle.unavailable("bind_hound").is_empty(), "Save must restore the dog's approach")
+	await capture("godot-v16-bai-co-phuc-dia.png")
+	await play_commands([[KEY_3]])
+	await launch()
+	check(flow.run.phase == "kennel_cleared" and flow.run.battle.wolf_hp == health
+		and flow.run.battle.qi == before_qi - Rules.BIND_COST and flow.run.hound_gu == 1,
+		"Winning must save the healthy dog and the next Gu after spending the first one")
+	await capture("godot-v16-qua-vong-dau.png")
+	var duplicate: Dictionary = flow.run.snapshot().duplicate(true)
+	duplicate.journal.append(["bind_hound", -1])
+	check(Run.restore(duplicate) == null, "The reward cannot be awarded twice by replay")
+	duplicate = flow.run.snapshot().duplicate(true)
+	duplicate.version = Run.NODO_VERSION
+	check(Run.restore(duplicate) == null, "The v15 schema must not accept an inner-trial journal")
+
+
+func check_kennel_rules() -> void:
+	var battle := Rules.new({"tactic": "kennel", "qi": 1, "wolf_cell": 19, "rocks": [18]})
+	check(battle.unavailable("bind_hound").contains("Tảng đá")
+		and battle.unavailable("bind_hound", 20).contains("đúng ô"),
+		"Cover and invalid targets must both stop the bind")
+	check(Rules.new().unavailable("bind_hound").contains("Không có"), "The new action must be restricted to the trial")
+	battle = Rules.new({"tactic": "kennel", "hp": 1, "qi": 0, "wolf_cell": 18, "rocks": []})
+	check(battle.unavailable("bind_hound").contains("chân nguyên"), "The cast must require essence")
+	battle.take_turn("guard")
+	check(battle.result == Rules.DEFEAT, "The protected inventory must not prevent death in the trial")
+	for layout in range(3):
+		for capacity in range(4, 8):
+			for hp in [1, 8, 24, 48]:
+				var run := Run.new(Awakening.profile_for("huyen-bao", 12), 1594323 * layout, Run.NODO_VERSION)
+				run.phase = "nodo_cleared"
+				run.battle = Rules.new({"hp": hp, "qi": 0, "max_qi": capacity})
+				check(run.reach_kennel_gate() and run.refine_hound_gu() and run.enter_kennel() and run.battle.qi == 1,
+					"Every gate entry must supply enough for one bind")
+				for step in range(6):
+					if run.battle.unavailable("bind_hound").is_empty():
+						run.perform("bind_hound")
+						break
+					run.perform("guard")
+				check(run.phase == "kennel_cleared" and run.battle.hp == hp
+					and run.battle.wolf_hp == Run.KENNEL_TRIAL.hp and run.hound_gu == 1,
+					"A cautious first round must work in layout %d with %d HP and %d capacity" % [layout, hp, capacity])
+
+
 func check_nodo_targets() -> void:
 	var battle := Rules.new({"tactic": "nodo", "hound_cell": 19, "hound_hp": 40, "wolf_cell": 21, "rocks": [],
 		"starter_gu": "moon", "refined_gu": "moon_edge", "qi": 6, "max_qi": 6})
@@ -1160,6 +1245,7 @@ func exercise() -> void:
 	check_ambush_kit()
 	check_relic_rules()
 	check_nodo_targets()
+	check_kennel_rules()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -1255,5 +1341,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, two targets, lunge replay and both hide routes")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes and Khuyển Vương gate and first trial")
 	quit(1 if failed else 0)

@@ -44,6 +44,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 14. Mở Điện Trấn Mạch, boss cuối Tam chuyển, sau khi nhận thưởng Đài Trấn Ấn. Luân phiên cự ly gần và xa để đối phó sóng chấn.
 15. Mở Tứ chuyển ở bãi đá chân núi Tam Xoa, ngoài cửa truyền thừa. Dùng địa hình để tránh cú húc của chó Thiết Giáp và đổi góc đánh.
 16. Nối trại tạm và trận cổ sư Nô đạo trên đường núi Tam Xoa. Chuẩn bị tiếp tế, chọn mục tiêu và đọc lệnh khuyển thú.
+17. Qua cột sáng vàng và thu phục chó hoang đầu tiên trong truyền thừa Khuyển Vương.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -242,7 +243,15 @@ Sau khi xử lý da Thiết Giáp, **Đến trại tạm** nâng bản lưu từ
 
 Trận nằm trên đường ngoài phúc địa. Cổ sư Nô đạo vô danh và khuyển thú là đối thủ của demo. Giữa trận có thể đổi mục tiêu bằng nút bên phải hoặc bấm ô đứng của địch. Hai đối thủ chặn di chuyển, chắn đường phóng và nhận Nguyệt Ấn riêng. Đòn trúng cổ sư lúc ra lệnh làm ngắt lệnh. Nếu nhận lệnh, khuyển vồ ô đã khóa trong tầm 5 ô có đường thông. Nếu bị chắn hoặc ngoài tầm, nó áp sát một ô. Hạ khuyển sẽ hủy đòn vồ đang chờ. Hạ cổ sư sẽ kết thúc trận. Màn dùng địa hình và atlas của demo với hai dấu phe, nhãn máu và vị trí riêng.
 
-Sau trận, lời nhắc về Ngự Khuyển Cổ dẫn đến hướng phát triển truyền thừa Khuyển Vương. Quy tắc phúc địa sẽ được triển khai khi có cảnh vào cửa. [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html)
+Sau trận, đoàn buôn chỉ lối lên cột sáng Khuyển Vương.
+
+## Truyền thừa Khuyển Vương · Vòng đầu
+
+Theo truyện, cột sáng vàng dẫn vào truyền thừa Khuyển Vương và cần luyện hóa Ngự Khuyển Cổ nhất chuyển. Ở vòng đầu, Cổ thu phục chó hoang mà không làm nó mất sinh lực. Vượt vòng nhận thêm một Ngự Khuyển Cổ, còn chó đã thu phục đi cùng vào vòng hai. [Chương 392](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-392.html) · [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html)
+
+Tại lối vào, demo cho đoàn buôn trao một Cổ sau khi người chơi dẹp đường. Bản lưu v15 nâng lên v16 khi tới cột sáng. Luyện hóa rồi bước qua cửa với ít nhất 1 chân nguyên. Bộ Cổ cũ, bảo vật và lá hồi sức được giữ trong trạng thái bên ngoài, phong cấm khi làm thử thách. Trong vòng đầu, người chơi có thể Di chuyển, Thủ thế và thôi động Ngự Khuyển Cổ. Sức chứa chân nguyên và sinh lực dùng từ lượt đang chơi.
+
+Cự ly 2 ô, mức tiêu hao 1 chân nguyên và đá chặn đường phóng là luật quy đổi của demo. Có thể chờ chó tới gần hoặc đi vòng tránh đá. Thu phục kết thúc vòng ngay trước khi chó đáp trả. Nhật ký lưu được bước luyện hóa, vị trí chó qua từng lượt, sinh lực của chó đã thu phục và Cổ nhận cho vòng sau. Vòng một kết thúc ở màn thưởng.
 
 ## Đồ họa trong trận
 

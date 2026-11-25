@@ -31,6 +31,8 @@ const PULSE_OPEN_BONUS := 5
 const HOUND_FRONT_ARMOR := 7
 const HOUND_FLANK_STRIKE := 4
 const NODO_HOUND_RANGE := 5
+const BIND_COST := 1
+const BIND_RANGE := 2
 
 var turn := 1
 var hero := 17
@@ -241,6 +243,11 @@ func forecast() -> void:
 		forecast_hound(gap)
 	elif tactic == "nodo":
 		forecast_nodo(gap)
+	elif tactic == "kennel":
+		if gap == 1:
+			intent = {"kind": "strike", "name": "Chó hoang táp", "cells": [hero], "damage": bite_damage}
+		else:
+			intent = {"kind": "advance", "name": "Chó hoang áp sát", "cells": [], "damage": 0}
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
 	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
@@ -407,7 +414,7 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass", "seal_altar", "pulse_boss", "armored_hound", "nodo"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass", "seal_altar", "pulse_boss", "armored_hound", "nodo", "kennel"]
 
 
 func aim_can_be_lost() -> bool:
@@ -447,6 +454,19 @@ func shot_unavailable(action: String, cost: int, attack_range: int, target: int)
 func unavailable(action: String, target: int = -1) -> String:
 	if not result.is_empty():
 		return "Trận đấu đã kết thúc."
+	if action == "bind_hound":
+		if tactic != "kennel":
+			return "Không có Ngự Khuyển Cổ cho trận này."
+		if target not in [-1, wolf]:
+			return "Chọn đúng ô của chó hoang."
+		if qi < BIND_COST:
+			return "Cần %d chân nguyên để thôi động Ngự Khuyển." % BIND_COST
+		if distance(hero, wolf) > BIND_RANGE:
+			return "Chó hoang ở ngoài tầm %d ô." % BIND_RANGE
+		var cover := ray_blocker(hero, wolf)
+		return "Tảng đá ở %s chắn đường thu phục." % cell_name(cover) if cover >= 0 else ""
+	if tactic == "kennel" and action not in ["move", "guard"]:
+		return "Phúc địa đang phong cấm bộ Cổ và đòn đánh của cổ sư."
 	var aim := attack_cell(target)
 	if action in ["strike", "moon", "moon_edge"] and aim != wolf and (aim < 0 or aim != live_hound()):
 		return "Chọn một đối thủ còn trên sân."
@@ -593,6 +613,8 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			dealt = Gu.MOON_EDGE_DAMAGE + (Gu.MOON_MARK_BONUS if set_trigger else 0)
 			qi_after = qi - Gu.MOON_EDGE_COST
 			mark = false
+		"bind_hound":
+			qi_after -= BIND_COST
 		"guard":
 			qi_after = mini(max_qi, qi + 1)
 		"jade_skin":
@@ -654,7 +676,7 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var receives := 0
 	var absorbed := 0
 	var relic_block := 0
-	var ends_fight := dealt >= defender_hp and not hits_hound
+	var ends_fight := action == "bind_hound" or (dealt >= defender_hp and not hits_hound)
 	var interrupts: bool = intent.kind == "nodo_command" and dealt > 0 and not hits_hound
 	var stops_hound := hits_hound and dealt >= defender_hp
 	var hit: bool = not ends_fight and not (stops_hound and intent.kind == "nodo_hound") and position_after in intent.cells
@@ -787,7 +809,10 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	if pulse_open:
 		notes.append("Né đúng nhịp. Đòn trúng lượt sau được cộng %d sát thương." % PULSE_OPEN_BONUS)
 
-	if wolf_hp <= 0:
+	if action == "bind_hound":
+		result = VICTORY
+		notes.append("Ngự Khuyển đã thu phục chó hoang. Sinh lực của nó giữ nguyên.")
+	elif wolf_hp <= 0:
 		result = VICTORY
 		notes.append("Cổ sư Nô đạo bại trận. Khuyển thú còn sống rút đi." if live_hound() >= 0 else "Đối thủ đã gục.")
 	elif preview.stops_hound and intent.kind in ["nodo_command", "nodo_hound", "nodo_hound_advance"]:

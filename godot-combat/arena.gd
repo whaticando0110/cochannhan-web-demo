@@ -7,6 +7,7 @@ signal exchange_cue(cue: String)
 const Rules = preload("res://battle_rules.gd")
 const Art = preload("res://combat_art.gd")
 const TRAIL = preload("res://assets/trail.png")
+const KENNEL_GRASS = preload("res://assets/kennel-grass.png")
 const THICKET = preload("res://assets/thicket.png")
 const ROCK = preload("res://assets/rock-ridge.png")
 const HERO = preload("res://assets/huyen-bao.png")
@@ -45,6 +46,8 @@ var projectile: AtlasTexture
 var projectile_point := Vector2.ZERO
 var projectile_angle := 0.0
 var projectile_span := 50.0
+var binding_progress := -1.0
+var bound_visible := false
 var shock_point := Vector2.ZERO
 var shock_damage := 0
 var shock_progress := 1.0
@@ -95,6 +98,7 @@ func set_state(state: Rules) -> void:
 	rules = state
 	hero_point = cell_center(rules.hero)
 	wolf_point = cell_center(rules.wolf)
+	bound_visible = rules.tactic == "kennel" and rules.result == Rules.VICTORY
 	hound_visible = rules.live_hound() >= 0 and rules.result != Rules.VICTORY
 	if hound_visible:
 		hound_point = cell_center(rules.hound_cell)
@@ -208,6 +212,7 @@ func paint_tiles() -> void:
 	draw_rect(grid_rect.grow(5), Color("#65563b"))
 	var marsh := rules != null and rules.tactic == "marsh"
 	var wind_pass := rules != null and rules.tactic == "wind_pass"
+	var kennel := rules != null and rules.tactic == "kennel"
 	for cell in range(Rules.ROWS * Rules.COLUMNS):
 		var point := Rules.grid(cell)
 		var rect := Rect2(ORIGIN + Vector2(point) * TILE, TILE)
@@ -231,7 +236,7 @@ func paint_tiles() -> void:
 			if cracked or rock:
 				terrain_frame(Art.CANYON, rect, Vector2i((2 if rock else 0) + variant % 2, 1), tint)
 		else:
-			var ground: Texture2D = [TRAIL, MULCH, STONE][mini(room, 2)]
+			var ground: Texture2D = KENNEL_GRASS if kennel else [TRAIL, MULCH, STONE][mini(room, 2)]
 			var sample := ground.get_width() / 8.0
 			draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), Color(shade, shade, shade * .88))
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
@@ -389,7 +394,7 @@ func _draw() -> void:
 	var facing_point := hound_point if hound_visible and aim_cell == rules.hound_cell and not selecting else wolf_point
 	var direction := 1 if hero_point.x <= facing_point.x else -1
 	actor_ring(hero_point, GREEN)
-	actor_ring(wolf_point, AMBER)
+	actor_ring(wolf_point, GREEN if bound_visible else AMBER)
 	if aim_cell >= 0 and rules.result.is_empty():
 		draw_rect(Rect2(cell_center(aim_cell) - TILE * .5 + Vector2.ONE * 3, TILE - Vector2.ONE * 6), Color("#f3c98cc8"), false, 2)
 	if cover_ray > 0 and rules.uses_cover():
@@ -446,6 +451,9 @@ func _draw() -> void:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
 		var wolf_size := 142 if rules.tactic in ["den", "marsh", "wind_pass", "armored_hound"] else 118
+		if rules.tactic == "kennel":
+			wolf_size = 77
+			wolf_tint = Color("#c6c7bc")
 		var face := rules.hound_facing if rules.tactic == "armored_hound" else -direction
 		atlas_frame(WOLF, 4, 4, wolf_frame, wolf_point + Vector2(0, 11), wolf_size, face, wolf_tint)
 	if not ward_kind.is_empty():
@@ -468,6 +476,15 @@ func _draw() -> void:
 		var span := Vector2.ONE * projectile_span
 		draw_texture_rect(projectile, Rect2(-span * .5, span), false)
 		draw_set_transform(Vector2.ZERO)
+	if binding_progress >= 0.0:
+		var origin := hero_point + Vector2(0, -18)
+		var goal := wolf_point + Vector2(0, 3)
+		var spark := origin.lerp(goal, binding_progress)
+		var tail := origin.lerp(goal, maxf(0.0, binding_progress - .27))
+		draw_line(tail, spark, Color("#74e7bc88"), 8, true)
+		draw_line(tail, spark, Color("#d2ffee"), 2, true)
+		draw_circle(spark, 7, Color("#74e7bc66"))
+		draw_circle(spark, 3, Color("#e0fff4"))
 	if not bolt.is_empty():
 		draw_polyline(bolt, Color("#7999eb99"), 7.0, true)
 		draw_polyline(bolt, Color("#e4f2ff"), 2.0, true)
@@ -539,6 +556,21 @@ func cast(at: Vector2, refined: bool, empowered: bool) -> void:
 	projectile = null
 	hero_art = "ready"
 	hero_frame = 13
+
+
+func play_binding() -> void:
+	hero_art = "cast"
+	var cast_pose := create_tween()
+	cast_pose.tween_method(set_hero_frame, 0.0, 4.0, .28)
+	await cast_pose.finished
+	var travel := create_tween().set_parallel()
+	travel.tween_method(func(progress: float): binding_progress = progress; queue_redraw(), 0.0, 1.0, .26)
+	travel.tween_method(set_hero_frame, 4.0, 7.9, .26)
+	await travel.finished
+	binding_progress = -1.0
+	bound_visible = true
+	impact(wolf_point + Vector2(-29, -10), 0, true, false, "Thu phục")
+	await get_tree().create_timer(.38).timeout
 
 
 func enemy_contact(exchange: Dictionary, point: Vector2, guarding: bool, recoil: bool = false) -> void:
@@ -627,6 +659,8 @@ func play_exchange(exchange: Dictionary) -> void:
 		if stone_prepared and not veiled:
 			play_effect(Art.CONTACTS.step_reveal, hero_point, 112, direction)
 		stone_prepared = false
+	elif exchange.action == "bind_hound":
+		await play_binding()
 	elif exchange.action in ["moon", "moon_edge"]:
 		await cast(aimed_at, exchange.action == "moon_edge", exchange.set_trigger)
 		mark_visible = rules.moon_mark

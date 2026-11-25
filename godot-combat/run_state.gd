@@ -4,7 +4,7 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 15
+const CURRENT_VERSION := 16
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -22,6 +22,8 @@ const XOA_FLOOR := 11
 const XOA_VERSION := 14
 const NODO_FLOOR := 12
 const NODO_VERSION := 15
+const KENNEL_FLOOR := 13
+const KENNEL_VERSION := 16
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -108,6 +110,9 @@ const NODO_REST_HEAL := 10
 const NODO_SUPPLY_PRICE := 6
 const NODO_SUPPLY_LEAVES := 2
 const NODO_CAMP := {"nodo_rest": "Nghỉ lấy sức", "nodo_supplies": "Đổi lấy Sinh Cơ Diệp"}
+const KENNEL_TRIAL := {"name": "Bãi cỏ phúc địa", "enemy": "Chó hoang", "damage": 11,
+	"bite": 11, "hp": 32, "heavy": "Táp", "pace": 2,
+	"rooms": [[4, 11, 27, 35], [3, 19, 26, 37], [5, 12, 20, 35]]}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -157,6 +162,8 @@ var pulse_award := ""
 var pulse_rite := false
 var xoa_award := ""
 var strike_bonus := 0
+var hound_gu := 0
+var outside_battle: Rules
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -188,6 +195,8 @@ func stage_at(index: int) -> Dictionary:
 			return XOA_TRAIL
 		NODO_FLOOR:
 			return NODO_ROAD
+		KENNEL_FLOOR:
+			return KENNEL_TRIAL
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -230,6 +239,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "armored_hound"
 			NODO_FLOOR:
 				tactic = "nodo"
+			KENNEL_FLOOR:
+				tactic = "kennel"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -277,6 +288,10 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "xoa_reward"
 		elif floor == NODO_FLOOR:
 			phase = "nodo_cleared"
+		elif floor == KENNEL_FLOOR:
+			phase = "kennel_cleared"
+			# The first Gu bound the dog. The trial grants the next one.
+			hound_gu = 1
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -669,6 +684,36 @@ func choose_nodo_camp(id: String) -> bool:
 	return true
 
 
+func reach_kennel_gate() -> bool:
+	if phase != "nodo_cleared":
+		return false
+	version = maxi(version, KENNEL_VERSION)
+	phase = "kennel_gate"
+	journal.append(["reach_kennel_gate"])
+	return true
+
+
+func refine_hound_gu() -> bool:
+	if phase != "kennel_gate":
+		return false
+	hound_gu = 1
+	phase = "kennel_ready"
+	journal.append(["refine_hound_gu"])
+	return true
+
+
+func enter_kennel() -> bool:
+	if phase != "kennel_ready" or hound_gu != 1:
+		return false
+	outside_battle = battle
+	floor = KENNEL_FLOOR
+	battle = encounter(outside_battle.hp, maxi(outside_battle.qi, Rules.BIND_COST), outside_battle.max_qi,
+		{"moon_equipped": false})
+	phase = "battle"
+	journal.append(["enter_kennel"])
+	return true
+
+
 func workshop_size() -> int:
 	if version >= 6 or phase == "ambush_workshop":
 		return 4
@@ -928,6 +973,12 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_xoa_camp" and run.enter_xoa_camp()
 				"xoa_camp":
 					committed = run.choose_nodo_camp(command[0])
+				"nodo_cleared":
+					committed = command[0] == "reach_kennel_gate" and run.reach_kennel_gate()
+				"kennel_gate":
+					committed = command[0] == "refine_hound_gu" and run.refine_hound_gu()
+				"kennel_ready":
+					committed = command[0] == "enter_kennel" and run.enter_kennel()
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":
