@@ -6,6 +6,7 @@ signal training_requested
 signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
+const Pack = preload("res://kennel_pack.gd")
 const Art = preload("res://combat_art.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
@@ -46,6 +47,9 @@ var wolf_bar: ProgressBar
 var lead_target: Button
 var hound_target: Button
 var aiming_at_hound := false
+var pack_choice := 0
+var pack_order := ""
+var pack_buttons: Array[Button] = []
 var reset_button: Button
 var training_button: Button
 var actions := {}
@@ -82,7 +86,7 @@ func configure(current_run: RunData) -> void:
 		arena_room = 5
 	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
-	elif run.floor == RunData.KENNEL_FLOOR:
+	elif run.floor in [RunData.KENNEL_FLOOR, RunData.KENNEL_TWO_FLOOR]:
 		arena_room = 0
 	elif run.floor in [RunData.XOA_FLOOR, RunData.NODO_FLOOR]:
 		arena_room = 1
@@ -169,7 +173,7 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 
 func build_hud() -> void:
-	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic in ["armored_hound", "nodo", "kennel"] else "THANH MAO SƠN"
+	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic in ["armored_hound", "nodo", "kennel", "kennel_pack"] else "THANH MAO SƠN"
 	label("CỔ CHÂN NHÂN  /  " + area, 36, 22, 600, 30, 17, GREEN)
 	if Goods.RELICS.has(state.relic):
 		relic_label = label("", 655, 10, 333, 31, 15, GOLD)
@@ -188,6 +192,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 3"
 	elif run != null and run.floor == RunData.PULSE_FLOOR:
 		mode = "Tam chuyển · Boss cuối"
+	elif state is Pack:
+		mode = "Khuyển Vương · Vòng 2"
 	elif run != null and run.floor == RunData.KENNEL_FLOOR:
 		mode = "Khuyển Vương · Vòng 1"
 	elif run != null and run.floor == RunData.NODO_FLOOR:
@@ -243,7 +249,7 @@ func build_hud() -> void:
 	hp_label = label("", 1054, 222, 94, 21, 16, GREEN)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hp_bar = bar(880, 248, 267, GREEN, Rules.MAX_HP)
-	var gold_essence := state.tactic in ["armored_hound", "nodo", "kennel"]
+	var gold_essence := state.tactic in ["armored_hound", "nodo", "kennel", "kennel_pack"]
 	var qi_tint := GOLD if gold_essence else CYAN
 	label("Chân nguyên hoàng kim" if gold_essence else "Chân nguyên", 880, 263, 169, 22, 16, IVORY)
 	qi_label = label("", 1054, 263, 94, 22, 16, qi_tint)
@@ -251,12 +257,21 @@ func build_hud() -> void:
 	qi_bar = bar(880, 290, 267, qi_tint, state.max_qi)
 
 	panel(860, 325, 306, 146, Color("#282a23"))
-	if state.tactic != "nodo":
+	if state.tactic != "nodo" and not state is Pack:
 		label(enemy_name, 880, 337, 190, 30, 21, GOLD, true)
 	wolf_label = label("", 1054, 342, 94, 24, 16, RED)
 	wolf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wolf_bar = bar(880, 374, 267, RED, state.wolf_max)
-	if state.tactic == "nodo":
+	if state is Pack:
+		wolf_label.hide()
+		wolf_bar.hide()
+		for index in range(2):
+			var selector := button("", 880 + index * 139, 337, 128, 49)
+			selector.name = "select_pack_dog_%d" % index
+			selector.add_theme_font_size_override("font_size", 15)
+			selector.pressed.connect(select_pack_dog.bind(index))
+			pack_buttons.append(selector)
+	elif state.tactic == "nodo":
 		wolf_label.hide()
 		wolf_bar.hide()
 		lead_target = button("", 880, 337, 128, 49)
@@ -279,7 +294,13 @@ func build_hud() -> void:
 	var descriptions := [
 		["move", "1   Di chuyển\nTối đa %d ô" % Rules.MOVE_RANGE],
 	]
-	if state.tactic == "kennel":
+	if state is Pack:
+		descriptions.append_array([
+			["dog_move", "2   Điều chó\nTối đa %d ô" % Pack.DOG_STEPS],
+			["bind_hound", "3   Ngự Khuyển Cổ\nTầm %d ô · −%d CN" % [Rules.BIND_RANGE, Rules.BIND_COST]],
+			["dog_bite", "5   Lệnh táp\nÁp một ô rồi táp"],
+		])
+	elif state.tactic == "kennel":
 		descriptions.append(["bind_hound", "3   Ngự Khuyển Cổ\nTầm %d ô · −%d CN" % [Rules.BIND_RANGE, Rules.BIND_COST]])
 	else:
 		descriptions.append(["strike", "2   Tay không\n%d sát thương · +1 CN" % (Rules.STRIKE_DAMAGE + state.strike_bonus)])
@@ -302,6 +323,8 @@ func build_hud() -> void:
 		descriptions.append(["four_flavors", "7   Tứ Vị Tửu Trùng\nTay không +%d · −%d CN" % [Gu.BREW_STRIKE_BONUS, Gu.FOUR_FLAVORS_COST]])
 	elif state.refined_gu == "scale_veil":
 		descriptions.append(["scale_veil", "7   Ẩn Lân"])
+	if state is Pack:
+		descriptions.sort_custom(func(a: Array, b: Array): return a[1] < b[1])
 	var width := (1132.0 - 12.0 * (descriptions.size() - 1)) / descriptions.size()
 	for index in range(descriptions.size()):
 		var row: Array = descriptions[index]
@@ -354,6 +377,9 @@ func attack_target(action: String) -> int:
 func update_hud() -> void:
 	update_hero_hp(state.hp)
 	update_player_contact()
+	if state is Pack:
+		update_pack_hud(state as Pack)
+		return
 	if lead_target != null:
 		aiming_at_hound = aiming_at_hound and state.live_hound() >= 0
 		lead_target.modulate = Color.WHITE if aiming_at_hound else GOLD
@@ -462,6 +488,83 @@ func update_hud() -> void:
 	actions.move.modulate = GREEN if selecting else Color.WHITE
 
 
+func update_pack_hud(pack: Pack) -> void:
+	var my_dogs := pack.living_dogs(true)
+	if pack_dog_id() not in my_dogs and not my_dogs.is_empty():
+		pack_choice = 0 if my_dogs[0] == 0 else 1
+	for index in range(pack_buttons.size()):
+		var id := 0 if index == 0 else pack.bound_id
+		var caption := "A · Chó vòng đầu" if index == 0 else "B · Chó mới"
+		var status := "Chưa thu phục"
+		if id >= 0:
+			var dog: Dictionary = pack.dogs[id]
+			status = "%d/%d · %s" % [dog.hp, dog.max_hp, Rules.cell_name(dog.cell)] if dog.hp > 0 else "Đã gục"
+		pack_buttons[index].text = "%s\n%s" % [caption, status]
+		pack_buttons[index].disabled = busy or id not in my_dogs or not state.result.is_empty()
+		pack_buttons[index].modulate = GOLD if index == pack_choice and id in my_dogs else Color.WHITE
+	field.set_aim(pack.actor_cell(pack_dog_id()) if pack_dog_id() in my_dogs else -1)
+	turn_label.text = "Lượt %02d" % state.turn
+	wards_label.text = "Ngự Khuyển Cổ ×%d" % pack.gu_left
+	intent_name.text = state.intent.get("name", "Vòng đã kết thúc")
+	var threats: PackedStringArray = []
+	for cell: int in state.intent.get("cells", []):
+		threats.append(Rules.cell_name(cell))
+	intent_copy.text = "Còn %d chó hoang đang áp sát." % pack.living_dogs(false).size() \
+		if threats.is_empty() else "Ô bị nhắm táp · %s" % ", ".join(threats)
+	report_label.text = "\n".join(report.slice(0, 3))
+	for action: String in actions:
+		var reason := pack.unavailable(pack_action(action))
+		actions[action].disabled = busy or not reason.is_empty()
+		actions[action].tooltip_text = reason
+		actions[action].modulate = GREEN if selecting and pack_order == pack_action(action) else Color.WHITE
+
+
+func pack_dog_id() -> int:
+	return 0 if pack_choice == 0 else (state as Pack).bound_id
+
+
+func pack_action(action: String) -> String:
+	match action:
+		"dog_move":
+			return Pack.LEAD_MOVE if pack_choice == 0 else Pack.BOUND_MOVE
+		"dog_bite":
+			return Pack.LEAD_BITE if pack_choice == 0 else Pack.BOUND_BITE
+	return action
+
+
+func select_pack_dog(choice: int) -> void:
+	if busy or not state.result.is_empty() or pack_buttons[choice].disabled:
+		return
+	pack_choice = choice
+	selecting = false
+	field.set_selecting(false)
+	update_hud()
+	show_hint()
+
+
+func choose_pack(action: String) -> void:
+	var pack := state as Pack
+	var command := pack_action(action)
+	var reason := pack.unavailable(command)
+	if not reason.is_empty():
+		hint_label.text = reason
+		return
+	if action == "guard":
+		resolve(command)
+		return
+	selecting = not selecting or pack_order != command
+	pack_order = command
+	field.available = pack.targets_for(command) if selecting else []
+	field.set_selecting(selecting)
+	target_cell = pack.actor_cell(pack.command_actor(command))
+	if selecting:
+		field.grab_focus()
+	else:
+		field.release_focus()
+	update_hud()
+	show_hint()
+
+
 func reset_battle() -> void:
 	if busy or run != null:
 		return
@@ -490,6 +593,12 @@ func show_battle() -> void:
 func show_hint() -> void:
 	field.show_cover_ray(0)
 	if busy or not state.result.is_empty():
+		return
+	if state is Pack:
+		if selecting:
+			hint_label.text = "Chọn ô sáng trên sân hoặc dùng phím mũi tên và Enter."
+		else:
+			hint_label.text = "Phím 2 và 5 ra lệnh cho chó đang chọn. Chọn A/B trên sân hoặc nhấn 6 để đổi chó."
 		return
 	if selecting:
 		if state.intent.kind == "wind":
@@ -525,6 +634,10 @@ func show_exchange(cue: String) -> void:
 
 func inspect_action(action: String) -> void:
 	if busy or not state.result.is_empty():
+		return
+	if state is Pack:
+		var reason := state.unavailable(pack_action(action))
+		hint_label.text = reason if not reason.is_empty() else "Chọn lệnh để xem các ô hợp lệ." if action != "guard" else "Giảm sát thương lên cổ sư và hồi 1 chân nguyên."
 		return
 	field.show_cover_ray(shot_range(action), state.attack_cell(attack_target(action)))
 	if action == "move":
@@ -608,6 +721,20 @@ func inspect_cell(cell: int) -> void:
 		show_hint()
 		return
 	target_cell = cell
+	if state is Pack:
+		var preview := state.preview_action(pack_order, cell)
+		if pack_order == "bind_hound":
+			field.show_cover_ray(Rules.BIND_RANGE, cell)
+		if preview.has("error"):
+			hint_label.text = "%s · %s" % [Rules.cell_name(cell), preview.error]
+		elif pack_order == "bind_hound":
+			hint_label.text = "%s · Thu phục, giữ nguyên sinh lực." % Rules.cell_name(cell)
+		elif preview.dealt > 0:
+			hint_label.text = "%s · Táp gây %d sát thương." % [Rules.cell_name(cell), preview.dealt]
+		else:
+			hint_label.text = "%s · %d bước%s" % [Rules.cell_name(cell), preview.path.size(),
+				" · Ô đang bị nhắm táp" if cell in state.intent.cells else ""]
+		return
 	var preview := state.preview_action("move", cell)
 	var name := Rules.cell_name(cell)
 	if preview.has("error"):
@@ -636,6 +763,9 @@ func inspect_cell(cell: int) -> void:
 
 func choose(action: String) -> void:
 	if busy:
+		return
+	if state is Pack:
+		choose_pack(action)
 		return
 	var reason := state.unavailable(action, attack_target(action))
 	if not reason.is_empty():
@@ -666,7 +796,12 @@ func shot_range(action: String) -> int:
 
 func select_cell(cell: int) -> void:
 	if selecting and not busy:
-		resolve("move", cell)
+		resolve(pack_order if state is Pack else "move", cell)
+	elif state is Pack:
+		var pack := state as Pack
+		var actor := pack.actor_at(cell)
+		if actor >= 0 and pack.dogs[actor].allied:
+			select_pack_dog(0 if actor == 0 else 1)
 	elif lead_target != null and (cell == state.wolf or cell == state.live_hound()):
 		aim_enemy(cell == state.live_hound())
 
@@ -688,6 +823,8 @@ func resolve(action: String, cell: int = -1) -> void:
 	if lead_target != null:
 		lead_target.disabled = true
 		hound_target.disabled = true
+	for selector in pack_buttons:
+		selector.disabled = true
 	if is_instance_valid(training_button):
 		training_button.disabled = true
 	await field.play_exchange(exchange)
@@ -709,6 +846,16 @@ func resolve(action: String, cell: int = -1) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if state is Pack:
+		var orders := {KEY_1: "move", KEY_2: "dog_move", KEY_3: "bind_hound", KEY_4: "guard", KEY_5: "dog_bite"}
+		if orders.has(event.keycode):
+			choose(orders[event.keycode])
+		elif event.keycode == KEY_6:
+			select_pack_dog(1 - pack_choice)
+		else:
+			return
+		get_viewport().set_input_as_handled()
 		return
 	var third := state.starter_gu if state.starter_gu in ["brew", "stone_veil"] else "moon"
 	if state.tactic == "kennel":

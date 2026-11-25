@@ -45,6 +45,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 15. Mở Tứ chuyển ở bãi đá chân núi Tam Xoa, ngoài cửa truyền thừa. Dùng địa hình để tránh cú húc của chó Thiết Giáp và đổi góc đánh.
 16. Nối trại tạm và trận cổ sư Nô đạo trên đường núi Tam Xoa. Chuẩn bị tiếp tế, chọn mục tiêu và đọc lệnh khuyển thú.
 17. Qua cột sáng vàng và thu phục chó hoang đầu tiên trong truyền thừa Khuyển Vương.
+18. Chỉ huy chó ấy trên Gò cỏ úa và dùng Ngự Khuyển mới trước khi ba chó hoang khép vòng vây.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -251,7 +252,15 @@ Theo truyện, cột sáng vàng dẫn vào truyền thừa Khuyển Vương và
 
 Tại lối vào, demo cho đoàn buôn trao một Cổ sau khi người chơi dẹp đường. Bản lưu v15 nâng lên v16 khi tới cột sáng. Luyện hóa rồi bước qua cửa với ít nhất 1 chân nguyên. Bộ Cổ cũ, bảo vật và lá hồi sức được giữ trong trạng thái bên ngoài, phong cấm khi làm thử thách. Trong vòng đầu, người chơi có thể Di chuyển, Thủ thế và thôi động Ngự Khuyển Cổ. Sức chứa chân nguyên và sinh lực dùng từ lượt đang chơi.
 
-Cự ly 2 ô, mức tiêu hao 1 chân nguyên và đá chặn đường phóng là luật quy đổi của demo. Có thể chờ chó tới gần hoặc đi vòng tránh đá. Thu phục kết thúc vòng ngay trước khi chó đáp trả. Nhật ký lưu được bước luyện hóa, vị trí chó qua từng lượt, sinh lực của chó đã thu phục và Cổ nhận cho vòng sau. Vòng một kết thúc ở màn thưởng.
+Cự ly 2 ô, mức tiêu hao 1 chân nguyên và đá chặn đường phóng là luật quy đổi của demo. Có thể chờ chó tới gần hoặc đi vòng tránh đá. Thu phục kết thúc vòng ngay trước khi chó đáp trả. Nhật ký lưu được bước luyện hóa, vị trí chó qua từng lượt, sinh lực của chó đã thu phục và Cổ nhận cho vòng sau. Từ màn thưởng vòng đầu, chọn **Vào vòng hai**.
+
+## Truyền thừa Khuyển Vương · Vòng hai
+
+Trong truyện, ba chó hoang xông lên từ ba phía. Phương Nguyên sai chó từ vòng trước cản một con, dùng Ngự Khuyển mới thu phục con khác rồi phối hợp hai con để đánh hai đối thủ còn lại. Chúng mang theo thương thế sang vòng ba. Phúc địa tiếp tục giới hạn Cổ phàm được dùng. Chương này có ngoại lệ cho Xuân Thu Thiền là Tiên Cổ của Phương Nguyên. [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html)
+
+**Gò cỏ úa** lấy chó, sinh lực và chân nguyên từ kết quả vòng đầu. Khi chọn vào vòng hai, bản lưu v16 nâng lên v17. Không Khiếu có một Ngự Khuyển Cổ để dùng cho một chó hoang trong tầm 2 ô, đường phóng thông, tốn 1 chân nguyên. Chó đổi phe ngay, giữ thương thế và bỏ đòn đã báo ở phía địch. Người chơi chọn chó A hoặc B rồi ra lệnh đi tối đa 2 ô, hoặc áp một ô để táp. Các hành động này là quy đổi theo lượt của demo.
+
+Mỗi chó hoang dự báo áp sát hoặc khóa một ô để táp. Chó đồng minh có thể chặn đường. Người chơi có thể rời ô bị khóa, điều chó ra chỗ khác hoặc dùng Ngự Khuyển để cắt một đòn. Vòng kết thúc khi dẹp hết chó hoang, giữ lại từng con sống với sinh lực thực tế. Nhật ký phát lại thứ tự lệnh, vị trí, phe, sinh lực và số Cổ còn. Vòng hai kết ở màn kết quả.
 
 ## Đồ họa trong trận
 

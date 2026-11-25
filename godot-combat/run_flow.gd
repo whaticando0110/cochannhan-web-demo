@@ -230,7 +230,7 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor == Run.KENNEL_FLOOR or run.phase in ["kennel_gate", "kennel_ready"]:
+	if run.floor in [Run.KENNEL_FLOOR, Run.KENNEL_TWO_FLOOR] or run.phase in ["kennel_gate", "kennel_ready"]:
 		section = "TỨ CHUYỂN    /    TRUYỀN THỪA KHUYỂN VƯƠNG"
 	elif run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
 		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
@@ -339,6 +339,9 @@ func show_result() -> void:
 		"kennel_cleared":
 			title = "Vượt vòng đầu Khuyển Vương"
 			description = "Chó hoang đã theo lệnh bạn. Phúc địa ban thêm một Ngự Khuyển Cổ nhất chuyển."
+		"kennel_two_cleared":
+			title = "Vượt vòng hai Khuyển Vương"
+			description = "Đàn chó hoang đã bị dẹp. Những con còn theo bạn giữ nguyên thương thế."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -348,6 +351,8 @@ func show_result() -> void:
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
+			if run.floor == Run.KENNEL_TWO_FLOOR and run.battle.hp > 0:
+				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
 		"complete":
 			title = "Vượt qua " + str(floor.name)
 			if run.can_cross_ford():
@@ -467,7 +472,19 @@ func show_result() -> void:
 		elif run.phase == "kennel_cleared":
 			text(menu, "Chó hoang · %d/%d sinh lực     |     Ngự Khuyển Cổ ×%d" % [
 				run.battle.wolf_hp, run.battle.wolf_max, run.hound_gu], Rect2(96, 308, 1008, 43), 22, GOLD)
-			text(menu, "Đã lưu chó hoang và Cổ cho vòng kế tiếp.", Rect2(96, 368, 1008, 40), 19, GREEN)
+			text(menu, "Chọn một con để thu phục. Ra lệnh cho chó đang theo bạn chặn những con còn lại.",
+				Rect2(96, 368, 1008, 42), 19, GREEN)
+			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
+			enter.name = "enter_kennel_two"
+			enter.grab_focus()
+		elif run.phase == "kennel_two_cleared":
+			var pack := run.battle as Run.Pack
+			var rows: PackedStringArray = []
+			for id in pack.living_dogs(true):
+				var dog: Dictionary = pack.dogs[id]
+				rows.append("%s · %d/%d sinh lực" % [pack.actor_name(id), dog.hp, dog.max_hp])
+			text(menu, "     |     ".join(rows), Rect2(96, 308, 1008, 43), 22, GOLD)
+			text(menu, "Ngự Khuyển Cổ còn lại ×%d" % run.hound_gu, Rect2(96, 368, 1008, 40), 19, GREEN)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
 
@@ -760,6 +777,8 @@ func advance_kennel(step: String) -> void:
 			changed = run.refine_hound_gu()
 		"enter":
 			changed = run.enter_kennel()
+		"second":
+			changed = run.enter_kennel_two()
 	if changed:
 		persist()
 		show_run()

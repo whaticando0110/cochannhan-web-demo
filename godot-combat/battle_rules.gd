@@ -147,7 +147,8 @@ static func neighbors(cell: int) -> Array[int]:
 	return adjacent
 
 
-func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {}, other: int = -1) -> Dictionary:
+func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {}, other: int = -1,
+		occupied: Array = []) -> Dictionary:
 	var walked := {start: 0}
 	var queue: Array[int] = [start]
 	var index := 0
@@ -158,7 +159,7 @@ func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {},
 		if steps >= budget:
 			continue
 		for candidate in neighbors(cell):
-			if candidate != blocker and candidate != other and candidate not in rocks and not walked.has(candidate):
+			if candidate != blocker and candidate != other and candidate not in rocks and candidate not in occupied and not walked.has(candidate):
 				walked[candidate] = steps + 1
 				parents[candidate] = cell
 				queue.append(candidate)

@@ -5,6 +5,7 @@ signal cell_focused(cell: int)
 signal exchange_cue(cue: String)
 
 const Rules = preload("res://battle_rules.gd")
+const Pack = preload("res://kennel_pack.gd")
 const Art = preload("res://combat_art.gd")
 const TRAIL = preload("res://assets/trail.png")
 const KENNEL_GRASS = preload("res://assets/kennel-grass.png")
@@ -46,6 +47,7 @@ var projectile: AtlasTexture
 var projectile_point := Vector2.ZERO
 var projectile_angle := 0.0
 var projectile_span := 50.0
+var pack_pieces: Array[Dictionary] = []
 var binding_progress := -1.0
 var bound_visible := false
 var shock_point := Vector2.ZERO
@@ -96,6 +98,13 @@ func _process(delta: float) -> void:
 
 func set_state(state: Rules) -> void:
 	rules = state
+	pack_pieces.clear()
+	if rules is Pack:
+		for dog: Dictionary in (rules as Pack).dogs:
+			var piece := dog.duplicate()
+			piece.point = cell_center(dog.cell)
+			piece.frame = 0
+			pack_pieces.append(piece)
 	hero_point = cell_center(rules.hero)
 	wolf_point = cell_center(rules.wolf)
 	bound_visible = rules.tactic == "kennel" and rules.result == Rules.VICTORY
@@ -212,7 +221,7 @@ func paint_tiles() -> void:
 	draw_rect(grid_rect.grow(5), Color("#65563b"))
 	var marsh := rules != null and rules.tactic == "marsh"
 	var wind_pass := rules != null and rules.tactic == "wind_pass"
-	var kennel := rules != null and rules.tactic == "kennel"
+	var kennel := rules != null and rules.tactic in ["kennel", "kennel_pack"]
 	for cell in range(Rules.ROWS * Rules.COLUMNS):
 		var point := Rules.grid(cell)
 		var rect := Rect2(ORIGIN + Vector2(point) * TILE, TILE)
@@ -238,7 +247,7 @@ func paint_tiles() -> void:
 		else:
 			var ground: Texture2D = KENNEL_GRASS if kennel else [TRAIL, MULCH, STONE][mini(room, 2)]
 			var sample := ground.get_width() / 8.0
-			draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), Color(shade, shade, shade * .88))
+			draw_texture_rect_region(ground, rect, Rect2(variant * sample, 0, sample, ground.get_height()), Color(shade, shade, shade * .88) * (Color("#d8c996") if rules is Pack else Color.WHITE))
 		draw_rect(rect, Color("#a0ad793b"), false, 1.0)
 		if rock:
 			if rules.uses_cover():
@@ -394,7 +403,8 @@ func _draw() -> void:
 	var facing_point := hound_point if hound_visible and aim_cell == rules.hound_cell and not selecting else wolf_point
 	var direction := 1 if hero_point.x <= facing_point.x else -1
 	actor_ring(hero_point, GREEN)
-	actor_ring(wolf_point, GREEN if bound_visible else AMBER)
+	if not rules is Pack:
+		actor_ring(wolf_point, GREEN if bound_visible else AMBER)
 	if aim_cell >= 0 and rules.result.is_empty():
 		draw_rect(Rect2(cell_center(aim_cell) - TILE * .5 + Vector2.ONE * 3, TILE - Vector2.ONE * 6), Color("#f3c98cc8"), false, 2)
 	if cover_ray > 0 and rules.uses_cover():
@@ -431,7 +441,9 @@ func _draw() -> void:
 		wolf_tint = Color("#f49c73") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#ded0b1")
 	elif not fallen and rules.tactic == "armored_hound":
 		wolf_tint = Color("#8a8981")
-	if rules.tactic == "nodo":
+	if rules is Pack:
+		paint_pack()
+	elif rules.tactic == "nodo":
 		var opponent_female := skin != "ao-reu"
 		var opponent_tint := Color("#dec49b") if not fallen else Color("#818985")
 		var fight_clip := wolf_frame in [10, 12, 13, 14, 15]
@@ -495,6 +507,28 @@ func _draw() -> void:
 		var marker := shock_caption if not shock_caption.is_empty() else ("Đỡ  −%d" % shock_damage if shock_guarded else "−%d" % shock_damage)
 		draw_string(ThemeDB.fallback_font, shock_point + Vector2(-12, -10 - 26 * shock_progress), marker,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(tone, alpha))
+
+
+func paint_pack() -> void:
+	var pack := rules as Pack
+	for id in range(pack_pieces.size()):
+		var dog := pack_pieces[id]
+		if dog.hp == 0:
+			continue
+		var center: Vector2 = dog.point
+		var tone := GREEN if dog.allied else AMBER
+		var face: int = dog.get("face", 1 if center.x <= hero_point.x else -1)
+		actor_ring(center, tone)
+		atlas_frame(WOLF, 4, 4, dog.frame, center + Vector2(0, 11), 78, face,
+			Color("#bfcabd") if dog.allied else Color("#d6c3aa") if id != 3 else Color("#c4c4bb"))
+		var hp_y := maxf(ORIGIN.y + 15.0, center.y - 39.0)
+		var hp_bar := Rect2(Vector2(center.x - 22, hp_y), Vector2(44, 4))
+		draw_rect(hp_bar, Color("#16211b"))
+		hp_bar.size.x *= float(dog.hp) / float(dog.max_hp)
+		draw_rect(hp_bar, tone)
+		var marker := ("A" if id == 0 else "B") if dog.allied else str(id)
+		draw_string(ThemeDB.fallback_font, Vector2(center.x - 12, hp_y - 5), marker,
+			HORIZONTAL_ALIGNMENT_CENTER, 24, 14, tone)
 
 
 func set_hero_frame(frame: float) -> void:
@@ -646,7 +680,72 @@ func gu_contact(exchange: Dictionary) -> void:
 	exchange_cue.emit("player_contact")
 
 
+func play_pack_exchange(exchange: Dictionary) -> void:
+	available.clear()
+	exchange_cue.emit("player")
+	if not exchange.hero_path.is_empty():
+		hero_art = "move"
+		await slide_hero(exchange.hero_path)
+		hero_art = "ready"
+	elif exchange.hero_guard:
+		hero_art = "guard"
+		hero_frame = 13
+		queue_redraw()
+		await get_tree().create_timer(.15).timeout
+	for event: Dictionary in exchange.player_events:
+		await play_pack_event(event)
+	exchange_cue.emit("player_contact")
+	if not exchange.enemy_events.is_empty():
+		exchange_cue.emit("enemy")
+		for event: Dictionary in exchange.enemy_events:
+			await play_pack_event(event)
+		exchange_cue.emit("enemy_contact")
+	set_state(rules)
+
+
+func play_pack_event(event: Dictionary) -> void:
+	var dog := pack_pieces[int(event.actor)]
+	match event.kind:
+		"move":
+			var walk := create_tween()
+			var from: Vector2 = dog.point
+			for cell: int in event.path:
+				var to := cell_center(cell)
+				if to.x != from.x:
+					walk.tween_callback((func(face: int): dog.face = face).bind(1 if to.x > from.x else -1))
+				walk.tween_method(func(value: Vector2): dog.point = value; queue_redraw(), from, to, .14)
+				walk.parallel().tween_method(func(value: float): dog.frame = int(value), 4.0, 7.9, .14)
+				from = to
+			await walk.finished
+			dog.frame = 0
+		"bind":
+			wolf_point = dog.point
+			await play_binding()
+			dog.allied = true
+			hero_art = "ready"
+		"bite":
+			var from: Vector2 = dog.point
+			var at := hero_point if event.victim == Pack.HERO_ID else Vector2(pack_pieces[event.victim].point)
+			var lunge := from.lerp(at, .45)
+			if at.x != from.x:
+				dog.face = 1 if at.x > from.x else -1
+			dog.frame = 9
+			var rush := create_tween()
+			rush.tween_method(func(value: Vector2): dog.point = value; queue_redraw(), from, lunge, .12)
+			await rush.finished
+			if event.victim != Pack.HERO_ID:
+				pack_pieces[event.victim].hp = event.hp
+			impact(at, event.damage, bool(dog.allied))
+			var retreat := create_tween()
+			retreat.tween_method(func(value: Vector2): dog.point = value; queue_redraw(), lunge, from, .14)
+			await retreat.finished
+			dog.frame = 0
+
+
 func play_exchange(exchange: Dictionary) -> void:
+	if rules is Pack:
+		await play_pack_exchange(exchange)
+		return
 	available.clear()
 	exchange_cue.emit("player")
 	var guarding: bool = exchange.action == "guard"

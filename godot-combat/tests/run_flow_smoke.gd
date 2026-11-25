@@ -3,6 +3,7 @@ extends SceneTree
 const Scene = preload("res://run_flow.tscn")
 const Run = preload("res://run_state.gd")
 const Rules = preload("res://battle_rules.gd")
+const Pack = preload("res://kennel_pack.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Awakening = preload("res://awakening_rules.gd")
@@ -504,6 +505,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_xoa_trail()
 	await play_nodo_road()
 	await play_kennel_trial()
+	await play_kennel_two()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -967,6 +969,88 @@ func play_kennel_trial() -> void:
 	check(Run.restore(duplicate) == null, "The v15 schema must not accept an inner-trial journal")
 
 
+func play_kennel_two() -> void:
+	var old: Dictionary = flow.run.snapshot().duplicate(true)
+	check(old.version == Run.KENNEL_VERSION, "The first round must still load from the v16 result")
+	var original: Rules = flow.run.battle
+	await click_button("enter_kennel_two")
+	await launch()
+	var pack := flow.run.battle as Pack
+	check(flow.run.version == Run.KENNEL_TWO_VERSION and pack != null and pack.living_dogs(false).size() == 3
+		and pack.living_dogs(true) == [0] and pack.dogs[0].hp == original.wolf_hp
+		and pack.hp == original.hp and pack.qi == original.qi and pack.gu_left == 1,
+		"The second round must carry the actual dog, Gu and vitals from v16")
+	await capture("godot-v17-go-co.png")
+	await play_commands([[KEY_5, 16]])
+	check(pack.dogs[2].hp == Pack.DOG_HP - Pack.ALLY_BITE and pack.dogs[0].cell == 17,
+		"The first dog must take a step and bite when ordered")
+	var starting_qi := pack.qi
+	await play_commands([[KEY_3, 11]])
+	check(pack.gu_left == 0 and flow.run.hound_gu == 0 and pack.bound_id == 1 and pack.dogs[1].hp == Pack.DOG_HP
+		and pack.qi == starting_qi - Rules.BIND_COST and pack.living_dogs(false).size() == 2,
+		"The second Gu must spend one charge and change just the chosen dog to allied")
+	var after_capture := pack.dogs.duplicate(true)
+	var threat := pack.intent.duplicate(true)
+	var mid_save: Dictionary = flow.run.snapshot().duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	check(pack != null and pack.dogs == after_capture and pack.intent == threat and pack.gu_left == 0,
+		"Loading after capture must recover all dogs and their queued intentions")
+	var invalid := mid_save.duplicate(true)
+	invalid.journal.append(["bind_hound", 20])
+	check(Run.restore(invalid) == null and not flow.run.enter_kennel_two(), "Replays cannot duplicate equipment or enter twice")
+	await capture("godot-v17-hai-cho.png")
+	await click_button("select_pack_dog_1")
+	await play_commands([[KEY_5, 20]])
+	check(pack.dogs[3].hp == Pack.DOG_HP - Pack.ALLY_BITE and pack.dogs[1].cell == 12,
+		"The captured dog must take its own order from the HUD")
+	key(KEY_6)
+	await play_commands([[KEY_5, 16]])
+	key(KEY_6)
+	await play_commands([[KEY_5, 20]])
+	check(flow.run.phase == "kennel_two_cleared" and pack.living_dogs(true) == [0, 1] and flow.run.hound_gu == 0,
+		"Round two must end with both dogs and the spent Gu")
+	var winning_dogs := pack.dogs.duplicate(true)
+	var remaining_hp := pack.hp
+	await launch()
+	check(flow.run.phase == "kennel_two_cleared" and (flow.run.battle as Pack).dogs == winning_dogs
+		and flow.run.battle.hp == remaining_hp and flow.run.hound_gu == 0,
+		"Loading the win must preserve both remaining dogs and their wounds")
+	await capture("godot-v17-vuot-vong-hai.png")
+
+
+func check_pack_rules() -> void:
+	var pack := Pack.new({"qi": 1})
+	pack.rocks = [11]
+	check(pack.unavailable("bind_hound", 3).contains("Đá chắn"), "Stone must obstruct the new Gu in round two")
+	check(pack.unavailable("bind_hound", 18).contains("chó hoang") and pack.unavailable("moon_edge").contains("phong cấm")
+		and pack.unavailable("vital_leaf").contains("phong cấm") and pack.unavailable("strike").contains("phong cấm")
+		and not pack.unavailable(Pack.BOUND_MOVE).is_empty(), "The Gu only targets wild dogs, and the ordinary kit stays sealed")
+	pack.rocks = []
+	pack.dogs[1].cell = 11
+	pack.dogs[1].hp = 7
+	pack.forecast()
+	var peek := pack.preview_action("bind_hound", 11)
+	check(not peek.has("error") and pack.gu_left == 1 and pack.dogs[1].hp == 7 and not pack.dogs[1].allied,
+		"Preview must not spend the Gu or change the wounded target")
+	var exchange := pack.take_turn("bind_hound", 11)
+	check(pack.gu_left == 0 and pack.dogs[1].hp == 7 and exchange.hero_damage == 0
+		and pack.dogs[1].allied and pack.take_turn("bind_hound", 21).has("error"),
+		"A bound dog keeps its wounds and cancels its old strike immediately")
+	check(pack.hero not in pack.targets_for(Pack.BOUND_MOVE) and pack.actor_cell(0) not in pack.targets_for("move"),
+		"The hero and the dog must not share cells")
+	pack = Pack.new({"hp": 1, "qi": 0})
+	pack.dogs[1].cell = 11
+	pack.forecast()
+	pack.take_turn("guard")
+	check(pack.result == Pack.DEFEAT, "Ignoring a red bite must still be lethal at low HP")
+	pack = Pack.new({}, 2)
+	check(pack.actor_cell(0) in pack.intent.cells, "Layout three must telegraph a bite on the first dog")
+	exchange = pack.take_turn(Pack.LEAD_MOVE, 10)
+	check(not exchange.has("error") and pack.actor_cell(0) == 10 and pack.dogs[0].hp == pack.dogs[0].max_hp,
+		"Moving the dog off a locked tile must dodge the bite")
+
+
 func check_kennel_rules() -> void:
 	var battle := Rules.new({"tactic": "kennel", "qi": 1, "wolf_cell": 19, "rocks": [18]})
 	check(battle.unavailable("bind_hound").contains("Tảng đá")
@@ -1246,6 +1330,7 @@ func exercise() -> void:
 	check_relic_rules()
 	check_nodo_targets()
 	check_kennel_rules()
+	check_pack_rules()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -1341,5 +1426,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes and Khuyển Vương gate and first trial")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes and both Khuyển Vương trials")
 	quit(1 if failed else 0)
