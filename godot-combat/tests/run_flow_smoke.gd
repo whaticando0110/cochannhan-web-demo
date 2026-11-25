@@ -252,6 +252,14 @@ func play_rank_two() -> void:
 	legacy.version = 4
 	flow.run = Run.restore(legacy)
 	check(flow.run != null and flow.run.can_cross_ford() and not flow.run.battle.revised_ward, "v4 victory did not retain legacy rules")
+	var claimant: Run = Run.restore(flow.run.snapshot())
+	var original_vitals := [claimant.battle.hp, claimant.battle.qi, claimant.stones]
+	check(claimant.claim_gu_loot(), "A v4 clear should be able to claim the new loot")
+	var migrated: Run = Run.restore(claimant.snapshot())
+	check(migrated != null and migrated.version == Run.GU_BOOK_VERSION and migrated.snapshot().chapter_rules == 4
+		and [migrated.battle.hp, migrated.battle.qi, migrated.stones] == original_vitals
+		and migrated.owned_gu.small_light == 2 and not migrated.claim_gu_loot(),
+		"A v4 loot upgrade must preserve the original battle, wallet and replay rules")
 	if flow.run == null:
 		return
 	flow.show_run()
@@ -312,7 +320,8 @@ func play_gu_trade() -> void:
 		"Recipes must require the actual Gu in the pouch")
 	await click_button("buy_small_light")
 	await launch()
-	check(flow.run.version == Run.GU_SHOP_VERSION and flow.run.owned_gu.small_light == Run.SMALL_LIGHT_BUNDLE
+	check(flow.run.version == maxi(before_trade.version, Run.GU_SHOP_VERSION)
+		and flow.run.owned_gu.small_light == Run.SMALL_LIGHT_BUNDLE
 		and flow.run.stones == wallet - Run.SMALL_LIGHT_PRICE and not flow.run.buy("buy_small_light")
 		and not flow.run.buy("buy_leaf"), "Buying Gu must cost actual stones and duplicate purchases must be rejected")
 	await click_button("refine_owned_moon")
@@ -322,7 +331,14 @@ func play_gu_trade() -> void:
 	await click_button("study_moon_link")
 	await launch()
 	check(flow.run.moon_link_known and flow.run.owned_gu.small_light == 1
+		and flow.run.gu_receipts.count({"gu": "small_light", "change": -2, "source": "Hợp luyện Nguyệt Mang"}) == 1
 		and not flow.run.commit_shop_action("study_moon_link"), "The learned combination must save without consuming its components")
+	var v18_shop: Dictionary = flow.run.snapshot().duplicate(true)
+	v18_shop.version = Run.GU_SHOP_VERSION
+	var old_shop := Run.restore(v18_shop) as Run
+	check(old_shop != null and old_shop.owned_gu == flow.run.owned_gu and old_shop.moon_link_known
+		and old_shop.gu_receipts == flow.run.gu_receipts,
+		"A v18 save with a purchase and refinement must rebuild the same inventory and receipts")
 	await capture("godot-v18-quay-co.png")
 	await click_button("leave_shop")
 	await select_kit("moon_edge", "moon")
@@ -347,7 +363,72 @@ func play_gu_trade() -> void:
 	flow.show_run()
 
 
+func play_gu_book(ridge_save: Dictionary) -> void:
+	var legacy := ridge_save.duplicate(true)
+	legacy.version = Run.GU_SHOP_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and flow.run.can_cross_ford(), "A v18 victory must remain playable")
+	flow.persist()
+	flow.show_run()
+	var wallet: int = flow.run.stones
+	await capture("godot-v19-chien-loi-pham.png")
+	await click_button("claim_gu_loot")
+	await launch()
+	check(flow.run.version == Run.GU_BOOK_VERSION and flow.run.stones == wallet and flow.run.owned_gu.small_light == 2
+		and not flow.run.claim_gu_loot(), "A v18 loot upgrade must claim once and preserve the wallet")
+	var duplicate: Dictionary = flow.run.snapshot().duplicate(true)
+	duplicate.journal.append(["claim_gu_loot"])
+	check(Run.restore(duplicate) == null, "A duplicated claim in the journal must not be loaded")
+	await click_button("cross_ford")
+	await click_button("merchant")
+	var light_branch := Run.restore(flow.run.snapshot()) as Run
+	check(light_branch.buy("buy_small_light") and light_branch.owned_gu.small_light == 5,
+		"Purchased and looted copies of a stackable Gu must add together")
+	var light_reload := Run.restore(light_branch.snapshot()) as Run
+	check(light_reload != null and light_reload.owned_gu.small_light == 5 and not light_reload.buy("buy_small_light"),
+		"Combined Gu quantities and the per-shop purchase limit must survive reload")
+	await click_button("buy_jade_skin")
+	await launch()
+	check(flow.run.phase == "shop" and flow.run.owned_gu.jade_skin == 1 and flow.run.stones == wallet - 3
+		and not flow.run.buy("buy_jade_skin") and not flow.run.buy("buy_small_light")
+		and flow.run.owned_gu.small_light == 2, "The shop must reject repeat and unaffordable Gu purchases")
+	duplicate = flow.run.snapshot().duplicate(true)
+	duplicate.journal.append(["buy_jade_skin"])
+	check(Run.restore(duplicate) == null, "The journal must not replay a duplicate Ngọc Bì purchase")
+	await capture("godot-v19-quay-co.png")
+	await click_button("leave_shop")
+	await select_kit("four_flavors", "brew")
+	var before_turn: int = flow.run.battle.turn
+	var before_journal: int = flow.run.journal.size()
+	await click_button("open_gu_book")
+	check(flow.current.name == "GuBook" and flow.find_child("gu_row_jade_skin", true, false) != null
+		and flow.find_child("gu_row_small_light", true, false) != null
+		and flow.find_child("gu_row_brew", true, false) == null,
+		"The book must show purchased and looted Gu and exclude the loaned kit")
+	await click_button("close_gu_book")
+	check(flow.run.battle.turn == before_turn and flow.run.journal.size() == before_journal,
+		"Reading the book during a fight must not submit an action")
+	await play_commands([[KEY_3], [KEY_7], [KEY_1, 19], [KEY_1, 21], [KEY_2], [KEY_2], [KEY_1, 14], [KEY_2], [KEY_2]])
+	check(flow.run.can_enter_pass(), "The Gu economy must still allow the original Ford fight without a relic")
+	await click_button("claim_gu_loot")
+	await launch()
+	check(flow.run.owned_gu.white_boar == 1 and flow.run.owned_gu.small_light == 2 and flow.run.owned_gu.jade_skin == 1
+		and flow.run.gu_loot_claimed.size() == 2 and not flow.run.claim_gu_loot(), "Both claim sources must survive reload")
+	check(flow.run.gu_receipts.count({"gu": "jade_skin", "change": 1, "source": "Quầy dừng bên Suối Sấm"}) == 1
+		and flow.run.gu_receipts.count({"gu": "white_boar", "change": 1, "source": "Chiến lợi phẩm · Bãi Đá Suối Sấm"}) == 1,
+		"The journal must preserve distinct, single-receipt sources")
+	await click_button("open_gu_book")
+	check(flow.find_child("gu_row_white_boar", true, false) != null, "The book must show both combat rewards")
+	await capture("godot-v19-so-co.png")
+	await click_button("close_gu_book")
+	await click_button("enter_pass")
+	await click_button("merchant")
+	check(flow.run.shop_unavailable("buy_jade_skin").contains("Đã có Ngọc Bì") and not flow.run.buy("buy_jade_skin"),
+		"The second shop must not sell a duplicate owned copy")
+
+
 func play_waypoints(ridge_save: Dictionary) -> void:
+	await play_gu_book(ridge_save)
 	flow.run = Run.restore(ridge_save)
 	flow.show_run()
 	check(flow.run.stones == Goods.RIDGE_STONES, "Winning the ridge must pay once")
@@ -1002,7 +1083,9 @@ func play_kennel_trial() -> void:
 	await play_commands([[KEY_3]])
 	await launch()
 	check(flow.run.phase == "kennel_cleared" and flow.run.battle.wolf_hp == health
-		and flow.run.battle.qi == before_qi - Rules.BIND_COST and flow.run.hound_gu == 1,
+		and flow.run.battle.qi == before_qi - Rules.BIND_COST and flow.run.hound_gu == 1
+		and flow.run.gu_receipts.count({"gu": "dog_control", "change": -1, "source": "Thu phục ở vòng 1 Khuyển Vương"}) == 1
+		and flow.run.gu_receipts.count({"gu": "dog_control", "change": 1, "source": "Thưởng vòng 1 Khuyển Vương"}) == 1,
 		"Winning must save the healthy dog and the next Gu after spending the first one")
 	await capture("godot-v16-qua-vong-dau.png")
 	var duplicate: Dictionary = flow.run.snapshot().duplicate(true)
@@ -1038,7 +1121,8 @@ func play_kennel_two() -> void:
 	var mid_save: Dictionary = flow.run.snapshot().duplicate(true)
 	await launch()
 	pack = flow.run.battle as Pack
-	check(pack != null and pack.dogs == after_capture and pack.intent == threat and pack.gu_left == 0,
+	check(pack != null and pack.dogs == after_capture and pack.intent == threat and pack.gu_left == 0
+		and flow.run.hound_gu == 0 and flow.run.gu_receipts.count({"gu": "dog_control", "change": -1, "source": "Thu phục ở vòng 2 Khuyển Vương"}) == 1,
 		"Loading after capture must recover all dogs and their queued intentions")
 	var invalid := mid_save.duplicate(true)
 	invalid.journal.append(["bind_hound", 20])
@@ -1504,5 +1588,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes shop Gu crafting, Liên Nguyệt and three Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, purchases and loot, Liên Nguyệt and three Khuyển Vương trials")
 	quit(1 if failed else 0)

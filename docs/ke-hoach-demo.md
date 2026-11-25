@@ -47,6 +47,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 17. Qua cột sáng vàng và thu phục chó hoang đầu tiên trong truyền thừa Khuyển Vương.
 18. Chỉ huy chó ấy trên Gò cỏ úa và dùng Ngự Khuyển mới trước khi ba chó hoang khép vòng vây.
 19. Xuống hố đá ở vòng ba, giữ đàn bị thương qua sáu chó hoang. Thử mua Cổ, hợp luyện và tạo sát chiêu ở quầy ngoài phúc địa.
+20. Cho mở Sổ Cổ sở hữu, bổ sung nguồn nhận từ quầy và chiến lợi phẩm Nhị chuyển.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -273,17 +274,27 @@ Khung đứng đo theo vùng ảnh có alpha rõ ở cỡ chơi. Chó hoang thư
 
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v18 | Mốc tiếp |
+| Phần | Đã chơi được trong v19 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
-| Mua Cổ | Quầy bán 3 Tiểu Quang với 4 nguyên thạch, mỗi điểm dừng mua được một lần. Kho Cổ riêng được dựng lại từ nhật ký. | Mở sổ Cổ sở hữu, thêm mặt hàng ngoài hệ Nguyệt và nguồn nhận Cổ qua chiến lợi phẩm. |
+| Mua và nhận Cổ | Sổ ghi số Cổ còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Mở bí phương Bạch Ngọc từ Ngọc Bì và Bạch Thỉ. |
 | Luyện Cổ | Dùng 1 Nguyệt Quang và 2 Tiểu Quang để nhận 1 Nguyệt Mang. Mẻ thử thành công cố định để kiểm luồng. Chọn bộ cấp sẵn ở xưởng vẫn dùng được cho lượt cũ. | Thêm nguyên liệu và giá hợp luyện cho Bạch Ngọc. Cân bằng lại đường đi khi chuyển dần sang bộ Cổ sở hữu. |
 | Tạo sát chiêu | Liên Nguyệt phối Nguyệt Mang với Tiểu Quang còn lại. Quy tắc demo là 42 sát thương, tầm 5 ô và 4 chân nguyên, dùng một lần mỗi trận khi mang Nguyệt Mang. | Thử một sát chiêu khác vai trò công kích, rồi so chi phí, ô mang và sức mạnh giữa các bộ trước khi mở thêm. |
 | Truyền thừa | Ba vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Mốc hiện tại kết ở màn kết quả hố đá. | Nối một mốc tiến sâu có lựa chọn đối thủ và đàn thú. Sau đó tách luật Tín Vương và Bạo Vương thành hai nhánh riêng. |
 
-Đi theo thứ tự hoàn thiện kho Cổ và nguồn nhận, hợp luyện thêm một hệ, cân bằng sát chiêu, rồi mở nhánh truyền thừa mới. Kiểm cả người chơi có Cổ sở hữu lẫn người chọn bộ cấp sẵn trong giai đoạn chuyển tiếp.
+Đi theo thứ tự hợp luyện thêm một hệ, cân bằng sát chiêu, rồi mở nhánh truyền thừa mới. Kiểm cả người chơi có Cổ sở hữu lẫn người chọn bộ cấp sẵn trong giai đoạn chuyển tiếp.
 
 Bí phương Nguyệt Mang lấy từ chương 98. Liên Nguyệt là sát chiêu riêng của demo, dùng nguyên tắc phối hợp nhiều Cổ trong truyện. Giá, tầm, sát thương và cách hành động trên lưới là số của trò chơi. [Chương 98](https://truyenhh3d.com/truyen/co-chan-nhan/chuong-98) · [Chương 719](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-719.html)
+
+## Sổ Cổ sở hữu
+
+Sổ mở từ màn kết quả, quầy, xưởng hoặc trận đang chơi. Nút Quay lại đưa về đúng chỗ đang chơi, giữ nguyên lượt và tài nguyên. Sổ hiển thị bậc, số Cổ còn lại và nguồn đã nhận. Một Cổ đã dùng hết vẫn hiện với số lượng 0. Bộ cấp sẵn ở xưởng và sát chiêu đang có được trình bày riêng khỏi số Cổ sở hữu.
+
+- Quầy giữ giá 4 nguyên thạch cho gói 3 Tiểu Quang và thêm Ngọc Bì giá 3 nguyên thạch. Gói Tiểu Quang giới hạn một lần mỗi quầy. Đã sở hữu Ngọc Bì từ quầy hoặc phần thưởng đầu lượt thì không thể mua trùng ở quầy sau.
+- Sau khi thắng Sườn đá Mù Sương, nhận túi gồm 2 Tiểu Quang. Sau khi thắng Bãi Đá Suối Sấm, nhận hộp chứa 1 Bạch Thỉ. Hai phần thưởng được thiết kế cho demo. Người chơi chọn **Nhận chiến lợi phẩm** ở kết quả trước khi đi tiếp. Mỗi phần chỉ nhận được một lần trong lượt.
+- Sổ phát lại từ nhật ký, gồm Nguyệt Quang đầu lượt, giao dịch, chiến lợi phẩm, đợt hợp luyện và Ngự Khuyển nhận hoặc dùng trong Khuyển Vương. Mở sổ không nâng bản lưu. Nhận chiến lợi phẩm mới hoặc mua Ngọc Bì ở quầy nâng bản lưu lên v19. Khi nâng từ v4–v6, nhật ký vẫn phát lại các màn trước lúc nhận thưởng theo luật cũ.
+
+Ngọc Bì và Bạch Thỉ là hai thành phần của Bạch Ngọc trong truyện. Demo hiện mở nguồn nhận cho hai Cổ này để dùng ở bước hợp luyện tiếp theo. [Chương 98](https://truyenhoan.com/co-chan-nhan/chuong-98.html)
 
 ## Đồ họa trong trận
 

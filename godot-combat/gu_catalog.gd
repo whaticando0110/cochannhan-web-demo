@@ -2,9 +2,12 @@ extends RefCounted
 
 const GU := {
 	"moon": {"name": "Nguyệt Quang Cổ", "family": "lunar", "rank": 1},
+	"small_light": {"name": "Tiểu Quang Cổ", "family": "lunar", "rank": 1},
 	"moon_edge": {"name": "Nguyệt Mang Cổ", "family": "lunar", "rank": 2},
 	"moon_link": {"name": "Liên Nguyệt", "family": "lunar", "rank": 2},
 	"jade_skin": {"name": "Ngọc Bì Cổ", "family": "ward", "rank": 1},
+	"white_boar": {"name": "Bạch Thỉ Cổ", "rank": 1},
+	"dog_control": {"name": "Ngự Khuyển Cổ", "rank": 1},
 	"white_jade": {"name": "Bạch Ngọc Cổ", "family": "ward", "rank": 2},
 	"brew": {"name": "Tửu Trùng", "family": "brew", "rank": 1},
 	"four_flavors": {"name": "Tứ Vị Tửu Trùng", "family": "brew", "rank": 2},
@@ -12,6 +15,7 @@ const GU := {
 	"scale_veil": {"name": "Ẩn Lân Cổ", "family": "veil", "rank": 2},
 }
 const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
+const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "dog_control"]
 const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
 const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
 const MOON_LINK_COST := 4

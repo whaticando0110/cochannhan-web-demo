@@ -207,6 +207,7 @@ func show_run() -> void:
 	next.action_committed.connect(persist)
 	next.battle_finished.connect(show_result)
 	next.training_requested.connect(open_training.bind(show_run))
+	next.gu_book_requested.connect(open_gu_book)
 	switch_to(next)
 	if save_problem:
 		next.hint_label.text = "Không ghi được bản lưu. Lượt chơi vẫn tiếp tục."
@@ -237,6 +238,8 @@ func show_result() -> void:
 	elif run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
 		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
+	var book := button(menu, "Sổ Cổ", Rect2(775, 58, 130, 44), open_gu_book)
+	book.name = "open_gu_book"
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
 	var floor: Dictionary = run.current_stage()
 	var title: String
@@ -420,6 +423,8 @@ func show_result() -> void:
 			text(menu, "Bộ đã dùng  ·  %s + %s" % [Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name],
 				Rect2(96, 310, 1000, 49), 23, GOLD)
 			draw_vitals(387)
+			if not run.gu_loot().is_empty():
+				draw_gu_loot()
 			if run.can_cross_ford():
 				var crossing := button(menu, "Tới Suối Sấm", Rect2(432, 480, 310, 54), cross_ford)
 				crossing.name = "cross_ford"
@@ -495,6 +500,84 @@ func show_result() -> void:
 				enter.grab_focus()
 	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
 	report_save_problem()
+
+
+func draw_gu_loot() -> void:
+	var loot := run.gu_loot()
+	var claimed: bool = run.gu_loot_claimed.has(run.floor)
+	var card := panel(menu, Rect2(96, 565, 1008, 90), Color("#1a2b25"), Color("#586c54"))
+	var item_name: String = Gu.GU[loot.gu].name
+	text(card, "%s ×%d" % [item_name, loot.count], Rect2(18, 6, 700, 37), 23, GOLD, true)
+	text(card, str(loot.detail), Rect2(19, 42, 700, 33), 16)
+	var claim := button(card, "Đã ghi vào Sổ Cổ" if claimed else "Nhận chiến lợi phẩm",
+		Rect2(742, 21, 247, 46), claim_gu_loot)
+	claim.name = "claim_gu_loot"
+	claim.disabled = claimed
+
+
+func claim_gu_loot() -> void:
+	if run.claim_gu_loot():
+		persist()
+		show_result()
+
+
+func open_gu_book() -> void:
+	menu = make_menu()
+	menu.name = "GuBook"
+	switch_to(menu)
+	var back := button(menu, "Quay lại", Rect2(919, 58, 185, 44), show_run)
+	back.name = "close_gu_book"
+	back.grab_focus()
+	text(menu, "LƯỢT CHƠI HIỆN TẠI", Rect2(96, 60, 650, 41), 19, GREEN)
+	text(menu, "Sổ Cổ sở hữu", Rect2(92, 115, 1012, 92), 56, GOLD, true)
+
+	var owned: Dictionary = run.owned_gu
+	var sources := {}
+	for receipt: Dictionary in run.gu_receipts:
+		if receipt.change <= 0:
+			continue
+		if not sources.has(receipt.gu):
+			sources[receipt.gu] = {}
+		var origin: Dictionary = sources[receipt.gu]
+		origin[receipt.source] = int(origin.get(receipt.source, 0)) + int(receipt.change)
+
+	var types := 0
+	var total := 0
+	for id: String in Gu.BOOK_ORDER:
+		var count := int(owned.get(id, 0))
+		types += int(count > 0)
+		total += count
+	text(menu, "%d loại · %d Cổ đang sở hữu" % [types, total], Rect2(96, 215, 1008, 37), 23)
+	text(menu, "Bộ Cổ cấp sẵn ở xưởng dùng để chọn chiến đấu. Sổ ghi các Cổ đã thật sự nhận hoặc dùng.",
+		Rect2(96, 254, 1008, 34), 17, GREEN)
+
+	var shelf := panel(menu, Rect2(96, 307, 1008, 369), Color("#1a2b25"), Color("#586c54"))
+	text(shelf, "CỔ TRÙNG", Rect2(20, 11, 235, 27), 15, GOLD)
+	text(shelf, "BẬC", Rect2(260, 11, 113, 27), 15, GOLD)
+	text(shelf, "CÒN", Rect2(376, 11, 62, 27), 15, GOLD)
+	text(shelf, "NGUỒN ĐÃ NHẬN", Rect2(455, 11, 530, 27), 15, GOLD)
+	var y := 44
+	for id: String in Gu.BOOK_ORDER:
+		if not sources.has(id):
+			continue
+		var record: Dictionary = Gu.GU[id]
+		var count := int(owned.get(id, 0))
+		var tint := PALE if count > 0 else Color("#9aab9e")
+		var row := panel(shelf, Rect2(13, y, 982, 48), Color("#20332a"), Color("#2b4436"))
+		row.name = "gu_row_" + id
+		var origins: PackedStringArray = []
+		for source: String in sources[id]:
+			origins.append("%s ×%d" % [source, sources[id][source]])
+		text(row, record.name, Rect2(7, 1, 235, 46), 20, tint)
+		text(row, "Nhị chuyển" if record.rank == 2 else "Nhất chuyển", Rect2(247, 1, 113, 46), 16, tint)
+		text(row, str(count), Rect2(363, 1, 62, 46), 20, tint)
+		text(row, "  ·  ".join(origins), Rect2(442, 2, 532, 44), 15, tint)
+		y += 52
+	var recent: Dictionary = run.gu_receipts.back()
+	text(menu, "Gần nhất · %s %+d · %s" % [Gu.GU[recent.gu].name, recent.change, recent.source],
+		Rect2(96, 691, 700, 38), 17, GREEN)
+	if run.moon_link_known:
+		text(menu, "Sát chiêu đã phối · Liên Nguyệt", Rect2(800, 691, 304, 38), 17, GOLD)
 
 
 func choose_reward(id: String) -> void:
@@ -596,7 +679,7 @@ func buy_pulse_rite() -> void:
 func draw_waypoint() -> void:
 	var entries := {
 		"camp": ["Lều nghỉ", "Băng bó trước khi đi. Hồi tối đa %d sinh lực." % Goods.CAMP_HEAL],
-		"merchant": ["Quầy đổi đồ", "Xem Sinh Cơ Diệp và %s." % Goods.RELICS[run.shop_relic()][0]],
+		"merchant": ["Quầy đổi đồ", "Có Sinh Cơ Diệp, %s và Cổ trùng." % Goods.RELICS[run.shop_relic()][0]],
 		"salvage": ["Túi bên bờ đá", "Băng qua đá sắc để nhặt thêm nguyên thạch."],
 		"spring": ["Mạch nước trong khe", "Dùng chân nguyên lấy một lá Sinh Cơ Diệp."],
 		"elite_detour": [Run.ELITE_DEN.name, "Đấu Điện Lang đầu đàn · %d sinh lực." % Run.ELITE_DEN.hp],
@@ -860,19 +943,20 @@ func draw_shop() -> void:
 	var offers := [
 		["buy_leaf", "Sinh Cơ Diệp", "Hồi tối đa %d sinh lực khi dùng một lá trong trận." % Rules.LEAF_HEAL],
 		["buy_relic", for_sale[0], for_sale[1]],
-		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Dùng để hợp luyện hoặc phối thành sát chiêu."],
+		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Dùng để hợp luyện hoặc phối sát chiêu."],
+		["buy_jade_skin", "Ngọc Bì Cổ", "Cổ Hộ thể nhất chuyển. Nguyên liệu hợp luyện."],
 	]
 	for i in range(offers.size()):
 		var offer: Array = offers[i]
 		var id: String = offer[0]
-		var card := panel(menu, Rect2(96 + i * 342, 298, 324, 202), Color("#1a2b25"), Color("#586c54"))
-		text(card, offer[1], Rect2(16, 12, 292, 42), 25, GOLD, true)
-		text(card, offer[2], Rect2(16, 54, 292, 60), 16)
+		var card := panel(menu, Rect2(96 + i * 255, 298, 243, 202), Color("#1a2b25"), Color("#586c54"))
+		text(card, offer[1], Rect2(13, 12, 217, 42), 23, GOLD, true)
+		text(card, offer[2], Rect2(13, 54, 217, 60), 16)
 		var reason := run.shop_unavailable(id)
 		var price := "Giá %d nguyên thạch" % run.shop_price(id)
-		text(card, price if reason.is_empty() else reason, Rect2(16, 113, 292, 37), 15, GREEN)
+		text(card, price if reason.is_empty() else reason, Rect2(13, 113, 217, 37), 15, GREEN)
 		var exchange := id == "buy_relic" and run.shop_price(id) == Goods.RELIC_TRADE_PRICE
-		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(16, 151, 292, 37), buy_waypoint_item.bind(id))
+		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(13, 151, 217, 37), buy_waypoint_item.bind(id))
 		purchase.name = id
 		purchase.disabled = not reason.is_empty()
 	var stock := run.owned_gu

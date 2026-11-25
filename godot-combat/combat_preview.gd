@@ -3,6 +3,7 @@ extends Control
 signal action_committed
 signal battle_finished
 signal training_requested
+signal gu_book_requested
 signal training_setup_requested
 
 const Rules = preload("res://battle_rules.gd")
@@ -52,6 +53,7 @@ var pack_order := ""
 var pack_buttons: Array[Button] = []
 var reset_button: Button
 var training_button: Button
+var gu_book_button: Button
 var actions := {}
 var report: Array[String] = []
 var headline := SystemFont.new()
@@ -221,6 +223,9 @@ func build_hud() -> void:
 	reset_button.visible = run == null
 	reset_button.pressed.connect(reset_battle)
 	if run != null:
+		gu_book_button = button("Sổ Cổ", 866, 44, 128, 46)
+		gu_book_button.name = "open_gu_book"
+		gu_book_button.pressed.connect(func(): gu_book_requested.emit())
 		training_button = button("Luyện trận", 1006, 44, 160, 46)
 		training_button.pressed.connect(func(): training_requested.emit())
 	elif not training.is_empty():
@@ -837,11 +842,15 @@ func resolve(action: String, cell: int = -1) -> void:
 		selector.disabled = true
 	if is_instance_valid(training_button):
 		training_button.disabled = true
+	if gu_book_button != null:
+		gu_book_button.disabled = true
 	await field.play_exchange(exchange)
 	busy = false
 	reset_button.disabled = false
 	if is_instance_valid(training_button):
 		training_button.disabled = false
+	if gu_book_button != null:
+		gu_book_button.disabled = false
 	for note in exchange.notes:
 		report.push_front(note)
 	report = report.slice(0, 4)

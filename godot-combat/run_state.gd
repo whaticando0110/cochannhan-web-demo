@@ -5,7 +5,8 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 18
+const CURRENT_VERSION := 19
+const GU_BOOK_VERSION := 19
 const GU_SHOP_VERSION := 18
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
@@ -123,6 +124,14 @@ const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
 const SMALL_LIGHT_BUNDLE := 3
 const SMALL_LIGHT_PRICE := 4
+const GU_SHOP_STOCK := {
+	"buy_small_light": {"gu": "small_light", "count": SMALL_LIGHT_BUNDLE, "price": SMALL_LIGHT_PRICE, "version": GU_SHOP_VERSION},
+	"buy_jade_skin": {"gu": "jade_skin", "count": 1, "price": 3, "version": GU_BOOK_VERSION},
+}
+const GU_LOOT := {
+	RIDGE_FLOOR: {"gu": "small_light", "count": 2, "detail": "Túi Cổ mắc trong khe đá sau trận."},
+	FORD_FLOOR: {"gu": "white_boar", "count": 1, "detail": "Hộp Cổ của người đi trước ở bến đá."},
+}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -172,8 +181,13 @@ var pulse_award := ""
 var pulse_rite := false
 var xoa_award := ""
 var strike_bonus := 0
-var hound_gu := 0
 var owned_gu := {"moon": 1, "small_light": 0, "moon_edge": 0}
+var gu_receipts: Array[Dictionary] = [{"gu": "moon", "change": 1, "source": "Khởi đầu lượt chơi"}]
+var gu_loot_claimed := {}
+var chapter_rules_before_book := 0
+var hound_gu: int:
+	get:
+		return owned_gu.get("dog_control", 0)
 var moon_link_known := false
 var outside_battle: Rules
 
@@ -286,7 +300,9 @@ func perform(action: String, target: int = -1) -> Dictionary:
 		return exchange
 	journal.append([action, target])
 	if battle is Pack:
-		hound_gu = (battle as Pack).gu_left
+		var pack := battle as Pack
+		if pack.gu_left < hound_gu:
+			change_owned_gu("dog_control", pack.gu_left - hound_gu, "Thu phục ở vòng %d Khuyển Vương" % pack.round_number)
 	if battle.result == Rules.DEFEAT:
 		phase = "death"
 	elif battle.result == Rules.VICTORY:
@@ -308,8 +324,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "nodo_cleared"
 		elif floor == KENNEL_FLOOR:
 			phase = "kennel_cleared"
-			# The first Gu bound the dog. The trial grants the next one.
-			hound_gu = 1
+			change_owned_gu("dog_control", -1, "Thu phục ở vòng 1 Khuyển Vương")
+			change_owned_gu("dog_control", 1, "Thưởng vòng 1 Khuyển Vương")
 		elif floor == KENNEL_TWO_FLOOR:
 			phase = "kennel_two_cleared"
 		elif floor == KENNEL_THREE_FLOOR:
@@ -394,6 +410,8 @@ func reward(id: String) -> bool:
 	if outcome.is_empty():
 		return false
 	moon_bonus = outcome.moon_bonus
+	if id == "jade_skin":
+		change_owned_gu(id, 1, "Thưởng · " + str(current_stage().name))
 	floor += 1
 	phase = "rest" if floor == 2 and version >= 3 else "battle"
 	battle = encounter(outcome.hp, outcome.qi, outcome.max_qi, outcome)
@@ -480,6 +498,28 @@ func starting_qi(qi: int) -> int:
 
 func revised_ward_rules() -> bool:
 	return version >= 5 or floor >= FORD_FLOOR or phase == "ford_workshop"
+
+
+func change_owned_gu(id: String, quantity: int, source: String) -> void:
+	owned_gu[id] = int(owned_gu.get(id, 0)) + quantity
+	gu_receipts.append({"gu": id, "change": quantity, "source": source})
+
+
+func gu_loot() -> Dictionary:
+	return GU_LOOT.get(floor, {}) if phase == "complete" else {}
+
+
+func claim_gu_loot() -> bool:
+	var loot := gu_loot()
+	if loot.is_empty() or gu_loot_claimed.has(floor):
+		return false
+	if version < 7:
+		chapter_rules_before_book = version
+	version = maxi(version, GU_BOOK_VERSION)
+	change_owned_gu(loot.gu, loot.count, "Chiến lợi phẩm · " + str(current_stage().name))
+	gu_loot_claimed[floor] = true
+	journal.append(["claim_gu_loot"])
+	return true
 
 
 func can_cross_ford() -> bool:
@@ -718,7 +758,7 @@ func reach_kennel_gate() -> bool:
 func refine_hound_gu() -> bool:
 	if phase != "kennel_gate":
 		return false
-	hound_gu = 1
+	change_owned_gu("dog_control", 1, "Đoàn buôn Tam Xoa")
 	phase = "kennel_ready"
 	journal.append(["refine_hound_gu"])
 	return true
@@ -861,18 +901,20 @@ func shop_relic() -> String:
 func shop_price(id: String) -> int:
 	if id == "buy_leaf":
 		return Goods.LEAF_PRICE
-	if id == "buy_small_light":
-		return SMALL_LIGHT_PRICE
+	if GU_SHOP_STOCK.has(id):
+		return GU_SHOP_STOCK[id].price
 	return Goods.RELIC_TRADE_PRICE if not relic.is_empty() and relic != shop_relic() else Goods.RELIC_PRICE
 
 
 func shop_unavailable(id: String) -> String:
-	if phase != "shop" or id not in ["buy_leaf", "buy_relic", "buy_small_light"]:
+	if phase != "shop" or (id not in ["buy_leaf", "buy_relic"] and not GU_SHOP_STOCK.has(id)):
 		return "Món hàng không còn được bán."
 	if visited_shop.has(id):
 		return "Đã mua món này tại quầy."
 	if id == "buy_relic" and relic == shop_relic():
 		return "Bạn đang mang bảo vật này."
+	if id == "buy_jade_skin" and owned_gu.get("jade_skin", 0) > 0:
+		return "Đã có Ngọc Bì trong sổ."
 	var price := shop_price(id)
 	if stones < price:
 		return "Cần %d nguyên thạch." % price
@@ -886,9 +928,11 @@ func buy(id: String) -> bool:
 	visited_shop[id] = true
 	if id == "buy_leaf":
 		stop.leaves += 1
-	elif id == "buy_small_light":
-		version = maxi(version, GU_SHOP_VERSION)
-		owned_gu.small_light += SMALL_LIGHT_BUNDLE
+	elif GU_SHOP_STOCK.has(id):
+		var offer: Dictionary = GU_SHOP_STOCK[id]
+		version = maxi(version, offer.version)
+		var shop := "Quầy dừng bên Suối Sấm" if floor == RIDGE_FLOOR else "Quầy dưới Hẻm Đá"
+		change_owned_gu(offer.gu, offer.count, shop)
 	else:
 		relic = shop_relic()
 	journal.append([id])
@@ -921,9 +965,9 @@ func commit_shop_action(id: String) -> bool:
 				return false
 			version = maxi(version, GU_SHOP_VERSION)
 			if id == "refine_owned_moon":
-				owned_gu.moon -= 1
-				owned_gu.small_light -= 2
-				owned_gu.moon_edge += 1
+				change_owned_gu("moon", -1, "Hợp luyện Nguyệt Mang")
+				change_owned_gu("small_light", -2, "Hợp luyện Nguyệt Mang")
+				change_owned_gu("moon_edge", 1, "Hợp luyện Nguyệt Mang")
 			else:
 				moon_link_known = true
 			journal.append([id])
@@ -1002,6 +1046,8 @@ func snapshot() -> Dictionary:
 	if schema != version:
 		saved.version = schema
 		saved.chapter_rules = version
+	elif chapter_rules_before_book > 0:
+		saved.chapter_rules = chapter_rules_before_book
 	return saved
 
 
@@ -1017,7 +1063,9 @@ static func restore(saved: Variant) -> RefCounted:
 		return null
 	var rules_version := int(saved.version)
 	if saved.has("chapter_rules"):
-		if saved.version < 5 or saved.version > 6 or not finite_integer(saved.chapter_rules, 4, int(saved.version) - 1):
+		var schema := int(saved.version)
+		var valid_rules := finite_integer(saved.chapter_rules, 4, mini(6, schema - 1))
+		if not valid_rules or schema not in [5, 6, GU_BOOK_VERSION]:
 			return null
 		rules_version = int(saved.chapter_rules)
 	var run = load("res://run_state.gd").new(profile_data, int(saved.seed), rules_version)
@@ -1079,7 +1127,9 @@ static func restore(saved: Variant) -> RefCounted:
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":
-					if command[0] == "cross_ford":
+					if command[0] == "claim_gu_loot":
+						committed = run.claim_gu_loot()
+					elif command[0] == "cross_ford":
 						committed = saved.version >= 5 and run.cross_ford()
 					elif command[0] == "enter_pass":
 						committed = saved.version >= 6 and run.enter_pass()
@@ -1091,7 +1141,8 @@ static func restore(saved: Variant) -> RefCounted:
 				return null
 		elif command.size() != 2 or not finite_integer(command[1], -1, 39) or run.perform(command[0], int(command[1])).has("error"):
 			return null
-	if run.snapshot().version != saved.version:
+	var restored: Dictionary = run.snapshot()
+	if restored.version != saved.version or restored.get("chapter_rules") != saved.get("chapter_rules"):
 		return null
 	return run
 
