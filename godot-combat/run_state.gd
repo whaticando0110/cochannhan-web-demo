@@ -4,7 +4,7 @@ const Rules = preload("res://battle_rules.gd")
 const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
-const CURRENT_VERSION := 14
+const CURRENT_VERSION := 15
 const RIDGE_FLOOR := 3
 const FORD_FLOOR := 4
 const AMBUSH_FLOOR := 5
@@ -20,6 +20,8 @@ const PULSE_FLOOR := 10
 const PULSE_VERSION := 13
 const XOA_FLOOR := 11
 const XOA_VERSION := 14
+const NODO_FLOOR := 12
+const NODO_VERSION := 15
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -97,6 +99,15 @@ const XOA_HEAL := 22
 const XOA_QI := 2
 const XOA_HIDE_PRICE := 7
 const XOA_REWARDS := {"iron_hide": "Giáp da Thiết Giáp", "sell_iron_hide": "Đổi da lấy nguyên thạch"}
+const NODO_ROAD := {"name": "Đường núi Tam Xoa", "enemy": "Cổ sư Nô đạo", "damage": 19,
+	"bite": 10, "hp": 104, "heavy": "Khuyển thú vồ", "pace": 2, "wolf_cell": 21, "hound_hp": 40,
+	"hound_cells": [29, 28, 25], "rooms": [[4, 11, 26, 35], [3, 14, 27, 37], [5, 10, 19, 34]]}
+const NODO_HEAL := 21
+const NODO_QI := 3
+const NODO_REST_HEAL := 10
+const NODO_SUPPLY_PRICE := 6
+const NODO_SUPPLY_LEAVES := 2
+const NODO_CAMP := {"nodo_rest": "Nghỉ lấy sức", "nodo_supplies": "Đổi lấy Sinh Cơ Diệp"}
 const BOSS_SEAL := "Ấn Trấn Lôi"
 const BOSS_HEAL := 32
 const BOSS_QI := 4
@@ -175,6 +186,8 @@ func stage_at(index: int) -> Dictionary:
 			return PULSE_HALL
 		XOA_FLOOR:
 			return XOA_TRAIL
+		NODO_FLOOR:
+			return NODO_ROAD
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -215,6 +228,8 @@ func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules
 				tactic = "pulse_boss"
 			XOA_FLOOR:
 				tactic = "armored_hound"
+			NODO_FLOOR:
+				tactic = "nodo"
 	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
 
 
@@ -226,6 +241,8 @@ static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi
 		"cracks": stage.cracks[variant] if stage.has("cracks") else [],
 		"runes": stage.runes[variant] if stage.has("runes") else [],
 		"heavy": stage.heavy, "damage": stage.damage,
+		"hound_cell": stage.hound_cells[variant] if stage.has("hound_cells") else -1,
+		"hound_hp": stage.get("hound_hp", 0),
 		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
 		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
 		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
@@ -258,6 +275,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "pulse_reward"
 		elif floor == XOA_FLOOR:
 			phase = "xoa_reward"
+		elif floor == NODO_FLOOR:
+			phase = "nodo_cleared"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -402,6 +421,9 @@ func workshop_vitals() -> Dictionary:
 			"leaves": battle.leaves}
 	if phase == "xoa_workshop":
 		return {"hp": mini(Rules.MAX_HP, battle.hp + XOA_HEAL), "qi": mini(battle.max_qi, battle.qi + XOA_QI),
+			"leaves": battle.leaves}
+	if phase == "xoa_camp":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + NODO_HEAL), "qi": mini(battle.max_qi, battle.qi + NODO_QI),
 			"leaves": battle.leaves}
 	var heal := CHAPTER_HEAL
 	if phase != "refinement":
@@ -611,6 +633,42 @@ func claim_xoa_reward(id: String) -> bool:
 	return true
 
 
+func enter_xoa_camp() -> bool:
+	if phase != "xoa_cleared":
+		return false
+	version = maxi(version, NODO_VERSION)
+	phase = "xoa_camp"
+	journal.append(["enter_xoa_camp"])
+	return true
+
+
+func nodo_camp_preview(id: String) -> Dictionary:
+	if phase != "xoa_camp" or not NODO_CAMP.has(id):
+		return {}
+	var next := workshop_vitals()
+	next.stones = stones
+	next.reason = ""
+	if id == "nodo_rest":
+		next.hp = mini(Rules.MAX_HP, next.hp + NODO_REST_HEAL)
+	else:
+		next.stones -= NODO_SUPPLY_PRICE
+		next.leaves += NODO_SUPPLY_LEAVES
+		if next.stones < 0:
+			next.reason = "Cần %d nguyên thạch để đổi." % NODO_SUPPLY_PRICE
+	return next
+
+
+func choose_nodo_camp(id: String) -> bool:
+	var next := nodo_camp_preview(id)
+	if next.is_empty() or not next.reason.is_empty():
+		return false
+	stones = next.stones
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	phase = "nodo_workshop"
+	journal.append([id])
+	return true
+
+
 func workshop_size() -> int:
 	if version >= 6 or phase == "ambush_workshop":
 		return 4
@@ -749,7 +807,7 @@ func leave_waypoint() -> void:
 
 
 func equip_build(recipe: String, starter: String) -> bool:
-	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop"]:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop", "nodo_workshop"]:
 		return false
 	var count := workshop_size()
 	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
@@ -775,6 +833,8 @@ func equip_build(recipe: String, starter: String) -> bool:
 			floor = PULSE_FLOOR
 		"xoa_workshop":
 			floor = XOA_FLOOR
+		"nodo_workshop":
+			floor = NODO_FLOOR
 		"elite_workshop":
 			elite_room = true
 		_:
@@ -864,6 +924,10 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_xoa_trail" and run.enter_xoa_trail()
 				"xoa_reward":
 					committed = run.claim_xoa_reward(command[0])
+				"xoa_cleared":
+					committed = command[0] == "enter_xoa_camp" and run.enter_xoa_camp()
+				"xoa_camp":
+					committed = run.choose_nodo_camp(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

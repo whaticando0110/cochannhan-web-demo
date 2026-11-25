@@ -43,6 +43,7 @@ Các con số, cách nhận đồ và hành vi địch ở trên là thiết k�
 13. Mở Đài Trấn Ấn, màn ba Tam chuyển, sau khi nhận thưởng Hẻm Hàn Phong. Né Chấn Ấn và kết thúc lượt di chuyển trên ô ấn để phá giáp.
 14. Mở Điện Trấn Mạch, boss cuối Tam chuyển, sau khi nhận thưởng Đài Trấn Ấn. Luân phiên cự ly gần và xa để đối phó sóng chấn.
 15. Mở Tứ chuyển ở bãi đá chân núi Tam Xoa, ngoài cửa truyền thừa. Dùng địa hình để tránh cú húc của chó Thiết Giáp và đổi góc đánh.
+16. Nối trại tạm và trận cổ sư Nô đạo trên đường núi Tam Xoa. Chuẩn bị tiếp tế, chọn mục tiêu và đọc lệnh khuyển thú.
 9. Nối atlas Cổ, ô địa hình và dấu báo đòn Gemini đã bàn giao vào lượt chính và Luyện trận. Kiểm nhịp ra Cổ, thời điểm đổi chỉ số trên HUD và hình dấu đúng ô.
 
 ## Bộ Cổ ở Nhị chuyển
@@ -234,6 +235,14 @@ Phát lại trận ở Điện Trấn Mạch để lấy đúng sinh lực, châ
 | Rương Trấn Mạch | 192/192 | 7–14 | 10,25 | 29,53 |
 
 Châu kích hoạt ở 126/192 đường thắng và giúp thắng sớm hơn ở 43 cấu hình ghép cặp. Rương giữ nhiều sinh lực hơn ở 54 cấu hình. Điểm kết thúc thấp nhất là 1 sinh lực với Châu và 11 với Rương trong phép tìm ưu tiên kết thúc sớm. Kiểm thêm 32 lượt có nhật ký từ Suối Sấm qua bốn bộ thuần. Phát lại được cả hai cách dùng da từ mỗi lượt.
+
+## Trại tạm và Đường núi Tam Xoa
+
+Sau khi xử lý da Thiết Giáp, **Đến trại tạm** nâng bản lưu từ v14 lên v15. Trại hồi tối đa 21 sinh lực và 3 chân nguyên trước khi áp dụng hiệu ứng bảo vật. Chọn nghỉ để hồi thêm tối đa 10 sinh lực, hoặc tốn 6 nguyên thạch lấy 2 Sinh Cơ Diệp. Giữ da thì Giáp da vẫn chặn thêm sát thương ở lần Thủ thế có hiệu lực đầu tiên. Đổi da thì giữ bảo vật cũ và có thêm nguyên thạch mua lá. Người chơi chọn lại bộ Cổ tại trại trước trận.
+
+Trận nằm trên đường ngoài phúc địa. Cổ sư Nô đạo vô danh và khuyển thú là đối thủ của demo. Giữa trận có thể đổi mục tiêu bằng nút bên phải hoặc bấm ô đứng của địch. Hai đối thủ chặn di chuyển, chắn đường phóng và nhận Nguyệt Ấn riêng. Đòn trúng cổ sư lúc ra lệnh làm ngắt lệnh. Nếu nhận lệnh, khuyển vồ ô đã khóa trong tầm 5 ô có đường thông. Nếu bị chắn hoặc ngoài tầm, nó áp sát một ô. Hạ khuyển sẽ hủy đòn vồ đang chờ. Hạ cổ sư sẽ kết thúc trận. Màn dùng địa hình và atlas của demo với hai dấu phe, nhãn máu và vị trí riêng.
+
+Sau trận, lời nhắc về Ngự Khuyển Cổ dẫn đến hướng phát triển truyền thừa Khuyển Vương. Quy tắc phúc địa sẽ được triển khai khi có cảnh vào cửa. [Chương 424](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-424.html)
 
 ## Đồ họa trong trận
 

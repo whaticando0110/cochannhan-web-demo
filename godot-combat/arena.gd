@@ -30,6 +30,10 @@ var room := 0
 var skin := "huyen-bao"
 var hero_point := Vector2.ZERO
 var wolf_point := Vector2.ZERO
+var hound_point := Vector2.ZERO
+var hound_frame := 0
+var hound_visible := false
+var aim_cell := -1
 var hero_frame := 13
 var wolf_frame := 0
 var hero_art := "ready"
@@ -71,6 +75,7 @@ var rubble_warning := false
 var rubble_progress := 1.0
 var veiled := false
 var cover_ray := 0
+var cover_target := -1
 var bolt := PackedVector2Array()
 
 
@@ -90,6 +95,10 @@ func set_state(state: Rules) -> void:
 	rules = state
 	hero_point = cell_center(rules.hero)
 	wolf_point = cell_center(rules.wolf)
+	hound_visible = rules.live_hound() >= 0 and rules.result != Rules.VICTORY
+	if hound_visible:
+		hound_point = cell_center(rules.hound_cell)
+		hound_frame = 0
 	hero_art = "ready"
 	hero_frame = 13
 	if room == 2:
@@ -117,7 +126,7 @@ func set_state(state: Rules) -> void:
 	flood_warning = rules.intent.get("pattern") == "water"
 	rubble_warning = rules.intent.get("pattern") == "rubble"
 	veiled = rules.veil_turns > 0
-	set_process(not ward_kind.is_empty() or mark_visible or brew_prepared or brew_stacks > 0 or stone_prepared or veiled)
+	set_process(not ward_kind.is_empty() or mark_visible or brew_prepared or brew_stacks > 0 or stone_prepared or veiled or rules.hound_mark)
 	queue_redraw()
 
 
@@ -128,8 +137,14 @@ func set_selecting(value: bool) -> void:
 	queue_redraw()
 
 
-func show_cover_ray(value: int) -> void:
+func set_aim(cell: int) -> void:
+	aim_cell = cell
+	queue_redraw()
+
+
+func show_cover_ray(value: int, target: int = -1) -> void:
 	cover_ray = value
+	cover_target = target
 	queue_redraw()
 
 
@@ -370,12 +385,17 @@ func _draw() -> void:
 	paint_tiles()
 	if rules == null:
 		return
-	var direction := 1 if hero_point.x <= wolf_point.x else -1
+	var opponent_face := 1 if hero_point.x > wolf_point.x else -1
+	var facing_point := hound_point if hound_visible and aim_cell == rules.hound_cell and not selecting else wolf_point
+	var direction := 1 if hero_point.x <= facing_point.x else -1
 	actor_ring(hero_point, GREEN)
 	actor_ring(wolf_point, AMBER)
+	if aim_cell >= 0 and rules.result.is_empty():
+		draw_rect(Rect2(cell_center(aim_cell) - TILE * .5 + Vector2.ONE * 3, TILE - Vector2.ONE * 6), Color("#f3c98cc8"), false, 2)
 	if cover_ray > 0 and rules.uses_cover():
-		var blocker := rules.ray_blocker(rules.hero, rules.wolf)
-		if blocker >= 0 and Rules.distance(rules.hero, rules.wolf) <= cover_ray:
+		var target := rules.attack_cell(cover_target)
+		var blocker := rules.shot_blocker(target)
+		if blocker >= 0 and Rules.distance(rules.hero, target) <= cover_ray:
 			var stop := cell_center(blocker)
 			draw_dashed_line(hero_point, stop, Color("#c5f7ffb0"), 2.0, 7.0, true, true)
 			terrain_frame(Art.TELEGRAPHS, Rect2(stop - TILE * .5, TILE), Vector2i(3, 0), Color.WHITE, hero_point.x > stop.x)
@@ -406,7 +426,23 @@ func _draw() -> void:
 		wolf_tint = Color("#f49c73") if rules.wolf_hp * 2 <= rules.wolf_max else Color("#ded0b1")
 	elif not fallen and rules.tactic == "armored_hound":
 		wolf_tint = Color("#8a8981")
-	if room == 2:
+	if rules.tactic == "nodo":
+		var opponent_female := skin != "ao-reu"
+		var opponent_tint := Color("#dec49b") if not fallen else Color("#818985")
+		var fight_clip := wolf_frame in [10, 12, 13, 14, 15]
+		if fight_clip:
+			atlas_frame(REU_CAST if opponent_female else CAST, 8, 2, 9 if wolf_frame >= 12 else 0,
+				wolf_point, 112, opponent_face, opponent_tint)
+		else:
+			atlas_frame(REU_TRAVEL if opponent_female else TRAVEL, 8, 4, maxi(0, wolf_frame - 4),
+				wolf_point, 109, opponent_face, opponent_tint)
+		if hound_visible:
+			actor_ring(hound_point, Color("#df8f64"))
+			var hound_face := 1 if hound_point.x < hero_point.x else -1
+			atlas_frame(WOLF, 4, 4, hound_frame, hound_point + Vector2(0, 11), 119, hound_face, Color("#cca986"))
+			if rules.hound_mark:
+				draw_effect(Art.LOOPS.moon_mark, loop_time, hound_point + Vector2(0, -39), 34, 1, true)
+	elif room == 2:
 		atlas_frame(WOLF_KING, 4, 5, wolf_frame, wolf_point + Vector2(0, 25), 193, -direction, wolf_tint)
 	else:
 		var wolf_size := 142 if rules.tactic in ["den", "marsh", "wind_pass", "armored_hound"] else 118
@@ -547,6 +583,21 @@ func storm_shot(target: Vector2, exchange: Dictionary, guarding: bool) -> void:
 	await get_tree().create_timer(.14).timeout
 
 
+func play_hound_lunge(exchange: Dictionary, guarding: bool) -> void:
+	var start := hound_point
+	var target := cell_center(exchange.enemy_intent.cells[0])
+	var landing := target - (target - start).normalized() * 34
+	hound_frame = 8
+	var rush := create_tween()
+	rush.tween_method(func(p: Vector2): hound_point = p; queue_redraw(), start, landing, .25)
+	await rush.finished
+	hound_frame = 10
+	enemy_contact(exchange, hero_point, guarding, true)
+	var retreat := create_tween()
+	retreat.tween_method(func(p: Vector2): hound_point = p; queue_redraw(), landing, start, .20)
+	await retreat.finished
+
+
 func gu_contact(exchange: Dictionary) -> void:
 	match exchange.action:
 		"jade_skin", "white_jade":
@@ -568,7 +619,8 @@ func play_exchange(exchange: Dictionary) -> void:
 	exchange_cue.emit("player")
 	var guarding: bool = exchange.action == "guard"
 	var has_cast_art := Art.CASTS.has(exchange.action)
-	var direction := 1 if hero_point.x <= wolf_point.x else -1
+	var aimed_at := cell_center(exchange.target_cell)
+	var direction := 1 if hero_point.x <= aimed_at.x else -1
 	if exchange.action == "move":
 		hero_art = "move"
 		await slide_hero(exchange.hero_path)
@@ -576,11 +628,11 @@ func play_exchange(exchange: Dictionary) -> void:
 			play_effect(Art.CONTACTS.step_reveal, hero_point, 112, direction)
 		stone_prepared = false
 	elif exchange.action in ["moon", "moon_edge"]:
-		await cast(wolf_point, exchange.action == "moon_edge", exchange.set_trigger)
+		await cast(aimed_at, exchange.action == "moon_edge", exchange.set_trigger)
 		mark_visible = rules.moon_mark
 	elif exchange.action == "strike":
 		var rally := hero_point
-		var forward := (wolf_point - hero_point).normalized() * 15
+		var forward := (aimed_at - hero_point).normalized() * 15
 		var strike := create_tween()
 		strike.tween_method(func(p: Vector2): hero_point = p; queue_redraw(), rally, rally + forward, .11)
 		strike.tween_method(func(p: Vector2): hero_point = p; queue_redraw(), rally + forward, rally, .10)
@@ -597,14 +649,20 @@ func play_exchange(exchange: Dictionary) -> void:
 		hero_art = "ready"
 	if not has_cast_art:
 		exchange_cue.emit("player_contact")
-	if exchange.wolf_damage > 0:
+	if exchange.wolf_damage > 0 or exchange.hound_damage > 0:
 		if exchange.action == "moon_edge":
 			var clip: Dictionary = Art.CONTACTS.marked_edge if exchange.set_trigger else Art.CONTACTS.moon_edge
-			play_effect(clip, wolf_point + Vector2(0, 12), 94 if exchange.set_trigger else 78, direction)
-		impact(wolf_point, exchange.wolf_damage, true)
+			play_effect(clip, aimed_at + Vector2(0, 12), 94 if exchange.set_trigger else 78, direction)
+		impact(aimed_at, exchange.wolf_damage + exchange.hound_damage, true)
 		var hit := create_tween()
-		hit.tween_method(set_wolf_frame, 12.0, 15.9, .18)
+		if exchange.hound_damage > 0:
+			hit.tween_method(func(f: float): hound_frame = int(f); queue_redraw(), 12.0, 15.9, .18)
+		else:
+			hit.tween_method(set_wolf_frame, 12.0, 15.9, .18)
 		await hit.finished
+		if exchange.hound_damage > 0 and rules.live_hound() < 0:
+			hound_visible = false
+		hound_frame = 0
 	if not exchange.reaction.is_empty():
 		exchange_cue.emit("enemy")
 	if exchange.reaction == "advance":
@@ -636,7 +694,14 @@ func play_exchange(exchange: Dictionary) -> void:
 		enemy_contact(exchange, hero_point + Vector2(0, -15), guarding)
 		await get_tree().create_timer(.22).timeout
 		rubble_progress = 1.0
-	elif exchange.enemy_intent.kind == "shot" and not exchange.reaction.is_empty():
+	elif exchange.reaction == "hound_advance":
+		var step := create_tween().set_parallel()
+		step.tween_method(func(p: Vector2): hound_point = p; queue_redraw(), hound_point, cell_center(rules.hound_cell), .23)
+		step.tween_method(func(f: float): hound_frame = int(f); queue_redraw(), 4.0, 7.9, .23)
+		await step.finished
+	elif exchange.enemy_intent.kind == "nodo_hound" and not exchange.reaction.is_empty():
+		await play_hound_lunge(exchange, guarding)
+	elif exchange.enemy_intent.kind in ["shot", "nodo_shot"] and not exchange.reaction.is_empty():
 		await storm_shot(cell_center(exchange.enemy_intent.cells[0]), exchange, guarding)
 	elif exchange.reaction in ["heavy", "strike", "ambush", "miss"]:
 		var start := wolf_point

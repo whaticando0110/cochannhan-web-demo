@@ -230,7 +230,9 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
+	if run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
+		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
+	elif run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
 		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
 	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
 	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
@@ -317,6 +319,15 @@ func show_result() -> void:
 			title = "Qua bãi đá chân núi"
 			description = "Đã nhận Giáp da Thiết Giáp." if run.xoa_award == "iron_hide" else (
 				"Đã đổi da lấy %d nguyên thạch." % Run.XOA_HIDE_PRICE)
+		"xoa_camp":
+			title = "Trại tạm dưới chân núi"
+			description = "Đoàn buôn nghỉ dưới chân núi Tam Xoa. Chọn nghỉ thêm hoặc đổi nguyên thạch lấy Sinh Cơ Diệp."
+		"nodo_workshop":
+			title = Run.NODO_ROAD.name
+			description = "Một cổ sư Nô đạo chặn lối. Đánh trúng lúc hắn ra lệnh, hoặc hạ khuyển thú trước."
+		"nodo_cleared":
+			title = "Qua đường núi Tam Xoa"
+			description = "Đã giành được lối lên cửa truyền thừa. Đoàn buôn nhắc chuẩn bị Ngự Khuyển Cổ trước khi vào phúc địa."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -347,7 +358,7 @@ func show_result() -> void:
 		draw_rewards()
 	elif run.phase == "rest":
 		draw_rest()
-	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop"]:
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop", "nodo_workshop"]:
 		draw_workshop()
 	elif run.phase == "elite_reward":
 		draw_elite_rewards()
@@ -361,6 +372,8 @@ func show_result() -> void:
 		draw_pulse_rewards()
 	elif run.phase == "xoa_reward":
 		draw_xoa_rewards()
+	elif run.phase == "xoa_camp":
+		draw_nodo_camp()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -429,6 +442,11 @@ func show_result() -> void:
 			road.name = "enter_xoa_trail"
 			road.grab_focus()
 		elif run.phase == "xoa_cleared":
+			draw_vitals(355)
+			var camp := button(menu, "Đến trại tạm", Rect2(432, 480, 310, 54), enter_xoa_camp)
+			camp.name = "enter_xoa_camp"
+			camp.grab_focus()
+		elif run.phase == "nodo_cleared":
 			draw_vitals(355)
 	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
 	report_save_problem()
@@ -703,6 +721,38 @@ func draw_xoa_rewards() -> void:
 
 func claim_xoa_reward(id: String) -> void:
 	if run.claim_xoa_reward(id):
+		persist()
+		show_result()
+
+
+func enter_xoa_camp() -> void:
+	if run.enter_xoa_camp():
+		persist()
+		show_result()
+
+
+func draw_nodo_camp() -> void:
+	var base := run.workshop_vitals()
+	var i := 0
+	for id in Run.NODO_CAMP:
+		var next := run.nodo_camp_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#26302b"), Color("#829780"))
+		text(card, Run.NODO_CAMP[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		var copy := "Sinh lực %d/%d → %d/%d. Giữ %d nguyên thạch." % [base.hp, Rules.MAX_HP, next.hp, Rules.MAX_HP, run.stones]
+		if id == "nodo_supplies":
+			copy = "Sinh Cơ Diệp ×%d → ×%d. Nguyên thạch %d → %d." % [
+				base.leaves, next.leaves, run.stones, next.stones] if next.reason.is_empty() else next.reason
+		text(card, copy + "\nChân nguyên khi rời trại %d/%d." % [run.starting_qi(next.qi), run.battle.max_qi], Rect2(20, 75, 452, 88), 19)
+		var option := button(card, "Chọn", Rect2(20, 178, 454, 41), choose_nodo_camp.bind(id))
+		option.name = id
+		option.disabled = not next.reason.is_empty()
+		if i == 0:
+			option.grab_focus()
+		i += 1
+
+
+func choose_nodo_camp(id: String) -> void:
+	if run.choose_nodo_camp(id):
 		persist()
 		show_result()
 

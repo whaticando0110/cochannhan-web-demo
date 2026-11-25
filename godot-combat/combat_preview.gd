@@ -43,6 +43,9 @@ var relic_label: Label
 var hp_bar: ProgressBar
 var qi_bar: ProgressBar
 var wolf_bar: ProgressBar
+var lead_target: Button
+var hound_target: Button
+var aiming_at_hound := false
 var reset_button: Button
 var training_button: Button
 var actions := {}
@@ -79,7 +82,7 @@ func configure(current_run: RunData) -> void:
 		arena_room = 5
 	elif run.floor in [RunData.ALTAR_FLOOR, RunData.PULSE_FLOOR]:
 		arena_room = 2
-	elif run.floor == RunData.XOA_FLOOR:
+	elif run.floor in [RunData.XOA_FLOOR, RunData.NODO_FLOOR]:
 		arena_room = 1
 	configure_identity(floor_data, arena_room, run.profile.hero, known_grade)
 
@@ -164,7 +167,7 @@ func button(text: String, x: float, y: float, w: float, h: float) -> Button:
 
 
 func build_hud() -> void:
-	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic == "armored_hound" else "THANH MAO SƠN"
+	var area := "NAM CƯƠNG · NÚI TAM XOA" if state.tactic in ["armored_hound", "nodo"] else "THANH MAO SƠN"
 	label("CỔ CHÂN NHÂN  /  " + area, 36, 22, 600, 30, 17, GREEN)
 	if Goods.RELICS.has(state.relic):
 		relic_label = label("", 655, 10, 333, 31, 15, GOLD)
@@ -183,6 +186,8 @@ func build_hud() -> void:
 		mode = "Tam chuyển · Màn 3"
 	elif run != null and run.floor == RunData.PULSE_FLOOR:
 		mode = "Tam chuyển · Boss cuối"
+	elif run != null and run.floor == RunData.NODO_FLOOR:
+		mode = "Tứ chuyển · Màn 2"
 	elif run != null and run.floor == RunData.XOA_FLOOR:
 		mode = "Tứ chuyển · Màn 1"
 	elif run != null:
@@ -234,7 +239,7 @@ func build_hud() -> void:
 	hp_label = label("", 1054, 222, 94, 21, 16, GREEN)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hp_bar = bar(880, 248, 267, GREEN, Rules.MAX_HP)
-	var gold_essence := state.tactic == "armored_hound"
+	var gold_essence := state.tactic in ["armored_hound", "nodo"]
 	var qi_tint := GOLD if gold_essence else CYAN
 	label("Chân nguyên hoàng kim" if gold_essence else "Chân nguyên", 880, 263, 169, 22, 16, IVORY)
 	qi_label = label("", 1054, 263, 94, 22, 16, qi_tint)
@@ -242,10 +247,20 @@ func build_hud() -> void:
 	qi_bar = bar(880, 290, 267, qi_tint, state.max_qi)
 
 	panel(860, 325, 306, 146, Color("#282a23"))
-	label(enemy_name, 880, 337, 190, 30, 21, GOLD, true)
+	if state.tactic != "nodo":
+		label(enemy_name, 880, 337, 190, 30, 21, GOLD, true)
 	wolf_label = label("", 1054, 342, 94, 24, 16, RED)
 	wolf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wolf_bar = bar(880, 374, 267, RED, state.wolf_max)
+	if state.tactic == "nodo":
+		wolf_label.hide()
+		wolf_bar.hide()
+		lead_target = button("", 880, 337, 128, 49)
+		lead_target.name = "target_controller"
+		lead_target.pressed.connect(aim_enemy.bind(false))
+		hound_target = button("", 1019, 337, 128, 49)
+		hound_target.name = "target_hound"
+		hound_target.pressed.connect(aim_enemy.bind(true))
 	intent_name = label("", 880, 394, 266, 26, 21, RED, true)
 	intent_copy = label("", 880, 425, 264, 40, 14, IVORY)
 	intent_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -310,11 +325,35 @@ func update_player_contact() -> void:
 	wolf_label.text = "%d / %d" % [state.wolf_hp, state.wolf_max]
 	qi_bar.value = state.qi
 	wolf_bar.value = state.wolf_hp
+	if lead_target != null:
+		lead_target.text = "Cổ sư · %s\n%d/%d" % [Rules.cell_name(state.wolf), state.wolf_hp, state.wolf_max]
+		hound_target.text = "Khuyển · %s\n%d/%d" % [Rules.cell_name(state.hound_cell), state.hound_hp, state.hound_max]
+
+
+func aim_enemy(hound: bool) -> void:
+	if busy or not state.result.is_empty() or (hound and state.live_hound() < 0):
+		return
+	aiming_at_hound = hound
+	update_hud()
+	show_hint()
+
+
+func attack_target(action: String) -> int:
+	if aiming_at_hound and action in ["strike", "moon", "moon_edge"]:
+		return state.live_hound()
+	return -1
 
 
 func update_hud() -> void:
 	update_hero_hp(state.hp)
 	update_player_contact()
+	if lead_target != null:
+		aiming_at_hound = aiming_at_hound and state.live_hound() >= 0
+		lead_target.modulate = Color.WHITE if aiming_at_hound else GOLD
+		hound_target.modulate = GOLD if aiming_at_hound else Color.WHITE
+		lead_target.disabled = busy or not state.result.is_empty()
+		hound_target.disabled = lead_target.disabled or state.live_hound() < 0
+		field.set_aim(state.attack_cell(attack_target("strike")))
 	var supplies: PackedStringArray = []
 	if state.jade_turns > 0:
 		supplies.append("Ngọc %d · %d lượt" % [state.ward_strength, state.jade_turns])
@@ -354,6 +393,12 @@ func update_hud() -> void:
 				intent_name.text += " · Cuồng nộ"
 			if state.intent.get("pattern") == "row":
 				intent_copy.text = "Hàng %d · %d sát thương. Rời hàng để né." % [int(state.intent.row) + 1, state.intent.damage]
+			elif state.intent.kind == "nodo_command":
+				intent_copy.text = "Khuyển chờ lệnh. Đánh trúng cổ sư để ngắt."
+			elif state.intent.kind == "nodo_hound_advance":
+				intent_copy.text = "Ngoài tầm vồ. Khuyển sẽ tiến về ô %s." % Rules.cell_name(state.intent.destination)
+			elif state.intent.kind == "nodo_hound":
+				intent_copy.text = "Khuyển vồ ô %s · %d sát thương. Rời ô để né." % [Rules.cell_name(state.ordered_cell), state.intent.damage]
 			elif state.intent.get("pattern") == "hound_rush":
 				intent_copy.text = "Húc về %s · %d sát thương. Né sang hàng khác." % [
 					"Tây" if state.hound_facing < 0 else "Đông", state.intent.damage]
@@ -404,8 +449,9 @@ func update_hud() -> void:
 		actions.scale_veil.text = "7   Ẩn Lân\nMất dấu · −%d CN" % state.scale_veil_cost()
 	for action in actions:
 		var control: Button = actions[action]
-		control.disabled = busy or not state.unavailable(action).is_empty()
-		control.tooltip_text = state.unavailable(action)
+		var reason := state.unavailable(action, attack_target(action))
+		control.disabled = busy or not reason.is_empty()
+		control.tooltip_text = reason
 	actions.move.modulate = GREEN if selecting else Color.WHITE
 
 
@@ -446,6 +492,9 @@ func show_hint() -> void:
 	else:
 		if state.tactic == "ford":
 			hint_label.text = "Đi được qua nước nông. Ô nước chuyển tím khi có điện. Vách đá chặn đòn đánh xa."
+		elif state.tactic == "nodo":
+			var aim := "Khuyển thú" if aiming_at_hound else "Cổ sư Nô đạo"
+			hint_label.text = "Đang nhắm %s. Bấm đối thủ trên sân hoặc trong bảng bên phải để đổi mục tiêu." % aim
 		elif state.tactic == "ambush":
 			hint_label.text = "Ô nứt đi được. Khi ô nứt sáng hổ phách, đá sẽ rơi vào đó sau lượt của bạn."
 		else:
@@ -468,11 +517,11 @@ func show_exchange(cue: String) -> void:
 func inspect_action(action: String) -> void:
 	if busy or not state.result.is_empty():
 		return
-	field.show_cover_ray(shot_range(action))
+	field.show_cover_ray(shot_range(action), state.attack_cell(attack_target(action)))
 	if action == "move":
 		hint_label.text = "Chọn Di chuyển để thấy các ô đến được trong %d bước." % state.movement_range()
 		return
-	var result := state.preview_action(action)
+	var result := state.preview_action(action, attack_target(action))
 	if result.has("error"):
 		hint_label.text = result.error
 		return
@@ -489,7 +538,7 @@ func inspect_action(action: String) -> void:
 				pieces.append("Phản đòn +%d" % state.counter_bonus() if state.counter_ready else "Tinh nguyên +%d" % Gu.BREW_STRIKE_BONUS)
 			"scale_veil":
 				pieces.append("Bước ẩn kế tiếp tối đa 4 ô")
-	elif action == "moon" and result.moon_mark and not state.moon_mark:
+	elif action == "moon" and result.moon_mark and not (state.hound_mark if result.hits_hound else state.moon_mark):
 		pieces.append("Đặt Nguyệt Ấn")
 	if result.healed > 0:
 		pieces.append("Hồi %d sinh lực" % result.healed)
@@ -516,10 +565,14 @@ func inspect_action(action: String) -> void:
 		pieces.append("Độc rút %d chân nguyên" % result.qi_drained)
 	if result.receives > 0:
 		pieces.append("Chịu %d sát thương%s" % [result.receives, " sau khi đỡ" if action == "guard" else ""])
-	elif result.dealt >= state.wolf_hp:
+	elif not result.hits_hound and result.dealt >= state.wolf_hp:
 		pieces.append("Kết liễu đối thủ trước khi địch đáp trả")
 	elif result.healed == 0 and result.absorbed == 0 and result.relic_block == 0:
 		pieces.append("Lượt này giữ nguyên sinh lực")
+	if result.interrupts:
+		pieces.append("Ngắt lệnh vồ")
+	elif result.stops_hound:
+		pieces.append("Hạ khuyển thú")
 	if result.healed > 0 or result.absorbed > 0 or result.relic_block > 0:
 		pieces.append("Sinh lực còn %d/%d" % [state.hp + result.healed - result.receives, Rules.MAX_HP])
 	if action == "brew" and result.brew_ready:
@@ -572,9 +625,9 @@ func inspect_cell(cell: int) -> void:
 func choose(action: String) -> void:
 	if busy:
 		return
-	var reason := state.unavailable(action)
+	var reason := state.unavailable(action, attack_target(action))
 	if not reason.is_empty():
-		field.show_cover_ray(shot_range(action))
+		field.show_cover_ray(shot_range(action), state.attack_cell(attack_target(action)))
 		hint_label.text = reason
 		return
 	if action == "move":
@@ -588,7 +641,7 @@ func choose(action: String) -> void:
 		show_hint()
 		update_hud()
 		return
-	resolve(action)
+	resolve(action, attack_target(action))
 
 
 func shot_range(action: String) -> int:
@@ -600,6 +653,8 @@ func shot_range(action: String) -> int:
 func select_cell(cell: int) -> void:
 	if selecting and not busy:
 		resolve("move", cell)
+	elif lead_target != null and (cell == state.wolf or cell == state.live_hound()):
+		aim_enemy(cell == state.live_hound())
 
 
 func resolve(action: String, cell: int = -1) -> void:
@@ -616,6 +671,9 @@ func resolve(action: String, cell: int = -1) -> void:
 	for control in actions.values():
 		control.disabled = true
 	reset_button.disabled = true
+	if lead_target != null:
+		lead_target.disabled = true
+		hound_target.disabled = true
 	if is_instance_valid(training_button):
 		training_button.disabled = true
 	await field.play_exchange(exchange)

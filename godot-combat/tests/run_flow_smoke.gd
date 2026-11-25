@@ -502,6 +502,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_seal_altar()
 	await play_pulse_boss()
 	await play_xoa_trail()
+	await play_nodo_road()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -838,6 +839,108 @@ func play_xoa_trail() -> void:
 	check(not trial.relic_ready, "The first guarded hit must consume the hide charge")
 
 
+func play_nodo_road() -> void:
+	var legacy: Dictionary = flow.run.snapshot().duplicate(true)
+	check(legacy.version == Run.XOA_VERSION, "Leaving the bãi đá save must not upgrade until camp")
+	await click_button("enter_xoa_camp")
+	await launch()
+	check(flow.run.version == Run.NODO_VERSION and flow.run.phase == "xoa_camp" and flow.run.relic == "iron_hide"
+		and not flow.run.enter_xoa_camp(), "Camp must upgrade a v14 journal once and retain the hide")
+	await capture("godot-v15-trai-tam.png")
+	var sale: RefCounted = Run.restore(legacy)
+	sale.stones = 0
+	check(sale.enter_xoa_camp() and not sale.choose_nodo_camp("nodo_supplies") and sale.stones == 0,
+		"An unaffordable camp purchase must leave the journal and inventory alone")
+	var source: RefCounted = Run.restore(legacy)
+	source.phase = "xoa_reward"
+	source.journal.pop_back()
+	source.relic = "pulse_pearl"
+	check(source.claim_xoa_reward("sell_iron_hide") and source.enter_xoa_camp(),
+		"The sale branch must also reach camp")
+	var offer: Dictionary = source.nodo_camp_preview("nodo_supplies")
+	var previous_leaves: int = source.battle.leaves
+	var previous_stones: int = source.stones
+	check(offer.reason.is_empty() and source.choose_nodo_camp("nodo_supplies")
+		and source.stones == previous_stones - Run.NODO_SUPPLY_PRICE
+		and source.workshop_vitals().leaves == previous_leaves + Run.NODO_SUPPLY_LEAVES
+		and not source.choose_nodo_camp("nodo_supplies"),
+		"Supplies must spend the displayed stones and grant leaves once")
+	var restored_sale: RefCounted = Run.restore(source.snapshot())
+	check(restored_sale != null and restored_sale.phase == "nodo_workshop" and restored_sale.relic == "pulse_pearl"
+		and restored_sale.stones == source.stones and restored_sale.workshop_vitals() == source.workshop_vitals(),
+		"The sold-hide branch must restore its prior relic and purchased leaves")
+	await click_button("nodo_rest")
+	await launch()
+	check(flow.run.phase == "nodo_workshop", "Rest choice must persist before equipment")
+	await select_kit("moon_edge", "moon")
+	var battle: Rules = flow.run.battle
+	check(battle.intent.kind == "nodo_command" and battle.preview_action("moon").interrupts,
+		"Targeting the controller during command must preview interruption")
+	await capture("godot-v15-duong-nui-tam-xoa.png")
+	await click_button("target_hound")
+	check(flow.current.attack_target("moon_edge") == battle.hound_cell
+		and battle.preview_action("moon_edge", battle.hound_cell).get("hits_hound", false),
+		"Selecting the hound must use its own tile, range and hit forecast: %s" % battle.unavailable("moon_edge", battle.hound_cell))
+	await play_commands([[KEY_7]])
+	check(battle.hound_hp < battle.hound_max and battle.wolf_hp == battle.wolf_max and battle.intent.kind == "nodo_hound",
+		"An attack on the hound must resolve on the hound and allow a non-interrupted order")
+	await launch()
+	battle = flow.run.battle
+	check(battle.intent.kind == "nodo_hound" and battle.ordered_cell == battle.hero
+		and battle.intent.cells == flow.current.field.threatened and battle.hound_hp < battle.hound_max,
+		"Reload must reconstruct both targets and the locked tile from actual moves")
+	await capture("godot-v15-khuyen-thu-vo.png")
+	var brace := battle.preview_action("guard")
+	check(brace.relic_block > 0 and brace.receives < battle.intent.damage,
+		"The hide must mitigate a guarded hound lunge")
+	await play_commands([[KEY_4]])
+	check(not battle.relic_ready and battle.ordered_cell == -1, "The lunge must spend the guarded hide and clear the order")
+	for i in range(18):
+		if flow.run.phase != "battle":
+			break
+		var code := KEY_4
+		if battle.unavailable("moon").is_empty() and (battle.intent.kind in ["nodo_command", "advance"] or battle.wolf_hp <= battle.moon_damage):
+			code = KEY_3
+		elif battle.hp <= 20 and battle.unavailable("vital_leaf").is_empty():
+			code = KEY_6
+		await play_commands([[code]])
+	check(flow.run.phase == "nodo_cleared", "Winning the two-target fight must open the route result")
+	await launch()
+	check(flow.run.phase == "nodo_cleared" and flow.run.battle.ordered_cell == -1,
+		"The camp, target choices and victory must replay in the saved run")
+
+
+func check_nodo_targets() -> void:
+	var battle := Rules.new({"tactic": "nodo", "hound_cell": 19, "hound_hp": 40, "wolf_cell": 21, "rocks": [],
+		"starter_gu": "moon", "refined_gu": "moon_edge", "qi": 6, "max_qi": 6})
+	check(battle.shot_blocker(battle.wolf) == battle.hound_cell and battle.unavailable("moon").contains("chắn")
+		and battle.unavailable("moon", 10).contains("đối thủ") and battle.hound_cell not in battle.move_targets(),
+		"Live actors must block a shot and movement while invalid targets are rejected")
+	battle.take_turn("moon", 19)
+	check(battle.hound_mark and not battle.moon_mark and battle.ordered_cell == 17,
+		"Lunar marking the hound alone must not interrupt the master")
+	var cut := battle.take_turn("moon_edge", 19)
+	check(cut.hound_damage == 14 and cut.set_trigger and cut.hero_damage == 0 and battle.hound_hp == 0
+		and battle.wolf_hp == battle.wolf_max and battle.ordered_cell == -1 and battle.shot_blocker(battle.wolf) < 0,
+		"Only the hound's mark is spent, killing it cancels the lunge and frees the tile")
+	battle = Rules.new({"tactic": "nodo", "hound_cell": 13, "hound_hp": 40, "wolf_cell": 21, "rocks": []})
+	var strike := battle.take_turn("moon")
+	check(strike.wolf_damage > 0 and battle.hound_hp == 40 and battle.ordered_cell == -1
+		and battle.intent.kind != "nodo_hound", "Hitting the master while ordering must interrupt the hound")
+	battle = Rules.new({"tactic": "nodo", "wolf_hp": 20, "hound_cell": 13, "hound_hp": 40, "rocks": []})
+	battle.take_turn("guard")
+	var finish := battle.take_turn("moon")
+	check(battle.result == Rules.VICTORY and finish.hero_damage == 0 and battle.hound_hp == 40,
+		"Defeating the controller must cancel even a queued lunge")
+	battle = Rules.new({"tactic": "nodo", "hound_cell": 22, "hound_hp": 40, "rocks": []})
+	battle.take_turn("guard")
+	check(battle.intent.kind == "nodo_hound_advance" and battle.intent.destination != battle.wolf,
+		"A hound blocked by its master must approach on an open tile")
+	battle.take_turn("guard")
+	check(battle.hound_cell != 22 and battle.hound_cell != battle.wolf and battle.ordered_cell == -1,
+		"Approach must move on the grid and consume the order")
+
+
 func check_ambush_kit() -> void:
 	var kit := {"starter_gu": "stone_veil", "moon_equipped": false, "refined_gu": "scale_veil"}
 	var pass_rules := Run.battle_for(Run.AMBUSH_PASS, 0, 48, 4, 4, 0, kit, "ambush", true)
@@ -1056,6 +1159,7 @@ func exercise() -> void:
 	check_ford_gu()
 	check_ambush_kit()
 	check_relic_rules()
+	check_nodo_targets()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -1151,5 +1255,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa facing and both loot routes")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, two targets, lunge replay and both hide routes")
 	quit(1 if failed else 0)

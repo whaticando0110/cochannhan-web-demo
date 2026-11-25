@@ -30,6 +30,7 @@ const PULSE_ENRAGE_DAMAGE := 3
 const PULSE_OPEN_BONUS := 5
 const HOUND_FRONT_ARMOR := 7
 const HOUND_FLANK_STRIKE := 4
+const NODO_HOUND_RANGE := 5
 
 var turn := 1
 var hero := 17
@@ -75,6 +76,11 @@ var runes: Array = []
 var seal_turns := 0
 var pulse_open := false
 var hound_facing := -1
+var hound_cell := -1
+var hound_hp := 0
+var hound_max := 0
+var hound_mark := false
+var ordered_cell := -1
 
 
 func _init(options: Dictionary = {}) -> void:
@@ -93,6 +99,9 @@ func _init(options: Dictionary = {}) -> void:
 	leaves = options.get("leaves", 0)
 	tactic = options.get("tactic", "")
 	wolf = options.get("wolf_cell", wolf)
+	hound_cell = options.get("hound_cell", -1)
+	hound_max = options.get("hound_hp", 0)
+	hound_hp = hound_max
 	moon_equipped = options.get("moon_equipped", true)
 	refined_gu = options.get("refined_gu", "")
 	var starter := "moon" if moon_equipped else "jade_skin" if jade_skin else ""
@@ -136,7 +145,7 @@ static func neighbors(cell: int) -> Array[int]:
 	return adjacent
 
 
-func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {}) -> Dictionary:
+func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {}, other: int = -1) -> Dictionary:
 	var walked := {start: 0}
 	var queue: Array[int] = [start]
 	var index := 0
@@ -147,7 +156,7 @@ func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {})
 		if steps >= budget:
 			continue
 		for candidate in neighbors(cell):
-			if candidate != blocker and candidate not in rocks and not walked.has(candidate):
+			if candidate != blocker and candidate != other and candidate not in rocks and not walked.has(candidate):
 				walked[candidate] = steps + 1
 				parents[candidate] = cell
 				queue.append(candidate)
@@ -156,7 +165,7 @@ func reach(start: int, budget: int, blocker: int = -1, parents: Dictionary = {})
 
 
 func move_targets() -> Array:
-	return [] if not result.is_empty() else reach(hero, movement_range(), wolf).keys()
+	return [] if not result.is_empty() else reach(hero, movement_range(), wolf, {}, live_hound()).keys()
 
 
 func movement_range() -> int:
@@ -171,7 +180,20 @@ func scale_veil_cost() -> int:
 	return Gu.SCALE_VEIL_COST - int(can_extend_veil())
 
 
-func ray_blocker(from: int, to: int) -> int:
+func live_hound() -> int:
+	return hound_cell if hound_hp > 0 else -1
+
+
+func attack_cell(target: int = -1) -> int:
+	return wolf if tactic != "nodo" or target == -1 else target
+
+
+func shot_blocker(target: int) -> int:
+	var other := wolf if target == live_hound() else live_hound()
+	return ray_blocker(hero, target, other)
+
+
+func ray_blocker(from: int, to: int, other: int = -1) -> int:
 	var point := grid(from)
 	var end := grid(to)
 	var delta := end - point
@@ -188,7 +210,7 @@ func ray_blocker(from: int, to: int) -> int:
 			point.y += step.y
 			crossed.y += 1
 		var cell := point.y * COLUMNS + point.x
-		if point != end and cell in rocks:
+		if point != end and (cell in rocks or cell == other):
 			return cell
 	return -1
 
@@ -217,6 +239,8 @@ func forecast() -> void:
 		forecast_pulse()
 	elif tactic == "armored_hound":
 		forecast_hound(gap)
+	elif tactic == "nodo":
+		forecast_nodo(gap)
 	elif tactic == "ford" and heavy_turn and heavy_count % 2 == 0:
 		intent = {"kind": "flood", "name": "Dẫn lôi qua nước", "cells": water, "damage": heavy_damage, "pattern": "water"}
 	elif tactic == "ambush" and heavy_turn and heavy_count % 2 == 1:
@@ -286,6 +310,24 @@ func forecast_hound(gap: int) -> void:
 		intent = {"kind": "strike", "name": "Cắn xé", "cells": [hero], "damage": bite_damage}
 	else:
 		intent = {"kind": "advance", "name": "Áp sát", "cells": [], "damage": 0}
+
+
+func forecast_nodo(gap: int) -> void:
+	if live_hound() >= 0 and ordered_cell >= 0:
+		if distance(hound_cell, ordered_cell) <= NODO_HOUND_RANGE and ray_blocker(hound_cell, ordered_cell, wolf) < 0:
+			intent = {"kind": "nodo_hound", "name": "Khuyển thú vồ", "cells": [ordered_cell],
+				"damage": heavy_damage, "pattern": "hound_rush"}
+		else:
+			intent = {"kind": "nodo_hound_advance", "name": "Khuyển thú áp sát", "cells": [],
+				"damage": 0, "destination": enemy_step(hound_cell, 1, wolf)}
+	elif live_hound() >= 0 and (turn - 1) % 3 == 0:
+		intent = {"kind": "nodo_command", "name": "Ra lệnh khuyển thú", "cells": [], "damage": 0}
+	elif gap == 1:
+		intent = {"kind": "strike", "name": "Cổ sư đánh tay không", "cells": [hero], "damage": bite_damage}
+	elif gap <= Gu.MOON_EDGE_RANGE and ray_blocker(wolf, hero, live_hound()) < 0:
+		intent = {"kind": "nodo_shot", "name": "Cổ sư phóng Cổ", "cells": [hero], "damage": bite_damage, "pattern": "bolt"}
+	else:
+		intent = {"kind": "advance", "name": "Cổ sư áp sát", "cells": [], "damage": 0}
 
 
 func hound_guards(from: int) -> bool:
@@ -365,11 +407,11 @@ func cells_around_hero() -> Array[int]:
 
 
 func uses_cover() -> bool:
-	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass", "seal_altar", "pulse_boss", "armored_hound"]
+	return tactic in ["ravine", "storm", "ford", "ambush", "den", "thunder_boss", "marsh", "wind_pass", "seal_altar", "pulse_boss", "armored_hound", "nodo"]
 
 
 func aim_can_be_lost() -> bool:
-	return intent.kind in ["shot", "ambush", "strike"]
+	return intent.kind in ["shot", "ambush", "strike", "nodo_shot"]
 
 
 func white_jade_absorb() -> int:
@@ -388,36 +430,41 @@ func counter_bonus() -> int:
 	return Gu.REVISED_COUNTER_BONUS if revised_ward else Gu.WARD_COUNTER_BONUS
 
 
-func shot_unavailable(action: String, cost: int, attack_range: int) -> String:
+func shot_unavailable(action: String, cost: int, attack_range: int, target: int) -> String:
 	if qi < cost:
 		return "Cần %d chân nguyên để phóng %s." % [cost, Gu.GU[action].name]
-	if distance(hero, wolf) > attack_range:
+	if distance(hero, target) > attack_range:
 		return "Đối thủ ở ngoài tầm %d ô." % attack_range
 	if uses_cover():
-		var cover := ray_blocker(hero, wolf)
+		var cover := shot_blocker(target)
+		if cover >= 0 and (cover == live_hound() or cover == wolf):
+			return "Đối thủ ở %s chắn đường phóng." % cell_name(cover)
 		if cover >= 0:
 			return "Vách đá ở %s chặn %s." % [cell_name(cover), Gu.GU[action].name]
 	return ""
 
 
-func unavailable(action: String) -> String:
+func unavailable(action: String, target: int = -1) -> String:
 	if not result.is_empty():
 		return "Trận đấu đã kết thúc."
+	var aim := attack_cell(target)
+	if action in ["strike", "moon", "moon_edge"] and aim != wolf and (aim < 0 or aim != live_hound()):
+		return "Chọn một đối thủ còn trên sân."
 	match action:
 		"move":
 			if move_targets().is_empty():
 				return "Không còn ô di chuyển."
 		"strike":
-			if distance(hero, wolf) != 1:
+			if distance(hero, aim) != 1:
 				return "Tay không cần đứng kề đối thủ."
 		"moon":
 			if not moon_equipped:
 				return "Nguyệt Quang Cổ chưa được trang bị."
-			return shot_unavailable(action, MOON_COST, MOON_RANGE)
+			return shot_unavailable(action, MOON_COST, MOON_RANGE, aim)
 		"moon_edge":
 			if refined_gu != action:
 				return "Nguyệt Mang Cổ chưa được trang bị."
-			return shot_unavailable(action, Gu.MOON_EDGE_COST, Gu.MOON_EDGE_RANGE)
+			return shot_unavailable(action, Gu.MOON_EDGE_COST, Gu.MOON_EDGE_RANGE, aim)
 		"guard":
 			pass
 		"jade_skin":
@@ -472,27 +519,27 @@ func unavailable(action: String) -> String:
 	return ""
 
 
-func wolf_step() -> int:
-	var distances := reach(hero, COLUMNS * ROWS)
-	var wolf_next := wolf
-	var best: int = distances.get(wolf, 1000)
-	for cell in reach(wolf, pace, hero):
+func enemy_step(start: int, speed: int, other: int = -1) -> int:
+	var distances := reach(hero, COLUMNS * ROWS, other)
+	var destination := start
+	var best: int = distances.get(start, 1000)
+	for cell in reach(start, speed, hero, {}, other):
 		var steps: int = distances.get(cell, 1000)
 		if steps < best:
 			best = steps
-			wolf_next = cell
-	return wolf_next
+			destination = cell
+	return destination
 
 
 func preview_action(action: String, target: int = -1) -> Dictionary:
-	var error := unavailable(action)
+	var error := unavailable(action, target)
 	if not error.is_empty():
 		return {"error": error}
 	var steps := 0
 	var path: Array[int] = []
 	if action == "move":
 		var parents := {}
-		steps = reach(hero, movement_range(), wolf, parents).get(target, 0)
+		steps = reach(hero, movement_range(), wolf, parents, live_hound()).get(target, 0)
 		if steps == 0:
 			return {"error": "Chọn ô có ký hiệu chỉ đường để di chuyển."}
 		var cell := target
@@ -505,7 +552,11 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var healed := 0
 	var ward := jade_turns
 	var protection := ward_strength
-	var mark := moon_mark
+	var attack := action in ["strike", "moon", "moon_edge"]
+	var aim := attack_cell(target) if attack else wolf
+	var hits_hound := attack and aim != wolf
+	var defender_hp := hound_hp if hits_hound else wolf_hp
+	var mark := hound_mark if hits_hound else moon_mark
 	var counter := counter_ready
 	var brew_setup := brew_ready
 	var boosted := strong_strikes
@@ -577,23 +628,23 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 		armor_block = mini(dealt, ALTAR_ARMOR)
 	elif hound_guards(hero):
 		armor_block = mini(dealt, HOUND_FRONT_ARMOR)
-	dealt = mini(wolf_hp, dealt - armor_block)
+	dealt = mini(defender_hp, dealt - armor_block)
 	var exposed_damage := 0
 	if recovering and dealt > 0:
 		if tactic == "thunder_boss":
-			exposed_damage = mini(THUNDER_OPEN_BONUS, wolf_hp - dealt)
+			exposed_damage = mini(THUNDER_OPEN_BONUS, defender_hp - dealt)
 		elif tactic == "marsh" and action == "strike":
-			exposed_damage = mini(MARSH_JAW_BONUS, wolf_hp - dealt)
+			exposed_damage = mini(MARSH_JAW_BONUS, defender_hp - dealt)
 		elif pulse_open:
-			exposed_damage = mini(PULSE_OPEN_BONUS, wolf_hp - dealt)
+			exposed_damage = mini(PULSE_OPEN_BONUS, defender_hp - dealt)
 	if tactic == "seal_altar" and seal_turns > 0 and action == "strike":
-		exposed_damage = mini(ALTAR_OPEN_STRIKE, wolf_hp - dealt)
+		exposed_damage = mini(ALTAR_OPEN_STRIKE, defender_hp - dealt)
 	elif tactic == "armored_hound" and action == "strike" and not hound_guards(hero):
-		exposed_damage = mini(HOUND_FLANK_STRIKE, wolf_hp - dealt)
+		exposed_damage = mini(HOUND_FLANK_STRIKE, defender_hp - dealt)
 	dealt += exposed_damage
 	var relic_damage := 0
 	if relic == "elite_fang" and ready_relic and dealt > 0:
-		relic_damage = mini(Goods.FANG_BONUS, wolf_hp - dealt)
+		relic_damage = mini(Goods.FANG_BONUS, defender_hp - dealt)
 		dealt += relic_damage
 		ready_relic = false
 	if relic == "pulse_pearl" and ready_relic and qi_after < qi:
@@ -603,7 +654,10 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var receives := 0
 	var absorbed := 0
 	var relic_block := 0
-	var hit: bool = dealt < wolf_hp and position_after in intent.cells
+	var ends_fight := dealt >= defender_hp and not hits_hound
+	var interrupts: bool = intent.kind == "nodo_command" and dealt > 0 and not hits_hound
+	var stops_hound := hits_hound and dealt >= defender_hp
+	var hit: bool = not ends_fight and not (stops_hound and intent.kind == "nodo_hound") and position_after in intent.cells
 	var evaded := hit and concealment > 0 and aim_can_be_lost()
 	if evaded:
 		concealment = 0
@@ -626,9 +680,10 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 	var qi_drained := int(receives > 0 and intent.kind == "poison" and qi_after > 0)
 	qi_after -= qi_drained
 	return {"dealt": dealt, "receives": receives, "qi": qi_after, "steps": steps, "path": path,
-		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if dealt < wolf_hp else 0,
-		"ward_strength": protection, "moon_mark": mark and dealt < wolf_hp, "set_trigger": set_trigger,
-		"counter_ready": counter and dealt < wolf_hp, "brew_ready": brew_setup, "strong_strikes": boosted,
+		"healed": healed, "absorbed": absorbed, "jade_turns": maxi(0, ward - 1) if not ends_fight else 0,
+		"target_cell": aim, "hits_hound": hits_hound, "interrupts": interrupts, "stops_hound": stops_hound,
+		"ward_strength": protection, "moon_mark": mark and dealt < defender_hp, "set_trigger": set_trigger,
+		"counter_ready": counter and not ends_fight, "brew_ready": brew_setup, "strong_strikes": boosted,
 		"steps_bonus": extra_steps, "veil_turns": maxi(0, concealment - 1), "evaded": evaded,
 		"relic_ready": ready_relic, "relic_block": relic_block, "relic_damage": relic_damage,
 		"exposed_damage": exposed_damage, "qi_drained": qi_drained, "relic_qi": relic_qi,
@@ -641,7 +696,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		return preview
 
 	var exchange := {"action": action, "hero_from": hero, "wolf_from": wolf,
-		"wolf_damage": 0, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path,
+		"wolf_damage": 0, "hound_damage": 0, "target_cell": preview.target_cell, "hero_damage": 0, "reaction": "", "notes": [], "hero_path": preview.path,
 		"healed": preview.healed, "absorbed": preview.absorbed, "enemy_intent": intent,
 		"set_trigger": preview.set_trigger, "evaded": preview.evaded}
 	var notes: Array = exchange.notes
@@ -652,8 +707,11 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	pulse_open = intent.kind == "core_wave" and action == "move" and hero in intent.cells and target not in intent.cells
 	jade_turns = preview.jade_turns
 	ward_strength = preview.ward_strength if jade_turns > 0 else 0
-	var had_mark := moon_mark
-	moon_mark = preview.moon_mark
+	var had_mark := hound_mark if preview.hits_hound else moon_mark
+	if preview.hits_hound:
+		hound_mark = preview.moon_mark
+	else:
+		moon_mark = preview.moon_mark
 	var had_counter := counter_ready
 	counter_ready = preview.counter_ready
 	brew_ready = preview.brew_ready
@@ -674,10 +732,18 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 				notes.append("Giày cỏ lau đã hỗ trợ bước đầu.")
 		"strike", "moon", "moon_edge":
 			var damage: int = preview.dealt
-			wolf_hp -= damage
-			exchange.wolf_damage = damage
+			if preview.hits_hound:
+				hound_hp -= damage
+				exchange.hound_damage = damage
+			else:
+				wolf_hp -= damage
+				exchange.wolf_damage = damage
 			var name: String = Gu.GU[action].name if Gu.GU.has(action) else "Tay không"
-			notes.append("%s gây %d sát thương." % [name, damage])
+			if tactic == "nodo":
+				var recipient := "khuyển thú" if preview.hits_hound else "cổ sư Nô đạo"
+				notes.append("%s gây %d sát thương lên %s." % [name, damage, recipient])
+			else:
+				notes.append("%s gây %d sát thương." % [name, damage])
 			if preview.armor_block > 0:
 				notes.append("Thạch Giáp chặn %d sát thương." % preview.armor_block)
 			if preview.exposed_damage > 0:
@@ -693,7 +759,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 				notes.append("Nguyệt Mang kích phát Nguyệt Ấn.")
 			elif action == "strike" and preview.set_trigger:
 				notes.append("Bạn dùng thế Phản đòn." if had_counter else "Đòn tay không được tinh nguyên cường hóa.")
-			elif moon_mark and not had_mark:
+			elif preview.moon_mark and not had_mark:
 				notes.append("Nguyệt Ấn bám trên đối thủ.")
 		"guard":
 			notes.append("Thủ thế và hồi 1 chân nguyên." if action_qi > previous_qi else "Bạn vào thế thủ.")
@@ -723,11 +789,26 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 
 	if wolf_hp <= 0:
 		result = VICTORY
-		notes.append("Đối thủ đã gục.")
+		notes.append("Cổ sư Nô đạo bại trận. Khuyển thú còn sống rút đi." if live_hound() >= 0 else "Đối thủ đã gục.")
+	elif preview.stops_hound and intent.kind in ["nodo_command", "nodo_hound", "nodo_hound_advance"]:
+		notes.append("Khuyển thú đã gục. Lệnh vồ mất hiệu lực.")
+	elif intent.kind == "nodo_command":
+		if preview.interrupts:
+			notes.append("Đòn trúng cổ sư, ngắt lệnh vồ.")
+		else:
+			ordered_cell = hero
+			notes.append("Khuyển thú nhận lệnh nhắm ô %s." % cell_name(ordered_cell))
+	elif intent.kind == "nodo_hound_advance":
+		if intent.destination != hound_cell and intent.destination != hero:
+			hound_cell = intent.destination
+			exchange.reaction = "hound_advance"
+			notes.append("Khuyển thú áp sát tới %s." % cell_name(hound_cell))
+		else:
+			notes.append("Khuyển thú giữ vị trí.")
 	elif intent.kind == "recover":
 		notes.append("Đối thủ hồi thế. Bạn có một lượt an toàn.")
 	elif intent.kind == "advance":
-		wolf = wolf_step()
+		wolf = enemy_step(wolf, pace, live_hound())
 		if wolf != exchange.wolf_from:
 			exchange.reaction = "advance"
 			notes.append("Đối thủ áp sát đến %s." % cell_name(wolf))
@@ -759,6 +840,10 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		exchange.reaction = "miss"
 		notes.append("Bạn đứng ngoài vùng nước nhiễm điện." if intent.kind == "flood" else "Bạn né được %s." % str(intent.name).to_lower())
 
+	if preview.stops_hound and intent.kind not in ["nodo_hound", "nodo_hound_advance", "nodo_command"]:
+		notes.append("Khuyển thú đã gục.")
+	if intent.kind in ["nodo_hound", "nodo_hound_advance"] or not result.is_empty():
+		ordered_cell = -1
 	if result.is_empty():
 		if intent.kind in ["heavy", "shot", "flood", "ambush", "fall", "core_wave"]:
 			heavy_count += 1
@@ -770,6 +855,7 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		jade_turns = 0
 		ward_strength = 0
 		moon_mark = false
+		hound_mark = false
 		counter_ready = false
 		brew_ready = false
 		strong_strikes = 0
