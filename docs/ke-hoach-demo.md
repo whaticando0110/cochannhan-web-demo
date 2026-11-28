@@ -273,17 +273,25 @@ Bản lưu v17 nâng lên v18 khi xuống hố. Demo bắt đầu ở thế dự
 
 Khung đứng đo theo vùng ảnh có alpha rõ ở cỡ chơi. Chó hoang thường cao khoảng 23 px tính cả đuôi. Huyền bào và Áo rêu cao khoảng 65–66 px. Giữ vòng phe và thanh sinh lực để đọc được từng con khi chúng chen ở lối hẹp. Các thú lớn như chó Thiết Giáp và Cuồng Điện Lang có cỡ riêng.
 
+## Vòng bốn Khuyển Vương · Khe đá hai lối
+
+Sau khi qua hố đá, chọn **Giữ cửa khe** hoặc **Vòng qua mỏm phải**. Hai thế mở cùng một chiến trường với ba bố cục theo mã lượt. Chúng đổi ô xuất phát của cổ sư, chó A và chó B. Ba chó hoang khỏe áp sát ngay, hai con bị thương tới sau. Các ô xuất phát và đợt áp sát là thiết kế demo. Quyền chọn đối thủ theo truyền thừa trong truyện bắt đầu từ vòng mười. [Chương 425](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-425)
+
+Vòng bốn lấy đúng sinh lực và chân nguyên của cổ sư, thương thế từng chó và số Ngự Khuyển còn lại ở kết quả vòng ba. Không cấp Ngự Khuyển mới ở khe. Các Cổ ngoài truyền thừa tiếp tục bị phong cấm. Chọn đội hình nâng nhật ký lên v23. Tải lại giữa trận giữ thế xuất phát đã chọn, vị trí từng con và lượt địch đã báo.
+
+Cả hai thế được chơi qua từ cùng bản lưu cuối vòng ba. Mô phỏng thêm 42 cấu hình gồm hai thế, ba bố cục và bảy mức thương thế. Tất cả có đường thắng, gồm các trường hợp chỉ còn một chó chiến đấu và các trường hợp cổ sư còn 1 sinh lực. Đây là đường tìm được trong mô phỏng, dùng để kiểm khả năng vượt vòng.
+
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v21 | Mốc tiếp |
+| Phần | Đã chơi được trong v23 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
 | Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
-| Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc và Tứ Vị Tửu Trùng trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở thêm bí phương cho hệ Ẩn. |
+| Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc, Tứ Vị Tửu Trùng và Ẩn Lân trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở Cổ bậc cao hơn. |
 | Tạo sát chiêu | Liên Nguyệt và Bạch Quang Hộ Thể dùng chung ô 8, chỉ cấp theo Cổ Nhị chuyển cùng Tiểu Quang đang sở hữu. Đã so chi phí và hiệu quả đến Đường núi Tam Xoa. | Dùng cùng cấu trúc ô khi mở sát chiêu cho hệ khác. |
-| Truyền thừa | Ba vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Mốc hiện tại kết ở màn kết quả hố đá. | Nối một mốc tiến sâu có lựa chọn đối thủ và đàn thú. Sau đó tách luật Tín Vương và Bạo Vương thành hai nhánh riêng. |
+| Truyền thừa | Bốn vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Khe đá hai lối có hai cách đặt đàn. | Chuẩn bị quyền chọn đối thủ từ vòng mười và tách luật Tín Vương, Bạo Vương thành hai nhánh riêng. |
 
-Sau mốc Tứ Vị Tửu Trùng, tiếp tục kiểm bí phương hệ Ẩn và mở nhánh truyền thừa mới. Mỗi lần thêm bí phương, kiểm cả bộ sở hữu và bộ cấp sẵn.
+Mỗi lần thêm bí phương hoặc màn mới, kiểm cả bộ sở hữu và bộ cấp sẵn. Tách luật của mỗi nhánh truyền thừa trước khi mở thêm cửa.
 
 Bí phương Nguyệt Mang lấy từ chương 98. Liên Nguyệt là sát chiêu riêng của demo, dùng nguyên tắc phối hợp nhiều Cổ trong truyện. Giá, tầm, sát thương và cách hành động trên lưới là số của trò chơi. [Chương 98](https://truyenhh3d.com/truyen/co-chan-nhan/chuong-98) · [Chương 719](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-719.html)
 
@@ -340,6 +348,12 @@ Trong demo, cả hai quầy bán gói 2 Tửu Trùng giá 4 nguyên thạch và 
 Nhấn phím `7` với Tứ Vị trang bị để dùng hiệu ứng Tinh nguyên hiện có. Có thể ghép với Tửu Trùng cấp sẵn hoặc Cổ Nhất chuyển hệ khác. Không cấp thêm sát chiêu ô `8`. Quầy từ chối nếu đã mua món ở điểm dừng này hoặc thiếu nguyên thạch. Sổ chặn hợp luyện khi thiếu nguyên liệu, đang giao chiến hoặc còn trong phúc địa Khuyển Vương.
 
 Bản lưu cũ không tự nhận nguyên liệu. Giao dịch mới nâng nhật ký lên v21. Khi tải lại, số rượu và Cổ được khôi phục bằng giao dịch đã ghi, gồm cả lượt hợp luyện và hiệu ứng trong trận.
+
+## Hợp luyện Ẩn Lân
+
+Chương 123 ghi bí phương dùng Ẩn Thạch và Ngư Lân. Chương 127 kể Phương Nguyên đổi Hắc Thỉ với Thanh Thư để lấy Ngư Lân. Các đoạn đã đối chiếu xác nhận vai trò nguyên liệu của Ngư Lân. Sổ để trống bậc của Cổ này. [Chương 123](https://tamhoan.com/co-chan-nhan/197826) · [Chương 127](https://medoctruyencv.com/truyen/co-chan-nhan-1000000016/1000013847)
+
+Demo bán Ẩn Thạch với 3 nguyên thạch và Ngư Lân với 2 tại hai quầy. Có thể mua Ẩn Thạch ở điểm dừng đầu, qua Suối Sấm rồi mua Ngư Lân và giữ 1 nguyên thạch. Sổ Cổ hợp luyện ngoài trận, tiêu 1 Ẩn Thạch và 1 Ngư Lân để nhận 1 Ẩn Lân với kết quả cố định. Ẩn Lân sở hữu dùng cùng hiệu ứng mất dấu và cùng mức chân nguyên với bộ cấp sẵn. Mua hoặc hợp luyện ghi vào nhật ký v22. Phúc địa Khuyển Vương vẫn khóa bí phương và thi triển Ẩn Lân.
 
 ## Đồ họa trong trận
 

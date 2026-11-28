@@ -24,7 +24,15 @@ const PIT_BOARD := [
 	{"rocks": [10, 13, 25, 29, 32, 33, 34, 36, 37, 38, 39], "wild": [11, 12, 0, 1, 6, 7]},
 ]
 
+const RIDGE_BOARD := [
+	{"rocks": [10, 13, 18, 21, 26, 29, 33, 38], "wild": [3, 4, 7, 0, 15]},
+	{"rocks": [9, 14, 18, 22, 26, 29, 32, 39], "wild": [2, 5, 6, 1, 15]},
+	{"rocks": [11, 12, 18, 22, 26, 29, 33, 39], "wild": [8, 15, 3, 1, 6]},
+]
+const RIDGE_FORMATIONS := {"ridge_hold": [35, 27, 34], "ridge_flank": [37, 28, 36]}
+
 var round_number := 2
+var first_wild_id := 1
 var dogs: Array[Dictionary] = []
 var bound_id := NO_ACTOR
 var gu_left := 1
@@ -32,21 +40,28 @@ var gu_left := 1
 
 func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 	round_number = vitals.get("round", 2)
-	var board: Dictionary = PIT_BOARD[layout] if round_number == 3 else BOARD[layout]
+	var boards := BOARD
+	if round_number == 3:
+		boards = PIT_BOARD
+	elif round_number == 4:
+		boards = RIDGE_BOARD
+	var board: Dictionary = boards[layout]
 	super({"hp": vitals.get("hp", MAX_HP), "qi": vitals.get("qi", MAX_QI),
 		"max_qi": vitals.get("max_qi", MAX_QI), "rocks": board.rocks,
 		"moon_equipped": false, "tactic": "kennel_pack"})
-	if round_number == 3:
-		hero = PIT_CELL
+	if round_number >= 3:
+		var formation: Array = [PIT_CELL, PIT_FLANKS[0], PIT_FLANKS[1]] if round_number == 3 else RIDGE_FORMATIONS[vitals.formation]
+		hero = formation[0]
 		gu_left = vitals.get("gu_left", 0)
 		var companions: Array = vitals.get("companions", [])
 		for index in range(companions.size()):
 			var dog: Dictionary = companions[index]
-			dogs.append({"cell": PIT_FLANKS[index], "hp": dog.hp, "max_hp": dog.max_hp, "allied": true})
+			dogs.append({"cell": formation[index + 1], "hp": dog.hp, "max_hp": dog.max_hp, "allied": true})
+		first_wild_id = companions.size()
 		if companions.size() == 2:
 			bound_id = 1
 		for index in range(board.wild.size()):
-			var injury := index >= 2
+			var injury := index >= (2 if round_number == 3 else 3)
 			dogs.append({"cell": board.wild[index], "hp": 8 if injury else DOG_HP, "max_hp": DOG_HP,
 				"allied": false, "wake_turn": 3 + (index % 2) if injury else 1})
 	else:
@@ -68,7 +83,7 @@ func actor_name(id: int) -> String:
 
 
 func wild_label(id: int) -> int:
-	return id - int(round_number == 3 and dogs.size() == 8)
+	return id - first_wild_id + 1
 
 
 func actor_cell(id: int) -> int:

@@ -13,9 +13,10 @@ const GU := {
 	"four_flavors": {"name": "Tứ Vị Tửu Trùng", "family": "brew", "rank": 2},
 	"stone_veil": {"name": "Ẩn Thạch Cổ", "family": "veil", "rank": 1},
 	"scale_veil": {"name": "Ẩn Lân Cổ", "family": "veil", "rank": 2},
+	"fish_scale": {"name": "Ngư Lân Cổ"},
 }
 const FAMILIES := {"lunar": "Nguyệt", "ward": "Hộ thể", "brew": "Tửu", "veil": "Ẩn"}
-const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "white_jade", "brew", "four_flavors", "dog_control"]
+const BOOK_ORDER := ["moon", "small_light", "moon_edge", "jade_skin", "white_boar", "white_jade", "brew", "four_flavors", "stone_veil", "fish_scale", "scale_veil", "dog_control"]
 const STARTERS := ["moon", "jade_skin", "brew", "stone_veil"]
 const RECIPES := ["moon_edge", "white_jade", "four_flavors", "scale_veil"]
 const MOON_LINK_COST := 4

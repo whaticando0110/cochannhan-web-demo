@@ -5,10 +5,12 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 21
+const CURRENT_VERSION := 23
+const KENNEL_FOUR_VERSION := 23
+const OWNED_VEIL_VERSION := 22
 const FOUR_FLAVORS_VERSION := 21
 const WHITE_JADE_VERSION := 20
-const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light", "refine_owned_brew"]
+const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light", "refine_owned_brew", "refine_owned_veil"]
 const GU_BOOK_VERSION := 19
 const GU_SHOP_VERSION := 18
 const RIDGE_FLOOR := 3
@@ -34,6 +36,7 @@ const KENNEL_TWO_FLOOR := 14
 const KENNEL_TWO_VERSION := 17
 const KENNEL_THREE_FLOOR := 15
 const KENNEL_THREE_VERSION := 18
+const KENNEL_FOUR_FLOOR := 16
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -125,6 +128,11 @@ const KENNEL_TRIAL := {"name": "Bãi cỏ phúc địa", "enemy": "Chó hoang", 
 	"rooms": [[4, 11, 27, 35], [3, 19, 26, 37], [5, 12, 20, 35]]}
 const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
+const KENNEL_FOUR := {"name": "Khe đá hai lối", "enemy": "Đàn chó hoang"}
+const KENNEL_FORMATIONS := {
+	"ridge_hold": ["Giữ cửa khe", "Xuất phát ở cửa khe bên trái, nơi dễ chặn đường áp sát."],
+	"ridge_flank": ["Vòng qua mỏm phải", "Xuất phát ở mỏm phải, gần lối vòng qua sườn đá."],
+}
 const SMALL_LIGHT_BUNDLE := 3
 const SMALL_LIGHT_PRICE := 4
 const BREW_BUNDLE := 2
@@ -133,6 +141,8 @@ const GU_SHOP_STOCK := {
 	"buy_small_light": {"gu": "small_light", "count": SMALL_LIGHT_BUNDLE, "price": SMALL_LIGHT_PRICE, "version": GU_SHOP_VERSION},
 	"buy_jade_skin": {"gu": "jade_skin", "count": 1, "price": 3, "version": GU_BOOK_VERSION},
 	"buy_brew": {"gu": "brew", "count": BREW_BUNDLE, "price": 4, "version": FOUR_FLAVORS_VERSION},
+	"buy_stone_veil": {"gu": "stone_veil", "count": 1, "price": 3, "version": OWNED_VEIL_VERSION},
+	"buy_fish_scale": {"gu": "fish_scale", "count": 1, "price": 2, "version": OWNED_VEIL_VERSION},
 }
 const GU_LOOT := {
 	RIDGE_FLOOR: {"gu": "small_light", "count": 2, "detail": "Túi Cổ mắc trong khe đá sau trận."},
@@ -235,6 +245,8 @@ func stage_at(index: int) -> Dictionary:
 			return KENNEL_TWO
 		KENNEL_THREE_FLOOR:
 			return KENNEL_THREE
+		KENNEL_FOUR_FLOOR:
+			return KENNEL_FOUR
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -339,6 +351,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "kennel_two_cleared"
 		elif floor == KENNEL_THREE_FLOOR:
 			phase = "kennel_three_cleared"
+		elif floor == KENNEL_FOUR_FLOOR:
+			phase = "kennel_four_cleared"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -531,6 +545,9 @@ func book_unavailable(id: String) -> String:
 		"refine_owned_brew":
 			if owned_gu.get("brew", 0) < BREW_BUNDLE or wine_sets < 1:
 				return "Tửu Trùng %d/%d · Bộ rượu %d/1" % [owned_gu.get("brew", 0), BREW_BUNDLE, wine_sets]
+		"refine_owned_veil":
+			if owned_gu.get("stone_veil", 0) < 1 or owned_gu.get("fish_scale", 0) < 1:
+				return "Cần 1 Ẩn Thạch và 1 Ngư Lân sở hữu."
 		_:
 			return "Bí phương này chưa có trong sổ."
 	return ""
@@ -555,6 +572,12 @@ func commit_book_action(id: String) -> bool:
 			wine_sets -= 1
 			change_owned_gu("brew", -BREW_BUNDLE, source)
 			change_owned_gu("four_flavors", 1, source)
+		"refine_owned_veil":
+			version = maxi(version, OWNED_VEIL_VERSION)
+			var source := "Hợp luyện Ẩn Lân"
+			change_owned_gu("stone_veil", -1, source)
+			change_owned_gu("fish_scale", -1, source)
+			change_owned_gu("scale_veil", 1, source)
 	journal.append([id])
 	return true
 
@@ -857,6 +880,23 @@ func enter_kennel_three() -> bool:
 		"companions": companions, "gu_left": hound_gu}, layout)
 	phase = "battle"
 	journal.append(["enter_kennel_three"])
+	return true
+
+
+func enter_kennel_four(formation: String) -> bool:
+	if phase != "kennel_three_cleared" or not KENNEL_FORMATIONS.has(formation):
+		return false
+	var previous := battle as Pack
+	var companions: Array[Dictionary] = [previous.dogs[0]]
+	if previous.bound_id >= 0:
+		companions.append(previous.dogs[previous.bound_id])
+	version = maxi(version, KENNEL_FOUR_VERSION)
+	floor = KENNEL_FOUR_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.RIDGE_BOARD.size()
+	battle = Pack.new({"round": 4, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu, "formation": formation}, layout)
+	phase = "battle"
+	journal.append([formation])
 	return true
 
 
@@ -1199,6 +1239,8 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = command[0] == "enter_kennel_two" and run.enter_kennel_two()
 				"kennel_two_cleared":
 					committed = command[0] == "enter_kennel_three" and run.enter_kennel_three()
+				"kennel_three_cleared":
+					committed = run.enter_kennel_four(command[0])
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

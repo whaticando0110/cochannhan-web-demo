@@ -348,6 +348,9 @@ func show_result() -> void:
 		"kennel_three_cleared":
 			title = "Vượt vòng ba Khuyển Vương"
 			description = "Đã dẹp sáu chó hoang ở hố đá. Đàn chó sống sót được lưu với thương thế hiện tại."
+		"kennel_four_cleared":
+			title = "Vượt vòng bốn Khuyển Vương"
+			description = "Đàn chó hoang đã tan. Những con còn theo bạn mang nguyên thương thế."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -357,7 +360,7 @@ func show_result() -> void:
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
-			if run.floor in [Run.KENNEL_TWO_FLOOR, Run.KENNEL_THREE_FLOOR] and run.battle.hp > 0:
+			if run.battle is Run.Pack and run.battle.hp > 0:
 				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
 		"complete":
 			title = "Vượt qua " + str(floor.name)
@@ -405,8 +408,11 @@ func show_result() -> void:
 	else:
 		var can_end_at_pass := run.version < Run.BOSS_VERSION
 		if not run.can_enter_boss() or can_end_at_pass:
+			var restart_y := 335 if run.phase == "death" else 480
+			if run.phase == "kennel_three_cleared":
+				restart_y = 612
 			var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
-				Rect2(96, 335 if run.phase == "death" else 480, 316, 54), show_entry)
+				Rect2(96, restart_y, 316, 54), show_entry)
 			next.name = "rebirth" if run.phase == "death" else "new_run"
 			next.grab_focus()
 		if run.phase == "victory":
@@ -485,7 +491,7 @@ func show_result() -> void:
 			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
 			enter.name = "enter_kennel_two"
 			enter.grab_focus()
-		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared"]:
+		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared"]:
 			var pack := run.battle as Run.Pack
 			var rows: PackedStringArray = []
 			for id in pack.living_dogs(true):
@@ -498,6 +504,18 @@ func show_result() -> void:
 				var enter := button(menu, "Xuống hố đá", Rect2(432, 480, 310, 54), advance_kennel.bind("third"))
 				enter.name = "enter_kennel_three"
 				enter.grab_focus()
+			elif run.phase == "kennel_three_cleared":
+				text(menu, "%s · Chọn vị trí mở đầu cho đàn." % Run.KENNEL_FOUR.name,
+					Rect2(96, 411, 1008, 40), 20, GOLD)
+				for id: String in Run.KENNEL_FORMATIONS:
+					var choice: Array = Run.KENNEL_FORMATIONS[id]
+					var x := 96 if id == "ridge_hold" else 608
+					var card := panel(menu, Rect2(x, 465, 496, 125), Color("#1a2b25"), Color("#586c54"))
+					text(card, choice[1], Rect2(16, 9, 464, 46), 17)
+					var place := button(card, choice[0], Rect2(16, 65, 464, 42), advance_kennel.bind(id))
+					place.name = id
+					if id == "ridge_hold":
+						place.grab_focus()
 	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
 	report_save_problem()
 
@@ -563,35 +581,50 @@ func open_gu_book() -> void:
 	text(shelf, "BẬC", Rect2(260, 11, 113, 27), 15, GOLD)
 	text(shelf, "CÒN", Rect2(376, 11, 62, 27), 15, GOLD)
 	text(shelf, "NGUỒN ĐÃ NHẬN", Rect2(455, 11, 530, 27), 15, GOLD)
-	var y := 41
+	var scroll := ScrollContainer.new()
+	scroll.name = "gu_book_scroll"
+	scroll.position = Vector2(13, 41)
+	scroll.size = Vector2(982, 280)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shelf.add_child(scroll)
+	var list := Control.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	var y := 0
 	for id: String in Gu.BOOK_ORDER:
 		if not sources.has(id):
 			continue
 		var record: Dictionary = Gu.GU[id]
 		var count := int(owned.get(id, 0))
 		var tint := PALE if count > 0 else Color("#9aab9e")
-		var row := panel(shelf, Rect2(13, y, 982, 29), Color("#20332a"), Color("#2b4436"))
+		var row := panel(list, Rect2(0, y, 963, 29), Color("#20332a"), Color("#2b4436"))
 		row.name = "gu_row_" + id
 		var origins: PackedStringArray = []
 		for source: String in sources[id]:
 			origins.append("%s ×%d" % [source, sources[id][source]])
 		text(row, record.name, Rect2(7, 1, 235, 27), 17, tint)
-		text(row, "Nhị chuyển" if record.rank == 2 else "Nhất chuyển", Rect2(247, 1, 113, 27), 16, tint)
+		var rank := "—"
+		if record.has("rank"):
+			rank = "Nhị chuyển" if record.rank == 2 else "Nhất chuyển"
+		text(row, rank, Rect2(247, 1, 113, 27), 16, tint)
 		text(row, str(count), Rect2(363, 1, 62, 27), 17, tint)
-		text(row, "  ·  ".join(origins), Rect2(442, 1, 532, 27), 15, tint)
+		text(row, "  ·  ".join(origins), Rect2(442, 1, 507, 27), 15, tint)
 		y += 31
+	list.custom_minimum_size.y = y
 	var cards := [
 		["refine_owned_jade", "Hợp luyện Bạch Ngọc", "1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc."],
 		["study_white_light", "Phối " + Gu.WHITE_LIGHT_NAME, "Bạch Ngọc và Tiểu Quang được giữ lại."],
 		["refine_owned_brew", "Luyện Tứ Vị Tửu Trùng", "%d Tửu Trùng + 1 bộ Rượu Tứ Vị." % Run.BREW_BUNDLE],
+		["refine_owned_veil", "Hợp luyện Ẩn Lân", "1 Ẩn Thạch + 1 Ngư Lân."],
 	]
 	for index in range(cards.size()):
 		var recipe: Array = cards[index]
-		var card := panel(menu, Rect2(96 + index * 341, 598, 326, 101), Color("#1a2b25"), Color("#586c54"))
+		var card := panel(menu, Rect2(96 + index * 255, 598, 243, 101), Color("#1a2b25"), Color("#586c54"))
 		var reason := run.book_unavailable(recipe[0])
-		text(card, recipe[2] if reason.is_empty() else reason, Rect2(13, 5, 300, 42), 16, PALE)
-		var apply := button(card, recipe[1], Rect2(13, 51, 300, 38), use_book_recipe.bind(recipe[0]))
+		text(card, recipe[2] if reason.is_empty() else reason, Rect2(13, 5, 217, 42), 15, PALE)
+		var apply := button(card, recipe[1], Rect2(13, 51, 217, 38), use_book_recipe.bind(recipe[0]))
 		apply.name = recipe[0]
+		apply.add_theme_font_size_override("font_size", 16)
 		apply.disabled = not reason.is_empty()
 	var recent: Dictionary = run.gu_receipts.back()
 	var last := "Cổ gần nhất · %s %+d · %s" % [Gu.GU[recent.gu].name, recent.change, recent.source]
@@ -898,6 +931,8 @@ func advance_kennel(step: String) -> void:
 			changed = run.enter_kennel_two()
 		"third":
 			changed = run.enter_kennel_three()
+		_:
+			changed = run.enter_kennel_four(step)
 	if changed:
 		persist()
 		show_run()
@@ -969,24 +1004,26 @@ func draw_shop() -> void:
 	var offers := [
 		["buy_leaf", "Sinh Cơ Diệp", "Hồi tối đa %d sinh lực khi dùng một lá trong trận." % Rules.LEAF_HEAL],
 		["buy_relic", for_sale[0], for_sale[1]],
-		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Dùng để hợp luyện hoặc phối sát chiêu."],
+		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Hợp luyện và phối sát chiêu."],
 		["buy_jade_skin", "Ngọc Bì Cổ", "Cổ Hộ thể nhất chuyển. Nguyên liệu hợp luyện."],
 		["buy_brew", "Tửu Trùng ×%d" % Run.BREW_BUNDLE, "Hai Cổ nhất chuyển để hợp luyện Tứ Vị."],
 		["buy_wine_set", "Bộ Rượu Tứ Vị", "Dương Mai, Mật Hoàng Kim, Khổ Bối và Bạch Lương dịch."],
+		["buy_stone_veil", "Ẩn Thạch Cổ", "Nhất chuyển, dùng để hợp luyện Ẩn Lân."],
+		["buy_fish_scale", "Ngư Lân Cổ", "Cổ nguyên liệu hợp luyện Ẩn Lân."],
 	]
 	for i in range(offers.size()):
 		var offer: Array = offers[i]
 		var id: String = offer[0]
-		var card := panel(menu, Rect2(96 + (i % 3) * 341, 282 + floori(i / 3.0) * 116, 326, 110), Color("#1a2b25"), Color("#586c54"))
-		text(card, offer[1], Rect2(13, 6, 300, 30), 21, GOLD, true)
-		text(card, offer[2], Rect2(13, 33, 300, 40), 15)
+		var card := panel(menu, Rect2(96 + (i % 4) * 255, 282 + floori(i / 4.0) * 116, 243, 110), Color("#1a2b25"), Color("#586c54"))
+		text(card, offer[1], Rect2(13, 6, 217, 30), 21, GOLD, true)
+		text(card, offer[2], Rect2(13, 33, 217, 40), 14)
 		var reason := run.shop_unavailable(id)
 		var price := "Giá %d nguyên thạch" % run.shop_price(id)
-		text(card, price if reason.is_empty() else reason, Rect2(13, 77, 206, 30), 14, GREEN)
+		text(card, price if reason.is_empty() else reason, Rect2(13, 77, 134, 30), 13, GREEN)
 		var exchange := id == "buy_relic" and run.shop_price(id) == Goods.RELIC_TRADE_PRICE
-		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(211, 76, 103, 31), buy_waypoint_item.bind(id))
+		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(148, 76, 84, 31), buy_waypoint_item.bind(id))
 		purchase.name = id
-		purchase.add_theme_font_size_override("font_size", 16)
+		purchase.add_theme_font_size_override("font_size", 14)
 		purchase.disabled = not reason.is_empty()
 	var stock := run.owned_gu
 	text(menu, "Kho Cổ riêng · Nguyệt Quang ×%d  ·  Tiểu Quang ×%d  ·  Nguyệt Mang ×%d" % [

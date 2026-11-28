@@ -524,7 +524,7 @@ func update_pack_hud(pack: Pack) -> void:
 	var delayed: int = wild_count - state.intent.get("orders", []).size()
 	if not threats.is_empty():
 		intent_copy.text = "Ô bị nhắm táp · %s" % ", ".join(threats)
-	elif pack.round_number == 3 and delayed > 0 and state.result.is_empty():
+	elif pack.round_number >= 3 and delayed > 0 and state.result.is_empty():
 		intent_copy.text = "%d con áp sát, %d con bị thương đến sau." % [wild_count - delayed, delayed]
 	else:
 		intent_copy.text = "Còn %d chó hoang trên sân." % wild_count

@@ -47,7 +47,7 @@ Tại **cột sáng vàng của Khuyển Vương**, luyện hóa Ngự Khuyển 
 
 Tại **Gò cỏ úa**, ba chó hoang áp sát từ ba phía. Ra lệnh cho chó vòng đầu bằng `2` để di chuyển hoặc `5` để táp. Dùng `3` chọn một chó hoang để thu phục. Sau khi thu phục, chọn chó A hoặc B trên sân, ở bảng bên phải hoặc đổi bằng `6`. Sân báo trước ô bị táp và giữ nguyên sinh lực còn lại của các chó sống khi qua vòng.
 
-Ở **Hố đá dưới gò cỏ**, dùng vị trí hẻm giữa hai vách đá để chặn sáu chó hoang. Hai con khỏe tới trước, bốn con bị thương tới sau. Chó đồng minh mang nguyên thương thế từ vòng hai.
+Ở **Hố đá dưới gò cỏ**, dùng vị trí hẻm giữa hai vách đá để chặn sáu chó hoang. Hai con khỏe tới trước, bốn con bị thương tới sau. Chó đồng minh mang nguyên thương thế từ vòng hai. Sau đó, ở **Khe đá hai lối**, chọn **Giữ cửa khe** hoặc **Vòng qua mỏm phải** để đặt đàn. Vòng bốn giữ đúng tài nguyên và thương thế ở kết quả hố đá.
 
 Ngoài phúc địa, quầy vẫn bán lá và bảo vật, đồng thời có **Tiểu Quang Cổ** để hợp luyện. Một Nguyệt Quang và hai Tiểu Quang thành Nguyệt Mang. Dùng Nguyệt Mang cùng Tiểu Quang còn lại để phối **Liên Nguyệt**. Khi trang bị Nguyệt Mang đã sở hữu và còn Tiểu Quang trong Sổ Cổ, phím `8` dùng Liên Nguyệt một lần mỗi trận, tốn 4 chân nguyên để gây 42 sát thương cơ bản ở tầm 5 ô.
 
@@ -56,6 +56,8 @@ Mở **Sổ Cổ** để xem số còn lại và nguồn nhận của từng C�
 Ngoài trận, mở **Sổ Cổ** để hợp luyện **1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc**. Có Bạch Ngọc và Tiểu Quang sở hữu thì có thể phối **Bạch Quang Hộ Thể**. Mang Bạch Ngọc trong bộ Cổ, nhấn `8` để dùng sát chiêu một lần mỗi trận, tốn 3 chân nguyên và chặn tối đa 9 sát thương mỗi đòn, trong hai đòn hoặc ba lượt. Hai sát chiêu dùng chung ô `8` theo Cổ Nhị chuyển đã chọn. Tiểu Quang là Cổ phụ trợ trong Sổ, vẫn giữ nguyên số lượng qua các trận.
 
 Để sở hữu **Tứ Vị Tửu Trùng**, mua hai Tửu Trùng với 4 nguyên thạch và bộ Rượu Tứ Vị với 2 nguyên thạch. Mở Sổ Cổ ngoài trận để hợp luyện. Một mẻ dùng hết hai Tửu Trùng và cả bộ rượu. Có thể dùng 4 nguyên thạch từ Sườn đá Mù Sương và 2 nguyên thạch từ Bãi Đá Suối Sấm để gom đủ. [Bí phương trong chương 121](https://truyenhoan.com/co-chan-nhan/chuong-121.html)
+
+Quầy bán **Ẩn Thạch** với 3 nguyên thạch và **Ngư Lân** với 2. Hợp luyện trong Sổ Cổ dùng một Cổ mỗi loại để sở hữu **Ẩn Lân**, có thể trang bị ở ô Nhị chuyển và dùng phím `7`. [Bí phương trong chương 123](https://tamhoan.com/co-chan-nhan/197826)
 
 **Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
 

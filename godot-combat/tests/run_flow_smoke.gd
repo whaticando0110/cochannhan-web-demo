@@ -570,9 +570,55 @@ func play_owned_brew(ridge_save: Dictionary) -> void:
 		"The owned result must keep the existing combat effect, including after reload")
 
 
+func play_owned_veil(ridge_save: Dictionary) -> void:
+	var legacy := ridge_save.duplicate(true)
+	legacy.version = Run.FOUR_FLAVORS_VERSION
+	flow.run = Run.restore(legacy)
+	check(flow.run != null and not flow.run.owned_gu.has("fish_scale"), "A v21 save must load without free veil materials")
+	flow.persist()
+	flow.show_run()
+	await click_button("cross_ford")
+	await click_button("merchant")
+	await capture("godot-v22-quay-co-an.png")
+	await click_button("buy_stone_veil")
+	await launch()
+	check(flow.run.version == Run.OWNED_VEIL_VERSION and flow.run.stones == 1 and flow.run.owned_gu.stone_veil == 1
+		and not flow.run.buy("buy_stone_veil") and not flow.run.buy("buy_fish_scale"),
+		"Pay three stones for Ẩn Thạch and reject duplicates and unaffordable materials")
+	check(not flow.run.commit_book_action("refine_owned_veil"), "Ẩn Thạch alone must not complete the recipe")
+	await click_button("leave_shop")
+	await select_kit("four_flavors", "brew")
+	await play_commands([[KEY_3], [KEY_7], [KEY_1, 19], [KEY_1, 21], [KEY_2], [KEY_2], [KEY_1, 14], [KEY_2], [KEY_2]])
+	await click_button("enter_pass")
+	await click_button("merchant")
+	await click_button("buy_fish_scale")
+	await click_button("open_gu_book")
+	await capture("godot-v22-bi-phuong-an-lan.png")
+	await click_button("refine_owned_veil")
+	await launch()
+	check(flow.run.stones == 1 and flow.run.owned_gu.stone_veil == 0 and flow.run.owned_gu.fish_scale == 0
+		and flow.run.owned_gu.scale_veil == 1 and not flow.run.commit_book_action("refine_owned_veil"),
+		"The five-stone route must spend both ingredients and replay one product")
+	var forged: Dictionary = flow.run.snapshot().duplicate(true)
+	forged.version = Run.FOUR_FLAVORS_VERSION
+	check(Run.restore(forged) == null, "A v21 header cannot replay the new materials")
+	await click_button("leave_shop")
+	var workshop := flow.find_child("workshop_recipe", true, false) as OptionButton
+	check(workshop != null and workshop.get_item_text(Gu.RECIPES.find("scale_veil")).contains("Sở hữu"),
+		"The kit must distinguish the crafted Ẩn Lân from the loan")
+	await select_kit("scale_veil", "stone_veil")
+	var previous_hp: int = flow.run.battle.hp
+	var previous_qi: int = flow.run.battle.qi
+	await shoot(KEY_7)
+	await launch()
+	check(flow.run.battle.hp == previous_hp and flow.run.battle.qi == previous_qi - Gu.SCALE_VEIL_COST
+		and flow.run.owned_gu.scale_veil == 1, "The owned Gu must evade the opening ambush and replay its existing cost")
+
+
 func play_waypoints(ridge_save: Dictionary) -> void:
 	await play_gu_book(ridge_save)
 	await play_owned_brew(ridge_save)
+	await play_owned_veil(ridge_save)
 	flow.run = Run.restore(ridge_save)
 	flow.show_run()
 	check(flow.run.stones == Goods.RIDGE_STONES, "Winning the ridge must pay once")
@@ -775,6 +821,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_kennel_trial()
 	await play_kennel_two()
 	await play_kennel_three()
+	await play_kennel_four()
 	await click_button("new_run")
 	flow.start_new_run(Awakening.profile_for("ao-reu", 12))
 	await launch()
@@ -1325,6 +1372,60 @@ func play_kennel_three() -> void:
 	await capture("godot-v18-vuot-ho-da.png")
 
 
+func play_kennel_four() -> void:
+	var checkpoint: Dictionary = flow.run.snapshot().duplicate(true)
+	check(checkpoint.version == Run.KENNEL_THREE_VERSION and not flow.run.enter_kennel_four("unknown"),
+		"The saved third round must open the choices but reject an unknown formation")
+	var restart := flow.find_child("new_run", true, false) as Button
+	var hold := flow.find_child("ridge_hold", true, false) as Button
+	check(restart != null and hold != null and hold.get_global_rect().end.y < restart.get_global_rect().position.y,
+		"The formation controls must leave the new-run button reachable")
+	await capture("godot-v23-chon-the-dan.png")
+	for id: String in Run.KENNEL_FORMATIONS:
+		flow.run = Run.restore(checkpoint)
+		flow.persist()
+		flow.show_run()
+		var before := flow.run.battle as Pack
+		await click_button(id)
+		await launch()
+		var pack := flow.run.battle as Pack
+		var formation: Array = Pack.RIDGE_FORMATIONS[id]
+		check(flow.run.version == Run.KENNEL_FOUR_VERSION and pack.hero == formation[0]
+			and pack.dogs[0].cell == formation[1] and pack.dogs[1].cell == formation[2]
+			and pack.dogs[0].hp == before.dogs[0].hp and pack.dogs[1].hp == before.dogs[before.bound_id].hp
+			and pack.gu_left == 0 and pack.hp == before.hp and pack.qi == before.qi
+			and pack.living_dogs(false).size() == 5 and pack.intent.orders.size() == 3,
+			"The chosen formation must replay with unchanged reserves and the five-dog encounter")
+		var wrong_version: Dictionary = flow.run.snapshot().duplicate(true)
+		wrong_version.version = Run.OWNED_VEIL_VERSION
+		check(Run.restore(wrong_version) == null and not flow.run.enter_kennel_four(id)
+			and pack.unavailable("scale_veil").contains("phong cấm"),
+			"The formation cannot replay in an old schema, repeat mid-battle or lift the Gu restriction")
+		await capture("godot-v23-%s.png" % id)
+		await shoot(KEY_2, 19 if id == "ridge_hold" else 20)
+		var dogs := pack.dogs.duplicate(true)
+		var forecast := pack.intent.duplicate(true)
+		await launch()
+		check(flow.run.battle.dogs == dogs and flow.run.battle.intent == forecast
+			and flow.run.battle.turn == 2, "The first order and telegraph must replay on both paths")
+		if id == "ridge_hold":
+			await play_commands([[KEY_5, 12], [KEY_5, 11], [KEY_5, 12], [KEY_5, 11], [KEY_5, 5],
+				[KEY_5, 5], [KEY_5, 3], [KEY_5, 6]])
+		else:
+			await play_commands([[KEY_5, 11], [KEY_5, 12], [KEY_5, 11], [KEY_5, 12], [KEY_5, 2],
+				[KEY_5, 5], [KEY_5, 5]])
+			key(KEY_6)
+			await shoot(KEY_2, 34)
+			key(KEY_6)
+			await shoot(KEY_5, 6)
+		check(flow.run.phase == "kennel_four_cleared", "Each formation must win from the actual pit save")
+		var survivors: Array = flow.run.battle.dogs.duplicate(true)
+		await launch()
+		check(flow.run.phase == "kennel_four_cleared" and flow.run.battle.dogs == survivors,
+			"The saved victory must retain its surviving pack")
+	await capture("godot-v23-ket-qua-vong-bon.png")
+
+
 func check_pack_rules() -> void:
 	var pack := Pack.new({"qi": 1})
 	pack.rocks = [11]
@@ -1841,5 +1942,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, refining Bạch Ngọc and Tứ Vị, both arts and three Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts and four Khuyển Vương trials")
 	quit(1 if failed else 0)
