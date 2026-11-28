@@ -6,7 +6,9 @@ const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
 const TinRefinement = preload("res://tin_refinement.gd")
-const CURRENT_VERSION := 24
+const BaoTrial = preload("res://bao_trial.gd")
+const CURRENT_VERSION := 25
+const BAO_VERSION := 25
 const TIN_VERSION := 24
 const KENNEL_FOUR_VERSION := 23
 const OWNED_VEIL_VERSION := 22
@@ -40,6 +42,7 @@ const KENNEL_THREE_FLOOR := 15
 const KENNEL_THREE_VERSION := 18
 const KENNEL_FOUR_FLOOR := 16
 const TIN_FLOOR := 17
+const BAO_FLOOR := 18
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -133,6 +136,7 @@ const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
 const KENNEL_FOUR := {"name": "Khe đá hai lối", "enemy": "Đàn chó hoang"}
 const TIN_TRIAL := {"name": "Đài luyện trong sương", "enemy": "Người Lông"}
+const BAO_TRIAL := {"name": "Bãi đá núi lửa", "enemy": "Người Trứng Gà Đỏ"}
 const KENNEL_FORMATIONS := {
 	"ridge_hold": ["Giữ cửa khe", "Xuất phát ở cửa khe bên trái, nơi dễ chặn đường áp sát."],
 	"ridge_flank": ["Vòng qua mỏm phải", "Xuất phát ở mỏm phải, gần lối vòng qua sườn đá."],
@@ -213,6 +217,7 @@ var moon_link_known := false
 var white_light_known := false
 var outside_battle: Rules
 var tin_refinement: TinRefinement
+var bao_trial: BaoTrial
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -254,6 +259,8 @@ func stage_at(index: int) -> Dictionary:
 			return KENNEL_FOUR
 		TIN_FLOOR:
 			return TIN_TRIAL
+		BAO_FLOOR:
+			return BAO_TRIAL
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -869,6 +876,39 @@ func act_tin_refinement(action: String) -> bool:
 	return true
 
 
+func reach_bao_gate() -> bool:
+	if phase != "tam_xoa_gate":
+		return false
+	version = maxi(version, BAO_VERSION)
+	change_owned_gu("exploding_egg", 1, "Đoàn buôn Tam Xoa")
+	phase = "bao_gate"
+	journal.append(["reach_bao_gate"])
+	return true
+
+
+func enter_bao_trial() -> bool:
+	if phase != "bao_gate" or owned_gu.get("exploding_egg", 0) != 1:
+		return false
+	floor = BAO_FLOOR
+	bao_trial = BaoTrial.new(seed % BaoTrial.BOARD.size(), battle.hp, battle.qi, battle.max_qi)
+	phase = "bao_trial"
+	journal.append(["enter_bao_trial"])
+	return true
+
+
+func act_bao_trial(action: String, target: int) -> bool:
+	if phase != "bao_trial" or not bao_trial.apply(action, target):
+		return false
+	journal.append([action, target])
+	if action == "bao_cast":
+		change_owned_gu("exploding_egg", -1, "Thi triển ở Bãi đá núi lửa")
+	if bao_trial.won:
+		phase = "bao_cleared"
+	elif bao_trial.lost:
+		phase = "death"
+	return true
+
+
 func reach_kennel_gate() -> bool:
 	if phase not in ["nodo_cleared", "tam_xoa_gate"]:
 		return false
@@ -1280,7 +1320,10 @@ static func restore(saved: Variant) -> RefCounted:
 						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate())
 				"tam_xoa_gate":
 					committed = (command[0] == "reach_tin_gate" and run.reach_tin_gate()
-						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate())
+						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate()
+						or command[0] == "reach_bao_gate" and run.reach_bao_gate())
+				"bao_gate":
+					committed = command[0] == "enter_bao_trial" and run.enter_bao_trial()
 				"tin_gate":
 					committed = command[0] == "enter_tin_trial" and run.enter_tin_trial()
 				"tin_trial":
@@ -1310,7 +1353,14 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = run.reward(command[0])
 			if not committed:
 				return null
-		elif command.size() != 2 or not finite_integer(command[1], -1, 39) or run.perform(command[0], int(command[1])).has("error"):
+		elif command.size() == 2 and finite_integer(command[1], -1, 39):
+			var target := int(command[1])
+			if run.phase == "bao_trial":
+				if not run.act_bao_trial(command[0], target):
+					return null
+			elif run.perform(command[0], target).has("error"):
+				return null
+		else:
 			return null
 	var restored: Dictionary = run.snapshot()
 	if restored.version != saved.version or restored.get("chapter_rules") != saved.get("chapter_rules"):

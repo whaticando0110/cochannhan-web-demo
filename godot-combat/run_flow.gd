@@ -28,6 +28,8 @@ var save_problem := false
 var boss_seal := false
 var pulse_seal := false
 var training_return: Callable
+var bao_aim := -1
+var bao_aiming := false
 var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Rules.MAX_HP,
 	"jade_skin": false, "leaves": 0, "build": 0}
 
@@ -231,7 +233,9 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor == Run.TIN_FLOOR or run.phase == "tin_gate":
+	if run.floor == Run.BAO_FLOOR or run.phase == "bao_gate":
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA BẠO VƯƠNG"
+	elif run.floor == Run.TIN_FLOOR or run.phase == "tin_gate":
 		section = "TỨ CHUYỂN    /    TRUYỀN THỪA TÍN VƯƠNG"
 	elif run.phase == "tam_xoa_gate":
 		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
@@ -349,6 +353,15 @@ func show_result() -> void:
 		"tin_cleared":
 			title = "Vượt vòng đầu Tín Vương"
 			description = "Phôi Cổ của bạn thành hình trước. Hạc Giấy Cổ vẫn ở trong Không Khiếu."
+		"bao_gate":
+			title = "Cột sáng Bạo Vương"
+			description = "Đoàn buôn trao một Bạo Trứng Cổ nhất chuyển để mở cột đỏ."
+		"bao_trial":
+			title = Run.BAO_TRIAL.name
+			description = "Dụ người Trứng Gà Đỏ vào cùng một vùng. Bạn chỉ có một lần thi triển."
+		"bao_cleared":
+			title = "Vượt vòng đầu Bạo Vương"
+			description = "Ba đối thủ đã gục trong một lần thi triển Bạo Trứng Cổ."
 		"kennel_gate":
 			title = "Cột sáng Khuyển Vương"
 			description = "Đoàn buôn tặng bạn một Ngự Khuyển Cổ nhất chuyển để đáp công dẹp đường."
@@ -376,7 +389,9 @@ func show_result() -> void:
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
-			if run.floor == Run.TIN_FLOOR:
+			if run.floor == Run.BAO_FLOOR:
+				description = run.bao_trial.report + " Hồi sinh đưa bạn về màn đầu."
+			elif run.floor == Run.TIN_FLOOR:
 				description = "Người Lông luyện thành trước khi phôi của bạn ổn định. Hồi sinh đưa bạn về màn đầu."
 			elif run.battle is Run.Pack and run.battle.hp > 0:
 				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
@@ -429,6 +444,14 @@ func show_result() -> void:
 		enter.grab_focus()
 	elif run.phase == "tin_trial":
 		draw_tin_refinement()
+	elif run.phase == "bao_gate":
+		text(menu, "Trong bãi đá, chỉ Bạo Trứng Cổ được thôi động. Dùng Thủ thế hồi chân nguyên khi cần.",
+			Rect2(96, 320, 1008, 58), 20)
+		var enter := button(menu, "Bước vào cột đỏ", Rect2(96, 421, 320, 54), advance_bao.bind("enter_bao_trial", -1))
+		enter.name = "enter_bao_trial"
+		enter.grab_focus()
+	elif run.phase == "bao_trial":
+		draw_bao_trial()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -511,6 +534,9 @@ func show_result() -> void:
 			var gate := button(menu, "Tới cửa Tam Vương", Rect2(432, 480, 310, 54), advance_tin.bind("reach_tam_xoa_gate"))
 			gate.name = "reach_tam_xoa_gate"
 			gate.grab_focus()
+		elif run.phase == "bao_cleared":
+			text(menu, "Vượt ải sau %d lượt · Còn %d sinh lực" % [run.bao_trial.turns, run.bao_trial.hp],
+				Rect2(96, 320, 1008, 51), 23, GOLD)
 		elif run.phase == "tin_cleared":
 			text(menu, "Mẻ hoàn tất sau %d/%d lượt" % [run.tin_refinement.turns, Run.TinRefinement.TURN_LIMIT],
 				Rect2(96, 320, 1008, 51), 23, GOLD)
@@ -955,8 +981,8 @@ func draw_tam_xoa_gate() -> void:
 			Color("#bd9a5b"), "reach_kennel_gate", advance_kennel.bind("gate")],
 		["Tín Vương", "Cột sáng lam · Hạc Giấy Cổ", "So tài luyện Cổ với người Lông.",
 			Color("#91c3e5"), "reach_tin_gate", advance_tin.bind("reach_tin_gate")],
-		["Bạo Vương", "Cột sáng đỏ · Bạo Trứng Cổ", "Thử thách Viêm đạo chưa mở.",
-			Color("#c89587"), "", Callable()],
+		["Bạo Vương", "Cột sáng đỏ · Bạo Trứng Cổ", "Dồn đối thủ vào cùng vùng tác dụng.",
+			Color("#d5a08e"), "reach_bao_gate", advance_bao.bind("reach_bao_gate", -1)],
 	]
 	for index in range(gates.size()):
 		var gate: Array = gates[index]
@@ -964,11 +990,10 @@ func draw_tam_xoa_gate() -> void:
 		text(card, gate[0], Rect2(16, 16, 294, 43), 29, gate[3], true)
 		text(card, gate[1], Rect2(16, 64, 294, 31), 16, PALE)
 		text(card, gate[2], Rect2(16, 106, 294, 45), 18)
-		if not str(gate[4]).is_empty():
-			var choose := button(card, "Đến cột sáng", Rect2(16, 166, 294, 39), gate[5])
-			choose.name = gate[4]
-			if index == 0:
-				choose.grab_focus()
+		var choose := button(card, "Đến cột sáng", Rect2(16, 166, 294, 39), gate[5])
+		choose.name = gate[4]
+		if index == 0:
+			choose.grab_focus()
 
 
 func draw_tin_refinement() -> void:
@@ -1015,6 +1040,114 @@ func advance_tin(step: String) -> void:
 		_:
 			changed = run.act_tin_refinement(step)
 	if changed:
+		persist()
+		show_run()
+
+
+func draw_bao_trial() -> void:
+	var trial := run.bao_trial
+	var board := panel(menu, Rect2(96, 293, 696, 324), Color("#251d1b"), Color("#935749"))
+	var area := trial.blast(bao_aim)
+	for cell in range(Rules.COLUMNS * Rules.ROWS):
+		draw_bao_tile(board, trial, cell, area)
+	var combat := panel(menu, Rect2(810, 293, 294, 324), Color("#2c2420"), Color("#935749"))
+	text(combat, "Lượt %d" % (trial.turns + 1), Rect2(14, 9, 264, 36), 21, GOLD)
+	text(combat, "Sinh lực %d/%d · Chân nguyên %d/%d" % [trial.hp, Rules.MAX_HP, trial.qi, trial.capacity],
+		Rect2(14, 45, 264, 31), 15, PALE)
+	text(combat, "Bạo Trứng Cổ ×%d" % run.owned_gu.get("exploding_egg", 0), Rect2(14, 77, 264, 36), 19, GOLD)
+	var count := trial.attackers()
+	var warning := "%d đối thủ nhắm ô của bạn." % count if count > 0 else "Đối thủ đang áp sát."
+	text(combat, warning, Rect2(14, 123, 264, 45), 17, Color("#f1a78a") if count else PALE)
+	var hint := "Chấm xanh là ô có thể bước tới."
+	if bao_aiming:
+		hint = "Chọn tâm vùng tác dụng." if area.is_empty() else "Vùng tác dụng trúng %d/%d đối thủ." % [trial.targets_hit(area), trial.enemies.size()]
+	text(combat, hint, Rect2(14, 178, 264, 50), 17, GOLD if bao_aiming else GREEN)
+	text(combat, trial.report, Rect2(14, 242, 264, 63), 16, PALE)
+	var walk := button(menu, "Di chuyển", Rect2(96, 634, 210, 41), change_bao_mode.bind(false))
+	walk.name = "bao_walk_mode"
+	walk.disabled = not bao_aiming
+	var aim := button(menu, "Ngắm Bạo Trứng", Rect2(320, 634, 244, 41), change_bao_mode.bind(true))
+	aim.name = "bao_aim_mode"
+	aim.disabled = bao_aiming or trial.qi < Run.BaoTrial.CAST_COST
+	aim.tooltip_text = "Cần 1 chân nguyên." if trial.qi < Run.BaoTrial.CAST_COST else "Tầm 2–4 ô."
+	var guard := button(menu, "Thủ thế · +1 CN", Rect2(578, 634, 232, 41), advance_bao.bind("bao_guard", -1))
+	guard.name = "bao_guard"
+	var cast := button(menu, "Thi triển · −1 CN", Rect2(824, 634, 280, 41), advance_bao.bind("bao_cast", bao_aim))
+	cast.name = "bao_cast"
+	cast.disabled = area.is_empty()
+
+
+func draw_bao_tile(board: Control, trial: Run.BaoTrial, cell: int, area: Array[int]) -> void:
+	var point := Rules.grid(cell)
+	var movable := trial.walkable(cell)
+	var targetable := trial.castable(cell)
+	var enemy := cell in trial.enemies
+	var rock := cell in trial.rocks
+	var label := ""
+	var fill := Color("#342521")
+	var edge := Color("#4a3a31")
+	if rock:
+		label = "Đá"
+		fill = Color("#46433f")
+	elif cell == trial.hero:
+		label = "Bạn"
+		var threatened := trial.attackers() > 0
+		fill = Color("#7e392e") if threatened else Color("#284b3b")
+		edge = Color("#e68e74") if threatened else GREEN
+	elif enemy:
+		label = "Trứng đỏ"
+		fill = Color("#633c33")
+		edge = Color("#d69681")
+	elif movable and not bao_aiming:
+		label = "·"
+		edge = GREEN
+	if bao_aiming:
+		if cell in area:
+			edge = GOLD
+			if not rock:
+				fill = Color("#78512f")
+		elif targetable and not enemy:
+			edge = Color("#8e6452")
+	var tile := button(board, label, Rect2(12 + point.x * 84, 13 + point.y * 60, 80, 56), choose_bao_tile.bind(cell))
+	tile.name = "bao_tile_%d" % cell
+	tile.tooltip_text = "%s · %s" % [Rules.cell_name(cell), Run.BAO_TRIAL.enemy] if enemy else Rules.cell_name(cell)
+	tile.add_theme_font_size_override("font_size", 15)
+	tile.add_theme_color_override("font_disabled_color", PALE)
+	for style_name: String in ["normal", "disabled", "hover", "pressed"]:
+		var skin := StyleBoxFlat.new()
+		skin.bg_color = fill.lightened(0.12) if style_name in ["hover", "pressed"] else fill
+		skin.border_color = edge
+		skin.set_border_width_all(2 if bao_aiming and cell == bao_aim else 1)
+		tile.add_theme_stylebox_override(style_name, skin)
+	tile.disabled = not (targetable if bao_aiming else movable)
+
+
+func change_bao_mode(aiming: bool) -> void:
+	bao_aiming = aiming
+	bao_aim = -1
+	show_result()
+
+
+func choose_bao_tile(cell: int) -> void:
+	if bao_aiming:
+		bao_aim = cell
+		show_result()
+	else:
+		advance_bao("bao_move", cell)
+
+
+func advance_bao(action: String, target: int) -> void:
+	var changed: bool
+	match action:
+		"reach_bao_gate":
+			changed = run.reach_bao_gate()
+		"enter_bao_trial":
+			changed = run.enter_bao_trial()
+		_:
+			changed = run.act_bao_trial(action, target)
+	if changed:
+		bao_aiming = false
+		bao_aim = -1
 		persist()
 		show_run()
 

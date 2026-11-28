@@ -819,6 +819,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_xoa_trail()
 	await play_nodo_road()
 	await play_tin_refinement()
+	await play_bao_trial()
 	await play_kennel_trial()
 	await play_kennel_two()
 	await play_kennel_three()
@@ -1282,6 +1283,73 @@ func play_tin_refinement() -> void:
 	await launch()
 	check(flow.run.phase == "death" and flow.run.tin_refinement.lost
 		and flow.find_child("rebirth", true, false) != null, "A lost duel must replay and offer the existing rebirth flow")
+	flow.run = Run.restore(road)
+	flow.persist()
+	flow.show_run()
+
+
+func play_bao_trial() -> void:
+	var road: Dictionary = flow.run.snapshot().duplicate(true)
+	await click_button("reach_tam_xoa_gate")
+	await launch()
+	check(flow.run.version == Run.TIN_VERSION and flow.run.phase == "tam_xoa_gate",
+		"The previously released gate must load before choosing the red branch")
+	await capture("godot-v25-ba-cua-tam-vuong.png")
+	await click_button("reach_bao_gate")
+	await launch()
+	check(flow.run.version == Run.BAO_VERSION and flow.run.phase == "bao_gate"
+		and flow.run.owned_gu.exploding_egg == 1 and not flow.run.owned_gu.has("paper_crane")
+		and not flow.run.reach_bao_gate(), "Only one Bạo Trứng must come from choosing the red branch")
+	var hp: int = flow.run.battle.hp
+	var qi: int = flow.run.battle.qi
+	await click_button("enter_bao_trial")
+	await launch()
+	var trial := flow.run.bao_trial as Run.BaoTrial
+	check(flow.run.phase == "bao_trial" and flow.run.floor == Run.BAO_FLOOR
+		and trial.hp == hp and trial.qi == qi and trial.enemies.size() == 3
+		and flow.run.book_unavailable("refine_owned_veil").contains("phúc địa")
+		and flow.run.perform("moon").has("error"), "The red arena must retain vitals and seal outside Gu")
+	var entry: Dictionary = flow.run.snapshot().duplicate(true)
+	var forged := entry.duplicate(true)
+	forged.version = Run.TIN_VERSION
+	check(Run.restore(forged) == null, "The red branch must be rejected in a v24 journal")
+	forged = entry.duplicate(true)
+	forged.journal.append(["bao_move", 40])
+	check(Run.restore(forged) == null, "A fabricated off-board move must not replay")
+	await capture("godot-v25-bai-da-nui-lua.png")
+	await click_button("bao_tile_26")
+	await click_button("bao_tile_27")
+	var positions: Array[int] = trial.enemies.duplicate()
+	await launch()
+	check(flow.run.bao_trial.hero == 27 and flow.run.bao_trial.enemies == positions and flow.run.bao_trial.turns == 2,
+		"Both sides' positions and elapsed turns must restore")
+	await click_button("bao_tile_35")
+	await click_button("bao_guard")
+	await click_button("bao_tile_34")
+	await click_button("bao_tile_33")
+	trial = flow.run.bao_trial
+	await click_button("bao_aim_mode")
+	await click_button("bao_tile_27")
+	check(trial.turns == 6 and trial.targets_hit(trial.blast(27)) == 3 and flow.run.owned_gu.exploding_egg == 1,
+		"Aiming must forecast all three targets without advancing the turn or consuming the key")
+	await capture("godot-v25-ngam-bao-trung.png")
+	await click_button("bao_cast")
+	await launch()
+	check(flow.run.phase == "bao_cleared" and flow.run.bao_trial.enemies.is_empty()
+		and flow.run.owned_gu.exploding_egg == 0 and flow.run.bao_trial.hp == hp
+		and not flow.run.act_bao_trial("bao_cast", 27), "Win and single use must survive reload")
+	await capture("godot-v25-vuot-bao-vuong.png")
+	flow.run = Run.restore(entry)
+	flow.persist()
+	flow.show_run()
+	await click_button("bao_guard")
+	await click_button("bao_aim_mode")
+	await click_button("bao_tile_32")
+	await click_button("bao_cast")
+	await launch()
+	check(flow.run.phase == "death" and flow.run.bao_trial.spent and flow.run.bao_trial.lost
+		and flow.run.owned_gu.exploding_egg == 0 and flow.find_child("rebirth", true, false) != null,
+		"An early use must spend the egg once and unlock rebirth on defeat")
 	flow.run = Run.restore(road)
 	flow.persist()
 	flow.show_run()
@@ -1785,6 +1853,25 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		await capture("godot-ket-qua-tuyen.png")
 
 
+func check_bao_layouts() -> void:
+	var cases := [
+		[0, 0, [["bao_move", 26], ["bao_move", 27], ["bao_move", 35], ["bao_guard", -1], ["bao_move", 34], ["bao_move", 33], ["bao_cast", 27]]],
+		[0, 1, [["bao_move", 26], ["bao_move", 27], ["bao_move", 35], ["bao_guard", -1], ["bao_move", 34], ["bao_move", 33], ["bao_cast", 27]]],
+		[1, 0, [["bao_move", 38], ["bao_move", 37], ["bao_guard", -1], ["bao_move", 29], ["bao_move", 30], ["bao_cast", 20]]],
+		[1, 1, [["bao_move", 29], ["bao_move", 28], ["bao_move", 29], ["bao_move", 28], ["bao_move", 29], ["bao_cast", 20]]],
+		[2, 0, [["bao_move", 36], ["bao_move", 37], ["bao_guard", -1], ["bao_guard", -1], ["bao_cast", 5]]],
+		[2, 1, [["bao_move", 36], ["bao_move", 37], ["bao_move", 36], ["bao_move", 28], ["bao_cast", 5]]],
+	]
+	for row: Array in cases:
+		var trial := Run.BaoTrial.new(row[0], 1, row[1], 4)
+		check(not trial.apply("bao_cast", trial.hero) and not trial.apply("bao_move", trial.rocks[0]) and trial.turns == 0,
+			"Illegal casts and blocked tiles must leave Bạo Vương unchanged")
+		for command: Array in row[2]:
+			check(trial.apply(command[0], command[1]), "Every seeded layout must have a valid tactical route")
+		check(trial.won and not trial.lost and trial.hp == 1,
+			"A mortally wounded player must be able to clear any layout with or without starting essence")
+
+
 func check_tin_recipes() -> void:
 	var Tin = Run.TinRefinement
 	for layout in range(Tin.RECIPES.size()):
@@ -1913,6 +2000,7 @@ func exercise() -> void:
 	check_gu_and_tactics()
 	check_owned_brew_recipe()
 	check_tin_recipes()
+	check_bao_layouts()
 	check_owned_art_slots()
 	check_white_light_balance()
 	check_third_save()
@@ -2018,5 +2106,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, four Khuyển Vương trials and the Tín Vương duel")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, four Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
 	quit(1 if failed else 0)
