@@ -11,6 +11,69 @@ Chạy `npm run preview` trong repo và mở [demo local](http://127.0.0.1:4173)
 
 `dist/roguelike.mjs` quản lý chu kỳ màn, chiến lợi phẩm và hồ sơ Khai Khiếu. Luật chiến đấu dùng chung từ `dist/combat.mjs`. Bản lưu lưu mã ngẫu nhiên và các hành động đã chốt để khôi phục bàn, đối thủ và tài nguyên.
 
+## Bản Godot
+
+Mở `godot-combat/project.godot` bằng Godot 4.7.2 Standard rồi bấm **F5**, hoặc chạy `godot --path godot-combat` từ thư mục repo. **F6** với cảnh `combat_preview.tscn` vẫn mở trận Điện Lang độc lập.
+
+Chọn Huyền bào hoặc Áo rêu, qua sông ở Hang Nguyệt Lan và đi theo biển hoa để mở Không Khiếu. Dùng **WASD**, phím mũi tên hoặc bấm một ô để tới. Trong ba trận theo lượt, dùng **1–4**. Sau khi chọn Di chuyển, bấm ô hoặc dùng **phím mũi tên + Enter**. Ô xanh né được đòn đã báo. Ô hổ phách đi được và vẫn nằm trong vùng đánh. Rê chuột hoặc dùng Tab vào lệnh để xem sát thương và chân nguyên dự kiến. Qua mỗi màn đầu chọn một chiến lợi phẩm để mang sang màn sau.
+
+Sau trận đầu, chọn **Khe đá Hoang Nha** hoặc **Lối săn tinh anh**. Vách đá ở Khe đá chặn Nguyệt Quang. Tinh anh luân phiên vồ và lao xuyên một hàng. Mũi tên đánh dấu hàng sắp bị quét. Thắng màn hai, chọn chiến lợi phẩm rồi dừng chân để hồi sinh lực, hồi chân nguyên hoặc đi thẳng vào hang. Cuồng Điện Lang luân phiên vồ và quét hành lang, nghỉ một lượt sau đòn nặng và đổi nhịp dưới nửa sinh lực.
+
+**Ngọc Bì Cổ** là một lựa chọn thưởng sau màn đầu. Dùng phím **5** để tốn 1 chân nguyên và tạo lớp ngọc chặn tối đa 5 sát thương của đòn kế tiếp trong hai lượt. Có thể nhận **Sinh Cơ Diệp** sau trận Khe đá. Dùng phím **6** để tiêu một lá và hồi tối đa 12 sinh lực trước đòn đáp trả. Luyện Nguyệt Quang, hồi phục và Mở rộng Nguyên Hải vẫn có tác dụng như ghi trên thẻ thưởng.
+
+Sau khi hạ Cuồng Điện Lang, chọn **Sang Nhị chuyển**. Ghép một Cổ Nhất chuyển với một Cổ Nhị chuyển rồi lần lượt đi qua **Sườn đá Mù Sương**, **Bãi Đá Suối Sấm** và **Hẻm Đá Phục Kích**. Có thể đổi bộ ở điểm nghỉ. Tại Suối Sấm, nước tím báo trước đòn dẫn lôi. Tại Hẻm Đá, ô nứt màu hổ phách báo trước đá rơi. Cả hai bên cần đường bắn thoáng để phóng đòn.
+
+**7** dùng Cổ Nhị chuyển. Bộ Nguyệt dùng Nguyệt Quang để đặt ấn rồi kích phát bằng Nguyệt Mang. Bộ Hộ thể dùng Bạch Ngọc để tăng sức chặn và mở Phản đòn. Bộ Tửu hồi chân nguyên rồi cường hóa hai cú Tay không. Bộ Ẩn dùng Ẩn Thạch chuẩn bị bước đi xa và Ẩn Lân để làm địch mất dấu. Dùng hai Cổ hệ Ẩn nối tiếp giúp lần Di chuyển kế tiếp đi tối đa bốn ô. Có 16 cặp giữa bốn hệ. Sinh Cơ Diệp vẫn nằm ở ô vật phẩm.
+
+Ở lượt mới, sau Sườn đá Mù Sương và Suối Sấm có thể chọn **Lều nghỉ**, **Quầy đổi đồ** hoặc **Biến cố**. Xem mức hồi, chi phí sinh lực hoặc chân nguyên trước khi chọn. Thắng hai trận này nhận nguyên thạch vào túi để mua Sinh Cơ Diệp hoặc một bảo vật. Hàng ở quầy theo mã lượt chơi. Bảo vật dùng chung với mọi bộ Cổ và đi theo bạn sang trận kế tiếp.
+
+Sau Suối Sấm, **Săn tinh anh** dẫn vào **Ổ Điện Lang** thay cho một điểm dừng thường. Điện Lang đầu đàn luân phiên vồ vùng và lao xuyên hàng, với một lượt hồi thế sau đòn lớn. Thắng trận, chọn **Nanh Tinh Anh** để cộng 8 sát thương cho đòn đầu tiên gây sát thương mỗi trận, hoặc **Túi dược của thợ săn** để mang thêm một Sinh Cơ Diệp, hồi thêm sinh lực và giữ bảo vật đang mang. Cả hai lựa chọn dẫn về Hẻm Đá.
+
+Sau Hẻm Đá, chọn **Tới Lôi Nha Đài** để chuẩn bị trận cuối Nhị chuyển. Cả hai lộ trình được hồi tối đa 32 sinh lực và 4 chân nguyên, giữ lá và bảo vật còn lại, rồi chọn bộ Cổ. Lôi Nha Trấn Ải quét điện theo hàng và chuyển sang đánh cả hàng lẫn cột khi còn nửa sinh lực. Rời các ô tím hoặc Thủ thế, rồi phản công trong lượt hở lôi giáp để cộng 5 sát thương. Thắng lần đầu nhận **Ấn Trấn Lôi**, mở khóa boss trong Luyện trận và giữ ấn khi bắt đầu lượt mới.
+
+Sau Lôi Nha Đài, chọn **Sang Tam chuyển** để vào **Đầm Rễ Độc**. Hai cụm hồ vàng lục phun độc luân phiên. Nếu đòn phun làm mất sinh lực, bạn mất thêm 1 chân nguyên. Né cú Táp độc rồi phản công bằng Tay không lúc Điện Lang hở hàm để cộng 6 sát thương. Khi thắng, chọn **Tinh Lộ Tịnh Mạch** để tăng sức chứa chân nguyên thêm 1 và hồi đầy, hoặc **Cao giải độc** để hồi tối đa 18 sinh lực và nhận 2 Sinh Cơ Diệp.
+
+Sau khi nhận thưởng Đầm Rễ Độc, chọn **Tới Hẻm Hàn Phong**. Đợt gió cắt đổi từ Tây sang Đông rồi ngược lại. Các ô có mũi tên báo vùng chịu đòn. Đứng sau tảng đá theo chiều gió để tránh sát thương. Thắng trận, chọn **Ấn Dẫn Phong** để hồi tối đa 2 chân nguyên ở lần Di chuyển đầu tiên thoát vùng báo đòn khi đang thiếu chân nguyên trong mỗi trận, hoặc **Túi Hàn Dược** để hồi tối đa 3 chân nguyên và nhận 2 Sinh Cơ Diệp.
+
+Sau khi nhận thưởng Hẻm Hàn Phong, chọn **Tới Đài Trấn Ấn**. Thạch Giáp Lang giảm 8 sát thương mỗi đòn. Kết thúc Di chuyển trên ô ấn tím để khóa giáp 5 lượt. Tay không gây thêm 4 sát thương khi giáp đang vỡ. Thắng chọn **Thạch Tủy Luyện Thể** để tăng sát thương Tay không thêm 3 trong lượt chơi, hoặc **Hộp tiếp tế cổ trận** để nhận 6 nguyên thạch và 1 Sinh Cơ Diệp.
+
+Sau khi nhận thưởng ở Đài Trấn Ấn, chọn **Tới Điện Trấn Mạch** để đánh Thạch Vương, boss cuối Tam chuyển. Boss luân phiên Nội Chấn và Ngoại Chấn. Di chuyển khỏi vùng báo đòn để mở **Hở mạch**, cộng 5 sát thương cho đòn trúng trong lượt hồi thế kế tiếp. Có thể dùng 8 nguyên thạch để **Dưỡng mạch** một lần, tăng sức chứa thêm 1, hồi đầy chân nguyên và hồi thêm tối đa 6 sinh lực. Thắng nhận **Ấn Trấn Mạch** để mở boss trong Luyện trận, rồi chọn Châu Hoàn Nguyên hoặc Rương Trấn Mạch.
+
+Sau khi nhận thưởng Điện Trấn Mạch, chọn **Sang Tứ chuyển**. Người chơi theo đoàn buôn tới **bãi đá chân núi Tam Xoa**, bên ngoài phúc địa của truyền thừa Tam Vương. Dùng chân nguyên hoàng kim, né cú Húc giáp của chó Thiết Giáp, rồi đánh sườn để vượt lớp phòng ngự trước mặt. Thắng có thể giữ da làm giáp hoặc đổi lấy nguyên thạch.
+
+Sau bãi đá, **trại tạm Tam Xoa** cho chọn nghỉ lấy sức hoặc đổi 6 nguyên thạch lấy 2 Sinh Cơ Diệp. Trên **Đường núi Tam Xoa**, chọn đánh cổ sư Nô đạo để ngắt lệnh, hoặc hạ khuyển thú trước. Cả hai chiếm ô riêng và có thể chắn đường phóng Cổ. Khi khuyển đã khóa ô, di chuyển để né hoặc thủ thế. Thắng mở đường đến cửa truyền thừa.
+
+Sau khi thắng cổ sư Nô đạo, vào **cửa Tam Vương** để chọn truyền thừa. Cột lam **Tín Vương** dùng Hạc Giấy Cổ. Tại Đài luyện trong sương, điều lửa theo bí phương và hoàn thành ba công đoạn trước người Lông. Cột đỏ **Bạo Vương** dùng Bạo Trứng Cổ. Tại Bãi đá núi lửa, di chuyển dụ ba đối thủ vào cùng một vùng, ngắm để xem trước số trúng rồi thi triển. Cổ chỉ dùng được một lần.
+
+Tại **cột sáng vàng của Khuyển Vương**, luyện hóa Ngự Khuyển Cổ nhất chuyển rồi bước vào vòng đầu. Phúc địa phong cấm bộ Cổ chiến đấu và bảo vật. Tiến vào tầm hai ô có đường thông, dùng phím `3` để thu phục chó hoang bằng 1 chân nguyên. Chó giữ nguyên sinh lực và cùng một Ngự Khuyển Cổ mới đi vào vòng hai.
+
+Tại **Gò cỏ úa**, ba chó hoang áp sát từ ba phía. Ra lệnh cho chó vòng đầu bằng `2` để di chuyển hoặc `5` để táp. Dùng `3` chọn một chó hoang để thu phục. Sau khi thu phục, chọn chó A hoặc B trên sân, ở bảng bên phải hoặc đổi bằng `6`. Sân báo trước ô bị táp và giữ nguyên sinh lực còn lại của các chó sống khi qua vòng.
+
+Ở **Hố đá dưới gò cỏ**, dùng vị trí hẻm giữa hai vách đá để chặn sáu chó hoang. Hai con khỏe tới trước, bốn con bị thương tới sau. Chó đồng minh mang nguyên thương thế từ vòng hai. Sau đó, ở **Khe đá hai lối**, chọn **Giữ cửa khe** hoặc **Vòng qua mỏm phải** để đặt đàn. Vòng bốn giữ đúng tài nguyên và thương thế ở kết quả hố đá. Sau khi thắng, vào **Hẻm Vọng Thanh** với nguyên thương thế của đàn. Ở vòng năm, táp trúng chó đầu đàn lúc sân báo **HÚ** để trì hoãn hai con tiếp viện. Ở vòng sáu tại **Bãi đá Chặn Đường**, nhấn `7` để chó đang chọn **Yểm hộ** bằng cách đổi chỗ với đồng minh đứng kề. Đòn đã báo vẫn đánh vào ô cũ. Ở vòng bảy tại **Khe đá Hàm Sói**, đường màu tím báo cú lao của chó đầu đàn. Rời các ô tím hoặc dùng Yểm hộ để đổi con chịu đòn đầu tiên.
+
+Ngoài phúc địa, quầy vẫn bán lá và bảo vật, đồng thời có **Tiểu Quang Cổ** để hợp luyện. Một Nguyệt Quang và hai Tiểu Quang thành Nguyệt Mang. Dùng Nguyệt Mang cùng Tiểu Quang còn lại để phối **Liên Nguyệt**. Khi trang bị Nguyệt Mang đã sở hữu và còn Tiểu Quang trong Sổ Cổ, phím `8` dùng Liên Nguyệt một lần mỗi trận, tốn 4 chân nguyên để gây 42 sát thương cơ bản ở tầm 5 ô.
+
+Mở **Sổ Cổ** để xem số còn lại và nguồn nhận của từng Cổ. Quầy bán thêm **Ngọc Bì Cổ** với 3 nguyên thạch. Nhận **2 Tiểu Quang Cổ** từ chiến lợi phẩm Sườn đá Mù Sương và **1 Bạch Thỉ Cổ** ở Bãi Đá Suối Sấm trước khi đi tiếp. Mỗi chiến lợi phẩm nhận một lần trong lượt chơi.
+
+Ngoài trận, mở **Sổ Cổ** để hợp luyện **1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc**. Có Bạch Ngọc và Tiểu Quang sở hữu thì có thể phối **Bạch Quang Hộ Thể**. Mang Bạch Ngọc trong bộ Cổ, nhấn `8` để dùng sát chiêu một lần mỗi trận, tốn 3 chân nguyên và chặn tối đa 9 sát thương mỗi đòn, trong hai đòn hoặc ba lượt. Hai sát chiêu dùng chung ô `8` theo Cổ Nhị chuyển đã chọn. Tiểu Quang là Cổ phụ trợ trong Sổ, vẫn giữ nguyên số lượng qua các trận.
+
+Để sở hữu **Tứ Vị Tửu Trùng**, mua hai Tửu Trùng với 4 nguyên thạch và bộ Rượu Tứ Vị với 2 nguyên thạch. Mở Sổ Cổ ngoài trận để hợp luyện. Một mẻ dùng hết hai Tửu Trùng và cả bộ rượu. Có thể dùng 4 nguyên thạch từ Sườn đá Mù Sương và 2 nguyên thạch từ Bãi Đá Suối Sấm để gom đủ. [Bí phương trong chương 121](https://truyenhoan.com/co-chan-nhan/chuong-121.html)
+
+Quầy bán **Ẩn Thạch** với 3 nguyên thạch và **Ngư Lân** với 2. Hợp luyện trong Sổ Cổ dùng một Cổ mỗi loại để sở hữu **Ẩn Lân**, có thể trang bị ở ô Nhị chuyển và dùng phím `7`. [Bí phương trong chương 123](https://tamhoan.com/co-chan-nhan/197826)
+
+**Luyện trận** mở từ màn chọn nhân vật, trong trận và ở các điểm dừng giữa màn. Chọn đối thủ, nhân vật, tư chất, sinh lực, chân nguyên và bộ Cổ mang theo. **R** chơi lại với cùng thiết lập. Chọn **Đổi thiết lập → Quay lại** để tiếp tục lượt chính tại chỗ đã rời. Chế độ luyện có tiến độ riêng. [Kế hoạch các màn và Cổ](docs/ke-hoach-demo.md)
+
+Bảy Cổ và Sinh Cơ Diệp có atlas và icon riêng trong Godot. Có thể vào Luyện trận để xem Nguyệt Mang thường hoặc kích phát Nguyệt Ấn, lớp Bạch Ngọc chịu đòn, Tứ Vị hai tầng và Điện Lang mất dấu khi gặp Ẩn Lân. Suối Sấm và Hẻm Đá có bộ ô riêng. [Chi tiết tích hợp đồ họa](docs/ke-hoach-demo.md#đồ-họa-trong-trận)
+
+Sau khi gục, **Hồi sinh** mở lựa chọn Khai Khiếu lại hoặc dùng nhân vật và tư chất đã có để vào màn đầu. Chiến lợi phẩm, bộ Cổ, túi nguyên thạch và ô bảo vật được đặt lại. Bản Godot lưu tiến độ cục bộ ở `user://thanh-mao-run-v1.json` sau mỗi thao tác hợp lệ. Bản lưu v8 tại Hẻm Đá, v9 tại Lôi Nha Đài, v10 tại Đầm Rễ Độc, v11 tại Hẻm Hàn Phong, v12 tại Đài Trấn Ấn và v13 tại Điện Trấn Mạch có thể đi tiếp từ màn kết quả tương ứng. Phạm vi kiểm hiện tại là Windows.
+
+```sh
+godot --headless --path godot-combat --import
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/preview_smoke.gd
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/run_flow_smoke.gd
+godot --headless --path godot-combat --fixed-fps 60 --script res://tests/art_smoke.gd
+```
+
 <details>
 <summary>Tài liệu bản thử thú triều trước khi chuyển sang roguelike</summary>
 

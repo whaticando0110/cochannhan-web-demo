@@ -1,0 +1,1592 @@
+extends Control
+
+const Run = preload("res://run_state.gd")
+const Rules = preload("res://battle_rules.gd")
+const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
+const Ceremony = preload("res://ceremony.gd")
+const BattleScene = preload("res://combat_preview.tscn")
+const HUYEN = preload("res://assets/huyen-bao-selection.png")
+const REU = preload("res://assets/ao-reu-selection.png")
+const GOLD := Color("#f1d89f")
+const GREEN := Color("#a2d6aa")
+const PALE := Color("#e3e9dc")
+const TRAINING_STAGES := [Run.FLOORS[0], Run.ROUTES.ravine, Run.ROUTES.elite, Run.FLOORS[2],
+	Run.CHAPTER_TWO, Run.THUNDER_FORD, Run.AMBUSH_PASS, Run.THUNDER_GATE, Run.PULSE_HALL]
+const TRAINING_ROOMS := [0, 1, 1, 2, 3, 4, 5, 2, 2]
+const TRAINING_TACTICS := ["", "ravine", "elite", "king", "storm", "ford", "ambush", "thunder_boss", "pulse_boss"]
+const TRAINING_GRADES := ["Đinh đẳng", "Bính đẳng", "Ất đẳng", "Giáp đẳng"]
+
+var save_path := "user://thanh-mao-run-v1.json"
+var ceremony_limit := 0
+var run: Run
+var current: Control
+var menu: Control
+var headline := SystemFont.new()
+var status: Label
+var save_problem := false
+var boss_seal := false
+var pulse_seal := false
+var training_return: Callable
+var bao_aim := -1
+var bao_aiming := false
+var training_options := {"opponent": 0, "grade": 0, "hero": 0, "qi": 4, "hp": Rules.MAX_HP,
+	"jade_skin": false, "leaves": 0, "build": 0}
+
+
+func _ready() -> void:
+	headline.font_names = PackedStringArray(["Cambria", "Georgia"])
+	if FileAccess.file_exists(save_path):
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+		run = Run.restore(saved)
+		if run != null:
+			var seal: Variant = saved.get("boss_seal", false)
+			boss_seal = run.phase == "chapter_cleared" or (seal is bool and seal)
+			var pulse: Variant = saved.get("pulse_seal", false)
+			pulse_seal = run.phase in ["pulse_reward", "rank_three_cleared"] or (pulse is bool and pulse)
+			boss_seal = boss_seal or pulse_seal
+	if run == null:
+		show_entry()
+	else:
+		show_run()
+
+
+func persist() -> void:
+	pulse_seal = pulse_seal or run.phase in ["pulse_reward", "rank_three_cleared"]
+	boss_seal = boss_seal or pulse_seal or run.phase == "chapter_cleared"
+	var temp := save_path + ".tmp"
+	var file := FileAccess.open(temp, FileAccess.WRITE)
+	if file == null:
+		save_problem = true
+		return
+	var saved := run.snapshot()
+	if boss_seal:
+		saved.boss_seal = true
+	if pulse_seal:
+		saved.pulse_seal = true
+	file.store_string(JSON.stringify(saved))
+	var written := file.get_error() == OK
+	file.close()
+	save_problem = not written
+	if written:
+		save_problem = DirAccess.rename_absolute(ProjectSettings.globalize_path(temp),
+			ProjectSettings.globalize_path(save_path)) != OK
+
+
+func switch_to(view: Control) -> void:
+	if current != null:
+		remove_child(current)
+		current.queue_free()
+	current = view
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(view)
+
+
+func panel(parent: Control, box: Rect2, tint: Color, border: Color) -> Panel:
+	var node := Panel.new()
+	node.position = box.position
+	node.size = box.size
+	var style := StyleBoxFlat.new()
+	style.bg_color = tint
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	node.add_theme_stylebox_override("panel", style)
+	parent.add_child(node)
+	return node
+
+
+func text(parent: Control, value: String, box: Rect2, px: int, tint: Color = PALE, serif: bool = false) -> Label:
+	var node := Label.new()
+	node.position = box.position
+	node.size = box.size
+	node.text = value
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	node.add_theme_color_override("font_color", tint)
+	node.add_theme_font_size_override("font_size", px)
+	if serif:
+		node.add_theme_font_override("font", headline)
+	parent.add_child(node)
+	return node
+
+
+func button(parent: Control, value: String, box: Rect2, action: Callable) -> Button:
+	var node := Button.new()
+	node.position = box.position
+	node.size = box.size
+	node.text = value
+	node.add_theme_font_size_override("font_size", 20)
+	node.pressed.connect(action)
+	parent.add_child(node)
+	return node
+
+
+func make_menu() -> Control:
+	var next := Control.new()
+	next.name = "RunMenu"
+	return next
+
+
+func hero_card(id: String, title: String, image: Texture2D, x: float) -> void:
+	var card := panel(menu, Rect2(x, 258, 292, 265), Color("#192d27"), Color("#526f5f"))
+	var portrait := TextureRect.new()
+	portrait.texture = image
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.position = Vector2(68, 16)
+	portrait.size = Vector2(156, 156)
+	card.add_child(portrait)
+	var caption := text(card, title, Rect2(16, 166, 260, 39), 25, GOLD, true)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var choose := button(card, "Vào Đại điển", Rect2(24, 211, 244, 42), func(): show_ceremony(id))
+	choose.name = id.replace("-", "_")
+
+
+func show_entry() -> void:
+	menu = make_menu()
+	switch_to(menu)
+	text(menu, "CỔ CHÂN NHÂN    /    THANH MAO SƠN", Rect2(94, 48, 980, 43), 20, GREEN)
+	button(menu, "Luyện trận", Rect2(919, 53, 185, 44), open_training.bind(show_entry))
+	var reborn := run != null and run.phase == "death"
+	text(menu, "Hồi sinh" if reborn else "Đại điển Khai Khiếu", Rect2(92, 96, 1000, 83), 58, GOLD, true)
+	var lead := "Chọn nhân vật để qua hang Nguyệt Lan. Tư chất quyết định sức chứa chân nguyên khi xuất trận."
+	if reborn:
+		lead = "Khai khiếu lại với một nhân vật hoặc giữ tư chất cũ để bắt đầu lượt mới."
+	text(menu, lead, Rect2(96, 188, 1000, 49), 22)
+	hero_card("huyen-bao", "Huyền bào", HUYEN, 160 if reborn else 296)
+	hero_card("ao-reu", "Áo rêu", REU, 470 if reborn else 612)
+	if reborn:
+		var card := panel(menu, Rect2(787, 258, 292, 265), Color("#273128"), Color("#8b7850"))
+		text(card, "Khai Khiếu trước", Rect2(22, 25, 250, 46), 28, GOLD, true)
+		var hero_name := "Áo rêu" if run.profile.hero == "ao-reu" else "Huyền bào"
+		text(card, "%s · %s\nNguyên Hải %d%% · %d chân nguyên" %
+			[hero_name, run.profile.grade, run.profile.sea_pct, run.profile.max_qi], Rect2(22, 90, 250, 92), 19)
+		var skip := button(card, "Bỏ qua Khai Khiếu", Rect2(24, 211, 244, 42), skip_ceremony)
+		skip.name = "skip_ceremony"
+	if pulse_seal:
+		text(menu, Run.PULSE_SEAL + " · Đã mở Thạch Vương trong Luyện trận", Rect2(96, 593, 1008, 38), 19, GOLD)
+	elif boss_seal:
+		text(menu, Run.BOSS_SEAL + " · Đã mở Lôi Nha Trấn Ải trong Luyện trận",
+			Rect2(96, 593, 1008, 38), 19, GOLD)
+	status = text(menu, "", Rect2(96, 674, 1000, 48), 17, PALE)
+	report_save_problem()
+
+
+func report_save_problem() -> void:
+	if save_problem and is_instance_valid(status):
+		status.text = "Không ghi được bản lưu. Bạn vẫn có thể chơi trong phiên này."
+
+
+func show_ceremony(id: String) -> void:
+	var next := Ceremony.new()
+	next.name = "Ceremony"
+	next.hero_id = id
+	next.fixed_limit = ceremony_limit
+	next.awakened.connect(start_new_run)
+	next.back_requested.connect(show_entry)
+	switch_to(next)
+
+
+func start_new_run(profile: Dictionary) -> void:
+	run = Run.new(profile, randi())
+	persist()
+	show_run()
+
+
+func skip_ceremony() -> void:
+	if run != null and run.phase == "death":
+		start_new_run(run.profile)
+
+
+func show_run() -> void:
+	if run.phase != "battle":
+		show_result()
+		return
+	var next := BattleScene.instantiate()
+	next.configure(run)
+	next.action_committed.connect(persist)
+	next.battle_finished.connect(show_result)
+	next.training_requested.connect(open_training.bind(show_run))
+	next.gu_book_requested.connect(open_gu_book)
+	switch_to(next)
+	if save_problem:
+		next.hint_label.text = "Không ghi được bản lưu. Lượt chơi vẫn tiếp tục."
+
+
+func show_result() -> void:
+	menu = make_menu()
+	switch_to(menu)
+	var section := "VƯỢT THANH MAO    /    MÀN %d TRÊN %d" % [run.floor + 1, Run.FLOORS.size()]
+	if run.floor >= Run.RIDGE_FLOOR or run.phase == "refinement":
+		var stage_number := maxi(1, run.floor - Run.RIDGE_FLOOR + 1)
+		stage_number += int(run.phase in ["ford_workshop", "ambush_workshop", "waypoint", "shop", "boss_workshop"])
+		section = "NHỊ CHUYỂN    /    %d TRÊN %d" % [stage_number, 4 if run.version >= Run.BOSS_VERSION else 3]
+	if run.elite_room or run.phase == "elite_workshop":
+		section = "NHỊ CHUYỂN    /    NHÁNH TINH ANH"
+	if run.floor == Run.MARSH_FLOOR or run.phase == "marsh_workshop":
+		section = "TAM CHUYỂN    /    MÀN 1"
+	if run.floor == Run.WIND_FLOOR or run.phase == "wind_workshop":
+		section = "TAM CHUYỂN    /    MÀN 2"
+	if run.floor == Run.ALTAR_FLOOR or run.phase == "altar_workshop":
+		section = "TAM CHUYỂN    /    MÀN 3"
+	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
+		section = "TAM CHUYỂN    /    BOSS CUỐI"
+	if run.floor == Run.BAO_FLOOR or run.phase == "bao_gate":
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA BẠO VƯƠNG"
+	elif run.floor == Run.TIN_FLOOR or run.phase == "tin_gate":
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA TÍN VƯƠNG"
+	elif run.phase == "tam_xoa_gate":
+		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
+	elif run.floor >= Run.KENNEL_FLOOR or run.phase in ["kennel_gate", "kennel_ready"]:
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA KHUYỂN VƯƠNG"
+	elif run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
+		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
+	elif run.floor == Run.XOA_FLOOR or run.phase == "xoa_workshop":
+		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
+	text(menu, section, Rect2(96, 60, 815, 41), 19, GREEN)
+	var book := button(menu, "Sổ Cổ", Rect2(775, 58, 130, 44), open_gu_book)
+	book.name = "open_gu_book"
+	button(menu, "Luyện trận", Rect2(919, 58, 185, 44), open_training.bind(show_result))
+	var floor: Dictionary = run.current_stage()
+	var title: String
+	var description: String
+	match run.phase:
+		"route":
+			title = "Chọn đường qua Thanh Mao"
+			description = "Điện Lang đã gục. Chọn lối vào màn hai trước khi nhận chiến lợi phẩm."
+		"reward":
+			title = "Chọn chiến lợi phẩm"
+			description = "Đã hạ %s. Chọn một món trước khi tới %s." % [floor.enemy, run.stage_at(run.floor + 1).name]
+		"rest":
+			title = "Dừng chân trước cửa hang"
+			description = "Còn một khoảng yên tĩnh trước khi vào hang. Chọn một việc để chuẩn bị."
+		"refinement":
+			title = "Chọn bộ Cổ Nhị chuyển"
+			description = "Mang một Cổ Nhị chuyển và một Cổ Nhất chuyển. Ghép cùng hệ để mở hiệu ứng bộ."
+		"ford_workshop":
+			title = "Chuẩn bị qua Suối Sấm"
+			description = "Giữ bộ %s + %s hoặc đổi trước khi xuống suối." % [
+				Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name]
+		"ambush_workshop":
+			title = "Chuẩn bị vào Hẻm Đá"
+			description = "Nghỉ ở chân hẻm và chọn bộ trước trận phục kích." if run.elite_award.is_empty() else (
+				"Đã hạ đầu đàn và nhận %s. Chọn bộ Cổ trước khi vào Hẻm Đá." % Goods.ELITE_REWARDS[run.elite_award])
+		"elite_workshop":
+			title = Run.ELITE_DEN.name
+			description = "Điện Lang đầu đàn có %d sinh lực, luân phiên vồ vùng và lao xuyên hàng. Có một lượt hồi thế sau mỗi đòn lớn." % Run.ELITE_DEN.hp
+		"elite_reward":
+			title = "Chiến lợi phẩm tinh anh"
+			description = "Chọn một món trước khi trở lại đường chính. Cả hai lựa chọn đều hồi tối đa %d sinh lực và %d chân nguyên." % [Goods.DEN_HEAL, Goods.DEN_QI]
+		"boss_workshop":
+			title = Run.THUNDER_GATE.name
+			description = "Lôi Nha quét ngang. Khi còn nửa sinh lực, nó đánh cả hàng và cột. Ra khỏi vùng tím rồi phản công lúc hở lôi giáp."
+		"chapter_cleared":
+			title = "Hoàn thành Nhị chuyển"
+			description = "Đã hạ Lôi Nha Trấn Ải. Ấn Trấn Lôi được lưu và mở trận này để luyện riêng."
+		"marsh_workshop":
+			title = Run.POISON_MARSH.name
+			description = "Né vùng độc vàng lục và cú táp nhắm vào ô bạn đứng. Sau cú táp, áp sát đánh Tay không lúc Điện Lang hở hàm."
+		"marsh_reward":
+			title = "Chiến lợi phẩm Đầm Rễ Độc"
+			description = "Đã vượt màn đầu Tam chuyển. Chọn một phần thưởng để giữ trong lượt chơi."
+		"marsh_cleared":
+			title = "Vượt qua Đầm Rễ Độc"
+			description = "Đã nhận %s. Đường lên Hẻm Hàn Phong đã mở." % Run.MARSH_REWARDS[run.marsh_award]
+		"wind_workshop":
+			title = Run.WIND_PASS.name
+			description = "Gió cắt đổi hướng sau mỗi đợt. Tìm ô khuất ở sau đá theo chiều gió, rồi né cú vồ nhắm."
+		"wind_reward":
+			title = "Chiến lợi phẩm Hẻm Hàn Phong"
+			description = "Đã vượt màn hai Tam chuyển. Chọn bảo vật hoặc tiếp tế cho lượt chơi."
+		"wind_cleared":
+			title = "Vượt qua Hẻm Hàn Phong"
+			description = "Đã nhận %s. Đài Trấn Ấn nằm ở cuối đường đá." % Run.WIND_REWARDS[run.wind_award]
+		"altar_workshop":
+			title = Run.SEAL_ALTAR.name
+			description = "Dừng trên ô ấn tím để khóa giáp %d lượt. Đánh Tay không trong lúc giáp vỡ được cộng %d sát thương." % [
+				Rules.ALTAR_BREAK_TURNS, Rules.ALTAR_OPEN_STRIKE]
+		"altar_reward":
+			title = "Chiến lợi phẩm Đài Trấn Ấn"
+			description = "Đã vượt màn ba Tam chuyển. Chọn một phần thưởng cho lượt chơi."
+		"altar_cleared":
+			title = "Vượt qua Đài Trấn Ấn"
+			description = "Đã nhận %s. Thạch Vương chờ ở Điện Trấn Mạch." % Run.ALTAR_REWARDS[run.altar_award]
+		"pulse_workshop":
+			title = Run.PULSE_HALL.name
+			description = "Thạch Vương luân phiên quét vùng gần và vùng xa. Di chuyển thoát vùng báo đòn để làm hở mạch."
+		"pulse_reward":
+			title = "Chiến lợi phẩm Điện Trấn Mạch"
+			description = "Ấn Trấn Mạch đã mở Thạch Vương trong Luyện trận. Chọn một chiến lợi phẩm cho lượt chơi."
+		"rank_three_cleared":
+			title = "Hoàn thành Tam chuyển"
+			description = "Đã nhận %s. Sau khi đột phá Tứ chuyển, theo đoàn buôn tới núi Tam Xoa." % Run.PULSE_REWARDS[run.pulse_award]
+		"xoa_workshop":
+			title = Run.XOA_TRAIL.name
+			description = "Đoàn buôn dừng ngoài cửa phúc địa. Một con chó Thiết Giáp chắn đường. Né cú húc rồi đánh vào sườn."
+		"xoa_reward":
+			title = "Da chó Thiết Giáp"
+			description = "Giữ da làm giáp hoặc đổi cho đoàn buôn lấy nguyên thạch."
+		"xoa_cleared":
+			title = "Qua bãi đá chân núi"
+			description = "Đã nhận Giáp da Thiết Giáp." if run.xoa_award == "iron_hide" else (
+				"Đã đổi da lấy %d nguyên thạch." % Run.XOA_HIDE_PRICE)
+		"xoa_camp":
+			title = "Trại tạm dưới chân núi"
+			description = "Đoàn buôn nghỉ dưới chân núi Tam Xoa. Chọn nghỉ thêm hoặc đổi nguyên thạch lấy Sinh Cơ Diệp."
+		"nodo_workshop":
+			title = Run.NODO_ROAD.name
+			description = "Một cổ sư Nô đạo chặn lối. Đánh trúng lúc hắn ra lệnh, hoặc hạ khuyển thú trước."
+		"nodo_cleared":
+			title = "Qua đường núi Tam Xoa"
+			description = "Đã giành được lối lên cửa truyền thừa. Đoàn buôn chờ bạn dưới những cột sáng."
+		"tam_xoa_gate":
+			title = "Cửa truyền thừa Tam Vương"
+			description = "Mỗi cột sáng cần một Cổ dẫn đường và mở một thử thách riêng."
+		"tin_gate":
+			title = "Cột sáng Tín Vương"
+			description = "Đoàn buôn trao Hạc Giấy Cổ. Nó dẫn bạn vào sương mù của phúc địa."
+		"tin_trial":
+			title = Run.TIN_TRIAL.name
+			description = "Người Lông đã nhóm lửa. Hoàn tất mẻ của bạn trước khi đối thủ luyện thành."
+		"tin_cleared":
+			title = "Vượt vòng đầu Tín Vương"
+			description = "Phôi Cổ của bạn thành hình trước. Hạc Giấy Cổ vẫn ở trong Không Khiếu."
+		"bao_gate":
+			title = "Cột sáng Bạo Vương"
+			description = "Đoàn buôn trao một Bạo Trứng Cổ nhất chuyển để mở cột đỏ."
+		"bao_trial":
+			title = Run.BAO_TRIAL.name
+			description = "Dụ người Trứng Gà Đỏ vào cùng một vùng. Bạn chỉ có một lần thi triển."
+		"bao_cleared":
+			title = "Vượt vòng đầu Bạo Vương"
+			description = "Ba đối thủ đã gục trong một lần thi triển Bạo Trứng Cổ."
+		"kennel_gate":
+			title = "Cột sáng Khuyển Vương"
+			description = "Đoàn buôn tặng bạn một Ngự Khuyển Cổ nhất chuyển để đáp công dẹp đường."
+		"kennel_ready":
+			title = "Cột sáng Khuyển Vương"
+			description = "Ngự Khuyển Cổ đã vào Không Khiếu. Cột sáng vàng dẫn vào vòng đầu."
+		"kennel_cleared":
+			title = "Vượt vòng đầu Khuyển Vương"
+			description = "Chó hoang đã theo lệnh bạn. Phúc địa ban thêm một Ngự Khuyển Cổ nhất chuyển."
+		"kennel_two_cleared":
+			title = "Vượt vòng hai Khuyển Vương"
+			description = "Đàn chó hoang đã bị dẹp. Những con còn theo bạn giữ nguyên thương thế."
+		"kennel_three_cleared":
+			title = "Vượt vòng ba Khuyển Vương"
+			description = "Đã dẹp sáu chó hoang ở hố đá. Đàn chó sống sót được lưu với thương thế hiện tại."
+		"kennel_four_cleared":
+			title = "Vượt vòng bốn Khuyển Vương"
+			description = "Đàn chó hoang đã tan. Hẻm phía trước vọng tiếng gọi đàn."
+		"kennel_five_cleared":
+			title = "Vượt vòng năm Khuyển Vương"
+			description = "Đã dẹp đàn chó đầu khe. Một đàn khác đóng lối ở bãi đá."
+		"kennel_six_cleared":
+			title = "Vượt vòng sáu Khuyển Vương"
+			description = "Đàn chó đã mở được đường. Một con đầu đàn chặn khe đá phía trước."
+		"kennel_seven_cleared":
+			title = "Vượt vòng bảy Khuyển Vương"
+			description = "Đã vượt khe phục kích. Chó sống sót giữ nguyên thương thế."
+		"waypoint":
+			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
+			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
+		"shop":
+			title = "Quầy đổi đồ"
+			description = "Mỗi món mua được một lần tại quầy. Bảo vật mới thay món đang mang."
+		"death":
+			title = "Bạn đã gục"
+			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
+			if run.floor == Run.BAO_FLOOR:
+				description = run.bao_trial.report + " Hồi sinh đưa bạn về màn đầu."
+			elif run.floor == Run.TIN_FLOOR:
+				description = "Người Lông luyện thành trước khi phôi của bạn ổn định. Hồi sinh đưa bạn về màn đầu."
+			elif run.battle is Run.Pack and run.battle.hp > 0:
+				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
+		"complete":
+			title = "Vượt qua " + str(floor.name)
+			if run.can_cross_ford():
+				description = "Bến đá phía trước dẫn qua Suối Sấm."
+			elif run.can_enter_pass():
+				description = "Dấu chân Điện Lang dẫn vào hẻm đá bên kia suối."
+			elif run.can_enter_boss():
+				description = "Lôi Nha Đài nằm cuối hẻm. Chuẩn bị lần cuối trước khi đối đầu Lôi Nha Trấn Ải."
+			else:
+				description = "Bạn đã vượt qua cả ba màn Nhị chuyển."
+		_:
+			title = "Vượt qua Thanh Mao Sơn"
+			description = "Cuồng Điện Lang đã gục. Bạn đã vượt qua cả ba màn."
+	text(menu, title, Rect2(92, 119, 1020, 99), 56, GOLD, true)
+	text(menu, description, Rect2(96, 231, 1020, 60), 23)
+	if run.phase == "route":
+		draw_routes()
+	elif run.phase == "reward":
+		draw_rewards()
+	elif run.phase == "rest":
+		draw_rest()
+	elif run.phase in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop", "nodo_workshop"]:
+		draw_workshop()
+	elif run.phase == "elite_reward":
+		draw_elite_rewards()
+	elif run.phase == "marsh_reward":
+		draw_marsh_rewards()
+	elif run.phase == "wind_reward":
+		draw_wind_rewards()
+	elif run.phase == "altar_reward":
+		draw_altar_rewards()
+	elif run.phase == "pulse_reward":
+		draw_pulse_rewards()
+	elif run.phase == "xoa_reward":
+		draw_xoa_rewards()
+	elif run.phase == "xoa_camp":
+		draw_nodo_camp()
+	elif run.phase in ["kennel_gate", "kennel_ready"]:
+		draw_kennel_gate()
+	elif run.phase == "tam_xoa_gate":
+		draw_tam_xoa_gate()
+	elif run.phase == "tin_gate":
+		text(menu, "Hai bên nhận cùng một phần nguyên liệu. Cổ ngoài truyền thừa bị phong cấm. Vào đài là nhận lời thi.",
+			Rect2(96, 320, 1008, 58), 20)
+		var enter := button(menu, "Thôi động Hạc Giấy", Rect2(96, 421, 320, 54), advance_tin.bind("enter_tin_trial"))
+		enter.name = "enter_tin_trial"
+		enter.grab_focus()
+	elif run.phase == "tin_trial":
+		draw_tin_refinement()
+	elif run.phase == "bao_gate":
+		text(menu, "Trong bãi đá, chỉ Bạo Trứng Cổ được thôi động. Dùng Thủ thế hồi chân nguyên khi cần.",
+			Rect2(96, 320, 1008, 58), 20)
+		var enter := button(menu, "Bước vào cột đỏ", Rect2(96, 421, 320, 54), advance_bao.bind("enter_bao_trial", -1))
+		enter.name = "enter_bao_trial"
+		enter.grab_focus()
+	elif run.phase == "bao_trial":
+		draw_bao_trial()
+	elif run.phase == "waypoint":
+		draw_waypoint()
+	elif run.phase == "shop":
+		draw_shop()
+	else:
+		var can_end_at_pass := run.version < Run.BOSS_VERSION
+		if not run.can_enter_boss() or can_end_at_pass:
+			var restart_y := 335 if run.phase == "death" else 480
+			if run.phase == "kennel_three_cleared":
+				restart_y = 612
+			var next := button(menu, "Hồi sinh" if run.phase == "death" else "Lượt chơi mới",
+				Rect2(96, restart_y, 316, 54), show_entry)
+			next.name = "rebirth" if run.phase == "death" else "new_run"
+			next.grab_focus()
+		if run.phase == "victory":
+			var picks := " · ".join(run.reward_history())
+			var route_name := "Đường đã đi  ·  %s" % run.stage_at(1).name
+			text(menu, route_name, Rect2(96, 305, 1000, 38), 21, GOLD)
+			text(menu, "Chiến lợi phẩm  ·  %s" % picks, Rect2(96, 352, 1000, 38), 20)
+			draw_vitals(405)
+			if run.can_begin_chapter():
+				var workshop := button(menu, "Sang Nhị chuyển", Rect2(432, 480, 310, 54), begin_chapter)
+				workshop.name = "chapter_two"
+				workshop.grab_focus()
+		elif run.phase in ["complete", "chapter_cleared"]:
+			text(menu, "Bộ đã dùng  ·  %s + %s" % [Gu.GU[run.battle.starter_gu].name, Gu.GU[run.battle.refined_gu].name],
+				Rect2(96, 310, 1000, 49), 23, GOLD)
+			draw_vitals(387)
+			if not run.gu_loot().is_empty():
+				draw_gu_loot()
+			if run.can_cross_ford():
+				var crossing := button(menu, "Tới Suối Sấm", Rect2(432, 480, 310, 54), cross_ford)
+				crossing.name = "cross_ford"
+				crossing.grab_focus()
+			elif run.can_enter_pass():
+				var crossing := button(menu, "Tới Hẻm Đá", Rect2(432, 480, 310, 54), enter_pass)
+				crossing.name = "enter_pass"
+				crossing.grab_focus()
+			elif run.can_enter_boss():
+				var gate := button(menu, "Tới Lôi Nha Đài", Rect2(432 if can_end_at_pass else 96, 480, 316, 54), enter_boss)
+				gate.name = "enter_boss"
+				gate.grab_focus()
+			elif run.phase == "chapter_cleared":
+				var path_name := "Qua Ổ Điện Lang · %s" % Goods.ELITE_REWARDS[run.elite_award] if not run.elite_award.is_empty() else "Đường thẳng qua Hẻm Đá"
+				text(menu, path_name, Rect2(96, 352, 1008, 34), 18, GREEN)
+				var climb := button(menu, "Sang Tam chuyển", Rect2(432, 480, 310, 54), enter_marsh)
+				climb.name = "enter_marsh"
+				climb.grab_focus()
+		elif run.phase == "marsh_cleared":
+			draw_vitals(355)
+			var head_up := button(menu, "Tới Hẻm Hàn Phong", Rect2(432, 480, 310, 54), enter_wind_pass)
+			head_up.name = "enter_wind_pass"
+			head_up.grab_focus()
+		elif run.phase == "wind_cleared":
+			draw_vitals(355)
+			var altar := button(menu, "Tới Đài Trấn Ấn", Rect2(432, 480, 310, 54), enter_altar)
+			altar.name = "enter_altar"
+			altar.grab_focus()
+		elif run.phase == "altar_cleared":
+			draw_vitals(355)
+			if run.strike_bonus > 0:
+				text(menu, "Tay không +%d sát thương trong lượt chơi này" % run.strike_bonus,
+					Rect2(96, 403, 1008, 38), 19, GOLD)
+			var gate := button(menu, "Tới Điện Trấn Mạch", Rect2(432, 480, 310, 54), enter_pulse_hall)
+			gate.name = "enter_pulse_hall"
+			gate.grab_focus()
+		elif run.phase == "rank_three_cleared":
+			text(menu, "Thưởng từ Đài Trấn Ấn · %s" % Run.ALTAR_REWARDS[run.altar_award], Rect2(96, 309, 1008, 38), 19, GOLD)
+			draw_vitals(355)
+			var road := button(menu, "Sang Tứ chuyển", Rect2(432, 480, 310, 54), enter_xoa_trail)
+			road.name = "enter_xoa_trail"
+			road.grab_focus()
+		elif run.phase == "xoa_cleared":
+			draw_vitals(355)
+			var camp := button(menu, "Đến trại tạm", Rect2(432, 480, 310, 54), enter_xoa_camp)
+			camp.name = "enter_xoa_camp"
+			camp.grab_focus()
+		elif run.phase == "nodo_cleared":
+			draw_vitals(355)
+			var gate := button(menu, "Tới cửa Tam Vương", Rect2(432, 480, 310, 54), advance_tin.bind("reach_tam_xoa_gate"))
+			gate.name = "reach_tam_xoa_gate"
+			gate.grab_focus()
+		elif run.phase == "bao_cleared":
+			text(menu, "Vượt ải sau %d lượt · Còn %d sinh lực" % [run.bao_trial.turns, run.bao_trial.hp],
+				Rect2(96, 320, 1008, 51), 23, GOLD)
+		elif run.phase == "tin_cleared":
+			text(menu, "Mẻ hoàn tất sau %d/%d lượt" % [run.tin_refinement.turns, Run.TinRefinement.TURN_LIMIT],
+				Rect2(96, 320, 1008, 51), 23, GOLD)
+		elif run.phase == "kennel_cleared":
+			text(menu, "Chó hoang · %d/%d sinh lực     |     Ngự Khuyển Cổ ×%d" % [
+				run.battle.wolf_hp, run.battle.wolf_max, run.hound_gu], Rect2(96, 308, 1008, 43), 22, GOLD)
+			text(menu, "Chọn một con để thu phục. Ra lệnh cho chó đang theo bạn chặn những con còn lại.",
+				Rect2(96, 368, 1008, 42), 19, GREEN)
+			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
+			enter.name = "enter_kennel_two"
+			enter.grab_focus()
+		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared", "kennel_five_cleared", "kennel_six_cleared", "kennel_seven_cleared"]:
+			var pack := run.battle as Run.Pack
+			var rows: PackedStringArray = []
+			for id in pack.living_dogs(true):
+				var dog: Dictionary = pack.dogs[id]
+				rows.append("%s · %d/%d sinh lực" % [pack.actor_name(id), dog.hp, dog.max_hp])
+			text(menu, "     |     ".join(rows), Rect2(96, 308, 1008, 43), 22, GOLD)
+			text(menu, "Ngự Khuyển Cổ còn lại ×%d" % run.hound_gu, Rect2(96, 368, 1008, 40), 19, GREEN)
+			if run.phase == "kennel_two_cleared":
+				text(menu, "Vòng ba · Lùi xuống hố đá để chặn đàn chó đông hơn.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Xuống hố đá", Rect2(432, 480, 310, 54), advance_kennel.bind("third"))
+				enter.name = "enter_kennel_three"
+				enter.grab_focus()
+			elif run.phase == "kennel_three_cleared":
+				text(menu, "%s · Chọn vị trí mở đầu cho đàn." % Run.KENNEL_FOUR.name,
+					Rect2(96, 411, 1008, 40), 20, GOLD)
+				for id: String in Run.KENNEL_FORMATIONS:
+					var choice: Array = Run.KENNEL_FORMATIONS[id]
+					var x := 96 if id == "ridge_hold" else 608
+					var card := panel(menu, Rect2(x, 465, 496, 125), Color("#1a2b25"), Color("#586c54"))
+					text(card, choice[1], Rect2(16, 9, 464, 46), 17)
+					var place := button(card, choice[0], Rect2(16, 65, 464, 42), advance_kennel.bind(id))
+					place.name = id
+					if id == "ridge_hold":
+						place.grab_focus()
+			elif run.phase == "kennel_four_cleared":
+				text(menu, "Vòng năm · Táp chó đầu đàn để ngắt tiếng hú gọi tiếp viện.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Vào Hẻm Vọng Thanh", Rect2(432, 480, 338, 54), advance_kennel.bind("fifth"))
+				enter.name = "enter_kennel_five"
+				enter.grab_focus()
+			elif run.phase == "kennel_five_cleared":
+				text(menu, "Vòng sáu · Đổi chỗ để yểm hộ đồng minh đang bị nhắm táp.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Vào Bãi đá Chặn Đường", Rect2(432, 480, 338, 54), advance_kennel.bind("sixth"))
+				enter.name = "enter_kennel_six"
+				enter.grab_focus()
+			elif run.phase == "kennel_six_cleared":
+				text(menu, "Vòng bảy · Né đường lao của chó đầu đàn hoặc đổi chó chịu đòn.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Vào Khe đá Hàm Sói", Rect2(432, 480, 338, 54), advance_kennel.bind("seventh"))
+				enter.name = "enter_kennel_seven"
+				enter.grab_focus()
+	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
+	report_save_problem()
+
+
+func draw_gu_loot() -> void:
+	var loot := run.gu_loot()
+	var claimed: bool = run.gu_loot_claimed.has(run.floor)
+	var card := panel(menu, Rect2(96, 565, 1008, 90), Color("#1a2b25"), Color("#586c54"))
+	var item_name: String = Gu.GU[loot.gu].name
+	text(card, "%s ×%d" % [item_name, loot.count], Rect2(18, 6, 700, 37), 23, GOLD, true)
+	text(card, str(loot.detail), Rect2(19, 42, 700, 33), 16)
+	var claim := button(card, "Đã ghi vào Sổ Cổ" if claimed else "Nhận chiến lợi phẩm",
+		Rect2(742, 21, 247, 46), claim_gu_loot)
+	claim.name = "claim_gu_loot"
+	claim.disabled = claimed
+
+
+func claim_gu_loot() -> void:
+	if run.claim_gu_loot():
+		persist()
+		show_result()
+
+
+func open_gu_book() -> void:
+	menu = make_menu()
+	menu.name = "GuBook"
+	switch_to(menu)
+	var back := button(menu, "Quay lại", Rect2(919, 58, 185, 44), show_run)
+	back.name = "close_gu_book"
+	back.grab_focus()
+	text(menu, "LƯỢT CHƠI HIỆN TẠI", Rect2(96, 60, 650, 41), 19, GREEN)
+	text(menu, "Sổ Cổ sở hữu", Rect2(92, 105, 1012, 76), 56, GOLD, true)
+
+	var owned: Dictionary = run.owned_gu
+	var sources := {}
+	for receipt: Dictionary in run.gu_receipts:
+		if receipt.change <= 0:
+			continue
+		if not sources.has(receipt.gu):
+			sources[receipt.gu] = {}
+		var origin: Dictionary = sources[receipt.gu]
+		origin[receipt.source] = int(origin.get(receipt.source, 0)) + int(receipt.change)
+
+	var types := 0
+	var total := 0
+	for id: String in Gu.BOOK_ORDER:
+		var count := int(owned.get(id, 0))
+		types += int(count > 0)
+		total += count
+	text(menu, "%d loại · %d Cổ đang sở hữu" % [types, total], Rect2(96, 181, 520, 36), 23)
+	var learned: PackedStringArray = []
+	if run.moon_link_known:
+		learned.append("Liên Nguyệt")
+	if run.white_light_known:
+		learned.append(Gu.WHITE_LIGHT_NAME)
+	if not learned.is_empty():
+		text(menu, "Sát chiêu đã phối · " + ", ".join(learned), Rect2(606, 181, 498, 36), 16, GOLD)
+	text(menu, "Bộ Cổ cấp sẵn ở xưởng dùng để chọn chiến đấu. Sổ ghi các Cổ đã thật sự nhận hoặc dùng.",
+		Rect2(96, 216, 1008, 33), 17, GREEN)
+
+	var shelf := panel(menu, Rect2(96, 255, 1008, 331), Color("#1a2b25"), Color("#586c54"))
+	text(shelf, "CỔ TRÙNG", Rect2(20, 11, 235, 27), 15, GOLD)
+	text(shelf, "BẬC", Rect2(260, 11, 113, 27), 15, GOLD)
+	text(shelf, "CÒN", Rect2(376, 11, 62, 27), 15, GOLD)
+	text(shelf, "NGUỒN ĐÃ NHẬN", Rect2(455, 11, 530, 27), 15, GOLD)
+	var scroll := ScrollContainer.new()
+	scroll.name = "gu_book_scroll"
+	scroll.position = Vector2(13, 41)
+	scroll.size = Vector2(982, 280)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shelf.add_child(scroll)
+	var list := Control.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	var y := 0
+	for id: String in Gu.BOOK_ORDER:
+		if not sources.has(id):
+			continue
+		var record: Dictionary = Gu.GU[id]
+		var count := int(owned.get(id, 0))
+		var tint := PALE if count > 0 else Color("#9aab9e")
+		var row := panel(list, Rect2(0, y, 963, 29), Color("#20332a"), Color("#2b4436"))
+		row.name = "gu_row_" + id
+		var origins: PackedStringArray = []
+		for source: String in sources[id]:
+			origins.append("%s ×%d" % [source, sources[id][source]])
+		text(row, record.name, Rect2(7, 1, 235, 27), 17, tint)
+		var rank := "—"
+		if record.has("rank"):
+			rank = "Nhị chuyển" if record.rank == 2 else "Nhất chuyển"
+		text(row, rank, Rect2(247, 1, 113, 27), 16, tint)
+		text(row, str(count), Rect2(363, 1, 62, 27), 17, tint)
+		text(row, "  ·  ".join(origins), Rect2(442, 1, 507, 27), 15, tint)
+		y += 31
+	list.custom_minimum_size.y = y
+	var cards := [
+		["refine_owned_jade", "Hợp luyện Bạch Ngọc", "1 Ngọc Bì + 1 Bạch Thỉ → 1 Bạch Ngọc."],
+		["study_white_light", "Phối " + Gu.WHITE_LIGHT_NAME, "Bạch Ngọc và Tiểu Quang được giữ lại."],
+		["refine_owned_brew", "Luyện Tứ Vị Tửu Trùng", "%d Tửu Trùng + 1 bộ Rượu Tứ Vị." % Run.BREW_BUNDLE],
+		["refine_owned_veil", "Hợp luyện Ẩn Lân", "1 Ẩn Thạch + 1 Ngư Lân."],
+	]
+	for index in range(cards.size()):
+		var recipe: Array = cards[index]
+		var card := panel(menu, Rect2(96 + index * 255, 598, 243, 101), Color("#1a2b25"), Color("#586c54"))
+		var reason := run.book_unavailable(recipe[0])
+		text(card, recipe[2] if reason.is_empty() else reason, Rect2(13, 5, 217, 42), 15, PALE)
+		var apply := button(card, recipe[1], Rect2(13, 51, 217, 38), use_book_recipe.bind(recipe[0]))
+		apply.name = recipe[0]
+		apply.add_theme_font_size_override("font_size", 16)
+		apply.disabled = not reason.is_empty()
+	var recent: Dictionary = run.gu_receipts.back()
+	var last := "Cổ gần nhất · %s %+d · %s" % [Gu.GU[recent.gu].name, recent.change, recent.source]
+	status = text(menu, last, Rect2(96, 707, 715, 36), 16, GREEN)
+	text(menu, "Bộ Rượu Tứ Vị ×%d" % run.wine_sets, Rect2(778, 707, 326, 36), 16, GOLD)
+	report_save_problem()
+
+
+func use_book_recipe(id: String) -> void:
+	if run.commit_book_action(id):
+		persist()
+		open_gu_book()
+
+
+func choose_reward(id: String) -> void:
+	if run.reward(id):
+		persist()
+		show_run()
+
+
+func choose_route(id: String) -> void:
+	if run.choose_route(id):
+		persist()
+		show_result()
+
+
+func draw_rest() -> void:
+	var i := 0
+	for id in Run.REST_OPTIONS:
+		var preview: Dictionary = run.rest_preview(id)
+		var card := panel(menu, Rect2(96 + i * 341, 316, 326, 208), Color("#1a2b25"), Color("#586c54"))
+		text(card, Run.REST_OPTIONS[id], Rect2(18, 18, 290, 42), 28, GOLD, true)
+		var delta := "Giữ nguyên sinh lực và chân nguyên."
+		if id == "rest_hp":
+			delta = "Sinh lực %d → %d" % [run.battle.hp, preview.hp]
+		elif id == "rest_qi":
+			delta = "Chân nguyên %d/%d → %d/%d" % [run.battle.qi, run.battle.max_qi, preview.qi, run.battle.max_qi]
+		text(card, delta, Rect2(18, 68, 290, 54), 19, GREEN)
+		var choice := button(card, "Chọn", Rect2(18, 146, 290, 44), choose_rest.bind(id))
+		choice.name = id
+		i += 1
+	draw_vitals(546)
+
+
+func choose_rest(id: String) -> void:
+	if run.rest(id):
+		persist()
+		show_run()
+
+
+func begin_chapter() -> void:
+	if run.begin_chapter():
+		persist()
+		show_result()
+
+
+func cross_ford() -> void:
+	if run.cross_ford():
+		persist()
+		show_result()
+
+
+func enter_pass() -> void:
+	if run.enter_pass():
+		persist()
+		show_result()
+
+
+func enter_boss() -> void:
+	if run.enter_boss():
+		persist()
+		show_result()
+
+
+func enter_marsh() -> void:
+	if run.enter_marsh():
+		persist()
+		show_result()
+
+
+func enter_wind_pass() -> void:
+	if run.enter_wind_pass():
+		persist()
+		show_result()
+
+
+func enter_altar() -> void:
+	if run.enter_altar():
+		persist()
+		show_result()
+
+
+func enter_pulse_hall() -> void:
+	if run.enter_pulse_hall():
+		persist()
+		show_result()
+
+
+func enter_xoa_trail() -> void:
+	if run.enter_xoa_trail():
+		persist()
+		show_result()
+
+
+func buy_pulse_rite() -> void:
+	if run.buy_pulse_rite():
+		persist()
+		show_result()
+
+
+func draw_waypoint() -> void:
+	var entries := {
+		"camp": ["Lều nghỉ", "Băng bó trước khi đi. Hồi tối đa %d sinh lực." % Goods.CAMP_HEAL],
+		"merchant": ["Quầy đổi đồ", "Có Sinh Cơ Diệp, %s và Cổ trùng." % Goods.RELICS[run.shop_relic()][0]],
+		"salvage": ["Túi bên bờ đá", "Băng qua đá sắc để nhặt thêm nguyên thạch."],
+		"spring": ["Mạch nước trong khe", "Dùng chân nguyên lấy một lá Sinh Cơ Diệp."],
+		"elite_detour": [Run.ELITE_DEN.name, "Đấu Điện Lang đầu đàn · %d sinh lực." % Run.ELITE_DEN.hp],
+	}
+	var vitals: Dictionary = run.workshop_vitals()
+	var options := run.waypoint_options()
+	var width := (1008.0 - 18 * (options.size() - 1)) / options.size()
+	var i := 0
+	for id in options:
+		var next: Dictionary = run.waypoint_preview(id)
+		var border := Color("#b0925d") if id == "elite_detour" else Color("#586c54")
+		var card := panel(menu, Rect2(96 + i * (width + 18), 308, width, 258), Color("#1a2b25"), border)
+		var inner := width - 36
+		text(card, entries[id][0], Rect2(18, 14, inner, 62), 25 if options.size() == 4 else 28, GOLD, true)
+		text(card, entries[id][1], Rect2(18, 82, inner, 63), 17)
+		var detail: String
+		match id:
+			"camp":
+				detail = "Sinh lực %d → %d" % [vitals.hp, next.hp]
+			"salvage":
+				detail = "Sinh lực %d → %d\nNguyên thạch %d → %d" % [vitals.hp, next.hp, run.stones, next.stones]
+			"spring":
+				detail = "Chân nguyên %d → %d\nSố lá %d → %d" % [run.departure_qi(), next.departure_qi, vitals.leaves, next.leaves]
+			"elite_detour":
+				detail = "Nhánh tự chọn\nNanh hoặc túi dược"
+			_:
+				detail = "Giá lá %d · Bảo vật %d nguyên thạch." % [run.shop_price("buy_leaf"), run.shop_price("buy_relic")]
+		if not next.reason.is_empty():
+			detail = next.reason
+		text(card, detail, Rect2(18, 145, inner, 57), 17, GREEN)
+		var select := button(card, "Săn tinh anh" if id == "elite_detour" else "Chọn",
+			Rect2(18, 201, inner, 43), choose_waypoint.bind(id))
+		select.name = id
+		select.disabled = not next.reason.is_empty()
+		i += 1
+	draw_waypoint_vitals(584)
+	var encounter_hint := "Suối Sấm · Nước tím báo dẫn lôi." if run.floor == Run.RIDGE_FLOOR else "Hẻm Đá · Ô nứt sáng báo đá rơi."
+	text(menu, encounter_hint, Rect2(96, 628, 1008, 32), 18, GOLD)
+
+
+func draw_elite_rewards() -> void:
+	var held := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"elite_fang": Goods.RELICS.elite_fang[1] + "\n" + held,
+		"elite_remedy": "Hồi thêm tối đa %d sinh lực và nhận một Sinh Cơ Diệp. Giữ bảo vật đang mang." % Goods.REMEDY_HEAL}
+	var i := 0
+	for id in Goods.ELITE_REWARDS:
+		var next: Dictionary = run.elite_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 312, 494, 288), Color("#1a2b25"), Color("#b0925d"))
+		text(card, Goods.ELITE_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 76, 452, 90), 19)
+		text(card, "Sinh lực %d → %d    ·    Chân nguyên %d → %d\nSinh Cơ Diệp %d → %d" %
+			[run.battle.hp, next.hp, run.battle.qi, next.qi, run.battle.leaves, next.leaves],
+			Rect2(20, 175, 452, 51), 17, GREEN)
+		var claim := button(card, "Nhận và tới Hẻm Đá", Rect2(20, 234, 454, 41), claim_elite_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_elite_reward(id: String) -> void:
+	if run.claim_elite_reward(id):
+		persist()
+		show_result()
+
+
+func draw_marsh_rewards() -> void:
+	var details := {"purifying_dew": "Thêm 1 sức chứa chân nguyên và hồi đầy.",
+		"marsh_tonic": "Hồi tối đa %d sinh lực và nhận %d Sinh Cơ Diệp." % [Run.TONIC_HEAL, Run.TONIC_LEAVES]}
+	var i := 0
+	for id in Run.MARSH_REWARDS:
+		var next: Dictionary = run.marsh_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#1a2b25"), Color("#71935d"))
+		text(card, Run.MARSH_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 58), 19)
+		text(card, "Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d\nSinh Cơ Diệp %d → %d" %
+			[run.battle.hp, next.hp, run.battle.qi, run.battle.max_qi, next.qi, next.max_qi, run.battle.leaves, next.leaves],
+			Rect2(20, 128, 452, 54), 17, GREEN)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 183, 454, 41), claim_marsh_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_marsh_reward(id: String) -> void:
+	if run.claim_marsh_reward(id):
+		persist()
+		show_result()
+
+
+func draw_wind_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"wind_seal": Goods.RELICS.wind_seal[1] + "\n" + carried,
+		"wind_supplies": "Hồi tối đa %d chân nguyên và nhận %d Sinh Cơ Diệp. Giữ bảo vật đang mang." %
+		[Run.WIND_SUPPLY_QI, Run.WIND_SUPPLY_LEAVES]}
+	var i := 0
+	for id in Run.WIND_REWARDS:
+		var next: Dictionary = run.wind_reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 289), Color("#1c2b2e"), Color("#6d9295"))
+		text(card, Run.WIND_REWARDS[id], Rect2(20, 13, 450, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 116), 18)
+		text(card, "Chân nguyên %d/%d → %d/%d    ·    Sinh Cơ Diệp %d → %d" %
+			[run.battle.qi, run.battle.max_qi, next.qi, run.battle.max_qi, run.battle.leaves, next.leaves],
+			Rect2(20, 194, 452, 38), 17, GREEN)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 234, 454, 41), claim_wind_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_wind_reward(id: String) -> void:
+	if run.claim_wind_reward(id):
+		persist()
+		show_result()
+
+
+func draw_altar_rewards() -> void:
+	var details := {"stone_marrow": "Tay không +%d sát thương trong các trận tiếp theo của lượt chơi. Giữ bảo vật đang mang." % Run.ALTAR_STRIKE_BONUS,
+		"altar_cache": "Nguyên thạch %d → %d\nSinh Cơ Diệp %d → %d" %
+		[run.stones, run.stones + Run.ALTAR_CACHE_STONES, run.battle.leaves, run.battle.leaves + 1]}
+	var i := 0
+	for id in Run.ALTAR_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 212), Color("#252737"), Color("#8a7ea8"))
+		text(card, Run.ALTAR_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 78), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 156, 454, 41), claim_altar_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_altar_reward(id: String) -> void:
+	if run.claim_altar_reward(id):
+		persist()
+		show_result()
+
+
+func draw_pulse_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"pulse_pearl": Goods.RELICS.pulse_pearl[1] + "\n" + carried,
+		"pulse_cache": "Nguyên thạch %d → %d\nSinh Cơ Diệp %d → %d" %
+			[run.stones, run.stones + Run.PULSE_CACHE_STONES, run.battle.leaves, run.battle.leaves + Run.PULSE_CACHE_LEAVES]}
+	var i := 0
+	for id in Run.PULSE_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 248), Color("#30252c"), Color("#ab8178"))
+		text(card, Run.PULSE_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 111), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 190, 454, 41), claim_pulse_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_pulse_reward(id: String) -> void:
+	if run.claim_pulse_reward(id):
+		persist()
+		show_result()
+
+
+func draw_xoa_rewards() -> void:
+	var carried := "Ô bảo vật đang trống." if run.relic.is_empty() else "Thay %s đang mang." % Goods.RELICS[run.relic][0]
+	var details := {"iron_hide": Goods.RELICS.iron_hide[1] + "\n" + carried,
+		"sell_iron_hide": "Nguyên thạch %d → %d. Giữ bảo vật đang mang." % [run.stones, run.stones + Run.XOA_HIDE_PRICE]}
+	var i := 0
+	for id in Run.XOA_REWARDS:
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#26302b"), Color("#829780"))
+		text(card, Run.XOA_REWARDS[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		text(card, details[id], Rect2(20, 72, 452, 99), 19)
+		var claim := button(card, "Nhận phần thưởng", Rect2(20, 178, 454, 41), claim_xoa_reward.bind(id))
+		claim.name = id
+		i += 1
+
+
+func claim_xoa_reward(id: String) -> void:
+	if run.claim_xoa_reward(id):
+		persist()
+		show_result()
+
+
+func enter_xoa_camp() -> void:
+	if run.enter_xoa_camp():
+		persist()
+		show_result()
+
+
+func draw_tam_xoa_gate() -> void:
+	var gates := [
+		["Khuyển Vương", "Cột sáng vàng · Ngự Khuyển Cổ", "Chỉ huy đàn chó và thu phục chó hoang.",
+			Color("#bd9a5b"), "reach_kennel_gate", advance_kennel.bind("gate")],
+		["Tín Vương", "Cột sáng lam · Hạc Giấy Cổ", "So tài luyện Cổ với người Lông.",
+			Color("#91c3e5"), "reach_tin_gate", advance_tin.bind("reach_tin_gate")],
+		["Bạo Vương", "Cột sáng đỏ · Bạo Trứng Cổ", "Dồn đối thủ vào cùng vùng tác dụng.",
+			Color("#d5a08e"), "reach_bao_gate", advance_bao.bind("reach_bao_gate", -1)],
+	]
+	for index in range(gates.size()):
+		var gate: Array = gates[index]
+		var card := panel(menu, Rect2(96 + index * 341, 305, 326, 223), Color("#1a2b25"), gate[3])
+		text(card, gate[0], Rect2(16, 16, 294, 43), 29, gate[3], true)
+		text(card, gate[1], Rect2(16, 64, 294, 31), 16, PALE)
+		text(card, gate[2], Rect2(16, 106, 294, 45), 18)
+		var choose := button(card, "Đến cột sáng", Rect2(16, 166, 294, 39), gate[5])
+		choose.name = gate[4]
+		if index == 0:
+			choose.grab_focus()
+
+
+func draw_tin_refinement() -> void:
+	var trial := run.tin_refinement as Run.TinRefinement
+	var bench := panel(menu, Rect2(96, 293, 647, 295), Color("#1a2b25"), Color("#688091"))
+	text(bench, "Bí phương của đài", Rect2(16, 9, 615, 44), 25, GOLD, true)
+	for index in range(Run.TinRefinement.STAGES.size()):
+		var y := 62 + index * 53
+		var done := index < trial.progress
+		var active := index == trial.progress
+		var stage: String = Run.TinRefinement.STAGES[index]
+		var required: String = Run.TinRefinement.HEAT_NAMES[trial.recipe[index]]
+		var label := "Đã xong" if done else "Đang chờ" if active else ""
+		var tint := GREEN if done else GOLD if active else PALE
+		text(bench, "%s · Lửa %s" % [stage, required.to_lower()], Rect2(16, y, 420, 41), 21, tint)
+		text(bench, label, Rect2(465, y, 165, 41), 17, tint)
+	text(bench, trial.report, Rect2(16, 229, 615, 49), 17, PALE)
+	var status_card := panel(menu, Rect2(761, 293, 343, 295), Color("#1a2b25"), Color("#688091"))
+	text(status_card, "Lửa hiện tại", Rect2(16, 13, 311, 31), 16, PALE)
+	text(status_card, Run.TinRefinement.HEAT_NAMES[trial.heat], Rect2(16, 49, 311, 56), 32, GOLD, true)
+	text(status_card, "Người Lông · %d/%d công đoạn" % [trial.opponent_progress(), Run.TinRefinement.STAGES.size()],
+		Rect2(16, 129, 311, 36), 18, Color("#91c3e5"))
+	text(status_card, "Còn %d lượt" % [Run.TinRefinement.TURN_LIMIT - trial.turns], Rect2(16, 181, 311, 36), 20, GREEN)
+	text(status_card, "Mỗi thao tác tốn một lượt.", Rect2(16, 230, 311, 38), 16)
+	var actions := [[Run.TinRefinement.HEAT_DOWN, "Hạ lửa"], [Run.TinRefinement.HEAT_UP, "Tăng lửa"],
+		[Run.TinRefinement.REFINE, "Luyện công đoạn"]]
+	for index in range(actions.size()):
+		var action: Array = actions[index]
+		var control := button(menu, action[1], Rect2(96 + index * 341, 606, 326, 46), advance_tin.bind(action[0]))
+		control.name = action[0]
+		control.tooltip_text = trial.unavailable(action[0])
+		control.disabled = not control.tooltip_text.is_empty()
+
+
+func advance_tin(step: String) -> void:
+	var changed: bool
+	match step:
+		"reach_tam_xoa_gate":
+			changed = run.reach_tam_xoa_gate()
+		"reach_tin_gate":
+			changed = run.reach_tin_gate()
+		"enter_tin_trial":
+			changed = run.enter_tin_trial()
+		_:
+			changed = run.act_tin_refinement(step)
+	if changed:
+		persist()
+		show_run()
+
+
+func draw_bao_trial() -> void:
+	var trial := run.bao_trial
+	var board := panel(menu, Rect2(96, 293, 696, 324), Color("#251d1b"), Color("#935749"))
+	var area := trial.blast(bao_aim)
+	for cell in range(Rules.COLUMNS * Rules.ROWS):
+		draw_bao_tile(board, trial, cell, area)
+	var combat := panel(menu, Rect2(810, 293, 294, 324), Color("#2c2420"), Color("#935749"))
+	text(combat, "Lượt %d" % (trial.turns + 1), Rect2(14, 9, 264, 36), 21, GOLD)
+	text(combat, "Sinh lực %d/%d · Chân nguyên %d/%d" % [trial.hp, Rules.MAX_HP, trial.qi, trial.capacity],
+		Rect2(14, 45, 264, 31), 15, PALE)
+	text(combat, "Bạo Trứng Cổ ×%d" % run.owned_gu.get("exploding_egg", 0), Rect2(14, 77, 264, 36), 19, GOLD)
+	var count := trial.attackers()
+	var warning := "%d đối thủ nhắm ô của bạn." % count if count > 0 else "Đối thủ đang áp sát."
+	text(combat, warning, Rect2(14, 123, 264, 45), 17, Color("#f1a78a") if count else PALE)
+	var hint := "Chấm xanh là ô có thể bước tới."
+	if bao_aiming:
+		hint = "Chọn tâm vùng tác dụng." if area.is_empty() else "Vùng tác dụng trúng %d/%d đối thủ." % [trial.targets_hit(area), trial.enemies.size()]
+	text(combat, hint, Rect2(14, 178, 264, 50), 17, GOLD if bao_aiming else GREEN)
+	text(combat, trial.report, Rect2(14, 242, 264, 63), 16, PALE)
+	var walk := button(menu, "Di chuyển", Rect2(96, 634, 210, 41), change_bao_mode.bind(false))
+	walk.name = "bao_walk_mode"
+	walk.disabled = not bao_aiming
+	var aim := button(menu, "Ngắm Bạo Trứng", Rect2(320, 634, 244, 41), change_bao_mode.bind(true))
+	aim.name = "bao_aim_mode"
+	aim.disabled = bao_aiming or trial.qi < Run.BaoTrial.CAST_COST
+	aim.tooltip_text = "Cần 1 chân nguyên." if trial.qi < Run.BaoTrial.CAST_COST else "Tầm 2–4 ô."
+	var guard := button(menu, "Thủ thế · +1 CN", Rect2(578, 634, 232, 41), advance_bao.bind("bao_guard", -1))
+	guard.name = "bao_guard"
+	var cast := button(menu, "Thi triển · −1 CN", Rect2(824, 634, 280, 41), advance_bao.bind("bao_cast", bao_aim))
+	cast.name = "bao_cast"
+	cast.disabled = area.is_empty()
+
+
+func draw_bao_tile(board: Control, trial: Run.BaoTrial, cell: int, area: Array[int]) -> void:
+	var point := Rules.grid(cell)
+	var movable := trial.walkable(cell)
+	var targetable := trial.castable(cell)
+	var enemy := cell in trial.enemies
+	var rock := cell in trial.rocks
+	var label := ""
+	var fill := Color("#342521")
+	var edge := Color("#4a3a31")
+	if rock:
+		label = "Đá"
+		fill = Color("#46433f")
+	elif cell == trial.hero:
+		label = "Bạn"
+		var threatened := trial.attackers() > 0
+		fill = Color("#7e392e") if threatened else Color("#284b3b")
+		edge = Color("#e68e74") if threatened else GREEN
+	elif enemy:
+		label = "Trứng đỏ"
+		fill = Color("#633c33")
+		edge = Color("#d69681")
+	elif movable and not bao_aiming:
+		label = "·"
+		edge = GREEN
+	if bao_aiming:
+		if cell in area:
+			edge = GOLD
+			if not rock:
+				fill = Color("#78512f")
+		elif targetable and not enemy:
+			edge = Color("#8e6452")
+	var tile := button(board, label, Rect2(12 + point.x * 84, 13 + point.y * 60, 80, 56), choose_bao_tile.bind(cell))
+	tile.name = "bao_tile_%d" % cell
+	tile.tooltip_text = "%s · %s" % [Rules.cell_name(cell), Run.BAO_TRIAL.enemy] if enemy else Rules.cell_name(cell)
+	tile.add_theme_font_size_override("font_size", 15)
+	tile.add_theme_color_override("font_disabled_color", PALE)
+	for style_name: String in ["normal", "disabled", "hover", "pressed"]:
+		var skin := StyleBoxFlat.new()
+		skin.bg_color = fill.lightened(0.12) if style_name in ["hover", "pressed"] else fill
+		skin.border_color = edge
+		skin.set_border_width_all(2 if bao_aiming and cell == bao_aim else 1)
+		tile.add_theme_stylebox_override(style_name, skin)
+	tile.disabled = not (targetable if bao_aiming else movable)
+
+
+func change_bao_mode(aiming: bool) -> void:
+	bao_aiming = aiming
+	bao_aim = -1
+	show_result()
+
+
+func choose_bao_tile(cell: int) -> void:
+	if bao_aiming:
+		bao_aim = cell
+		show_result()
+	else:
+		advance_bao("bao_move", cell)
+
+
+func advance_bao(action: String, target: int) -> void:
+	var changed: bool
+	match action:
+		"reach_bao_gate":
+			changed = run.reach_bao_gate()
+		"enter_bao_trial":
+			changed = run.enter_bao_trial()
+		_:
+			changed = run.act_bao_trial(action, target)
+	if changed:
+		bao_aiming = false
+		bao_aim = -1
+		persist()
+		show_run()
+
+
+func advance_kennel(step: String) -> void:
+	var changed: bool
+	match step:
+		"gate":
+			changed = run.reach_kennel_gate()
+		"refine":
+			changed = run.refine_hound_gu()
+		"enter":
+			changed = run.enter_kennel()
+		"second":
+			changed = run.enter_kennel_two()
+		"third":
+			changed = run.enter_kennel_three()
+		"fifth":
+			changed = run.enter_kennel_five()
+		"sixth":
+			changed = run.enter_kennel_six()
+		"seventh":
+			changed = run.enter_kennel_seven()
+		_:
+			changed = run.enter_kennel_four(step)
+	if changed:
+		persist()
+		show_run()
+
+
+func draw_kennel_gate() -> void:
+	var ready := run.phase == "kennel_ready"
+	var card := panel(menu, Rect2(96, 316, 1008, 272), Color("#202922"), Color("#847550"))
+	var art := Control.new()
+	art.position = Vector2(16, 13)
+	art.size = Vector2(238, 244)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(art)
+	art.draw.connect(func():
+		art.draw_rect(Rect2(Vector2.ZERO, art.size), Color("#151c18"))
+		for layer in range(5):
+			var inset := layer * 9.0
+			art.draw_colored_polygon(PackedVector2Array([Vector2(63 + inset, 14), Vector2(175 - inset, 14),
+				Vector2(150 - inset * .45, 196), Vector2(88 + inset * .45, 196)]), Color(1, .79, .29, .09))
+		for i in range(18):
+			var height := float((i * 67) % 170) + 15.0
+			var drift := float((i * 31) % 94) - 47.0
+			art.draw_rect(Rect2(119 + drift * (1.0 - height / 440), height, 2, 4), Color("#ecbd6580"))
+		art.draw_set_transform(Vector2(119, 202), 0.0, Vector2(1, .22))
+		art.draw_arc(Vector2.ZERO, 81, 0, TAU, 48, Color("#5f5232"), 2, true)
+		art.draw_arc(Vector2(0, -7), 58, 0, TAU, 48, Color("#e8bc66"), 2, true)
+		art.draw_set_transform(Vector2.ZERO)
+	)
+	text(card, "Luật vòng đầu", Rect2(297, 20, 654, 53), 30, GOLD, true)
+	text(card, "Chỉ Ngự Khuyển Cổ được thôi động. Bộ Cổ chiến đấu và bảo vật sẽ nằm yên cho đến khi rời phúc địa.",
+		Rect2(299, 77, 647, 63), 19)
+	var advice := "Chờ chó hoang vào tầm hoặc tìm góc phóng qua đá. Vào cửa với ít nhất 1 chân nguyên." if ready else (
+		"Luyện hóa Ngự Khuyển trước khi chạm vào cột sáng.")
+	text(card, advice, Rect2(299, 145, 647, 51), 18, GREEN)
+	var enter := button(card, "Bước vào cột sáng" if ready else "Luyện hóa Ngự Khuyển", Rect2(298, 211, 350, 44),
+		advance_kennel.bind("enter" if ready else "refine"))
+	enter.name = "enter_kennel" if ready else "refine_hound_gu"
+	enter.grab_focus()
+
+
+func draw_nodo_camp() -> void:
+	var base := run.workshop_vitals()
+	var i := 0
+	for id in Run.NODO_CAMP:
+		var next := run.nodo_camp_preview(id)
+		var card := panel(menu, Rect2(96 + i * 514, 310, 494, 236), Color("#26302b"), Color("#829780"))
+		text(card, Run.NODO_CAMP[id], Rect2(20, 13, 452, 54), 31, GOLD, true)
+		var copy := "Sinh lực %d/%d → %d/%d. Giữ %d nguyên thạch." % [base.hp, Rules.MAX_HP, next.hp, Rules.MAX_HP, run.stones]
+		if id == "nodo_supplies":
+			copy = "Sinh Cơ Diệp ×%d → ×%d. Nguyên thạch %d → %d." % [
+				base.leaves, next.leaves, run.stones, next.stones] if next.reason.is_empty() else next.reason
+		text(card, copy + "\nChân nguyên khi rời trại %d/%d." % [run.starting_qi(next.qi), run.battle.max_qi], Rect2(20, 75, 452, 88), 19)
+		var option := button(card, "Chọn", Rect2(20, 178, 454, 41), choose_nodo_camp.bind(id))
+		option.name = id
+		option.disabled = not next.reason.is_empty()
+		if i == 0:
+			option.grab_focus()
+		i += 1
+
+
+func choose_nodo_camp(id: String) -> void:
+	if run.choose_nodo_camp(id):
+		persist()
+		show_result()
+
+
+func draw_shop() -> void:
+	var for_sale: Array = Goods.RELICS[run.shop_relic()]
+	var offers := [
+		["buy_leaf", "Sinh Cơ Diệp", "Hồi tối đa %d sinh lực khi dùng một lá trong trận." % Rules.LEAF_HEAL],
+		["buy_relic", for_sale[0], for_sale[1]],
+		["buy_small_light", "Tiểu Quang Cổ ×%d" % Run.SMALL_LIGHT_BUNDLE, "Hợp luyện và phối sát chiêu."],
+		["buy_jade_skin", "Ngọc Bì Cổ", "Cổ Hộ thể nhất chuyển. Nguyên liệu hợp luyện."],
+		["buy_brew", "Tửu Trùng ×%d" % Run.BREW_BUNDLE, "Hai Cổ nhất chuyển để hợp luyện Tứ Vị."],
+		["buy_wine_set", "Bộ Rượu Tứ Vị", "Dương Mai, Mật Hoàng Kim, Khổ Bối và Bạch Lương dịch."],
+		["buy_stone_veil", "Ẩn Thạch Cổ", "Nhất chuyển, dùng để hợp luyện Ẩn Lân."],
+		["buy_fish_scale", "Ngư Lân Cổ", "Cổ nguyên liệu hợp luyện Ẩn Lân."],
+	]
+	for i in range(offers.size()):
+		var offer: Array = offers[i]
+		var id: String = offer[0]
+		var card := panel(menu, Rect2(96 + (i % 4) * 255, 282 + floori(i / 4.0) * 116, 243, 110), Color("#1a2b25"), Color("#586c54"))
+		text(card, offer[1], Rect2(13, 6, 217, 30), 21, GOLD, true)
+		text(card, offer[2], Rect2(13, 33, 217, 40), 14)
+		var reason := run.shop_unavailable(id)
+		var price := "Giá %d nguyên thạch" % run.shop_price(id)
+		text(card, price if reason.is_empty() else reason, Rect2(13, 77, 134, 30), 13, GREEN)
+		var exchange := id == "buy_relic" and run.shop_price(id) == Goods.RELIC_TRADE_PRICE
+		var purchase := button(card, "Đổi bảo vật" if exchange else "Mua", Rect2(148, 76, 84, 31), buy_waypoint_item.bind(id))
+		purchase.name = id
+		purchase.add_theme_font_size_override("font_size", 14)
+		purchase.disabled = not reason.is_empty()
+	var stock := run.owned_gu
+	text(menu, "Kho Cổ riêng · Nguyệt Quang ×%d  ·  Tiểu Quang ×%d  ·  Nguyệt Mang ×%d" % [
+		stock.moon, stock.small_light, stock.moon_edge], Rect2(96, 509, 1008, 32), 18, GOLD)
+	var work := [
+		["refine_owned_moon", "Hợp luyện Nguyệt Mang", "Dùng 1 Nguyệt Quang và 2 Tiểu Quang."],
+		["study_moon_link", "Phối sát chiêu Liên Nguyệt", "Dùng Nguyệt Mang và Tiểu Quang phối hợp trong trận."],
+	]
+	for i in range(work.size()):
+		var recipe: Array = work[i]
+		var x := 96 + i * 512
+		var reason := run.gu_work_unavailable(recipe[0])
+		var action := button(menu, recipe[1], Rect2(x, 543, 420, 39), buy_waypoint_item.bind(recipe[0]))
+		action.name = recipe[0]
+		action.disabled = not reason.is_empty()
+		text(menu, recipe[2] if reason.is_empty() else reason, Rect2(x, 583, 492, 30), 15, PALE)
+	draw_waypoint_vitals(615)
+	var exit_shop := button(menu, "Rời quầy", Rect2(844, 662, 260, 42), leave_waypoint_shop)
+	exit_shop.name = "leave_shop"
+
+
+func draw_waypoint_vitals(y: float) -> void:
+	var now: Dictionary = run.workshop_vitals()
+	var trinket: String = Goods.RELICS[run.relic][0] if not run.relic.is_empty() else "Ô bảo vật trống"
+	var summary := "Sinh lực %d/%d   ·   Chân nguyên %d/%d   ·   Số lá %d   ·   Túi %d nguyên thạch   ·   %s"
+	text(menu, summary % [now.hp, Rules.MAX_HP, run.departure_qi(), run.battle.max_qi, now.leaves, run.stones, trinket],
+		Rect2(96, y, 1008, 44), 18, GREEN)
+
+
+func choose_waypoint(id: String) -> void:
+	if run.choose_waypoint(id):
+		persist()
+		show_result()
+
+
+func buy_waypoint_item(id: String) -> void:
+	if run.commit_shop_action(id):
+		persist()
+		show_result()
+
+
+func leave_waypoint_shop() -> void:
+	if run.leave_shop():
+		persist()
+		show_result()
+
+
+func workshop_gu_label(id: String) -> String:
+	var gu: Dictionary = Gu.GU[id]
+	var ownership := "Sở hữu" if run.owned_gu.get(id, 0) > 0 else "Cấp sẵn"
+	return "%s · %s · %s" % [gu.name, Gu.FAMILIES[gu.family], ownership]
+
+
+func draw_workshop() -> void:
+	var revised := run.revised_ward_rules()
+	var count := run.workshop_size()
+	var card := panel(menu, Rect2(96, 298, 1008, 332), Color("#1a2b25"), Color("#586c54"))
+	var recipes: Array = []
+	var starters: Array = []
+	for i in range(count):
+		var refined_id: String = Gu.RECIPES[i]
+		var starter_id: String = Gu.STARTERS[i]
+		recipes.append(workshop_gu_label(refined_id))
+		starters.append(workshop_gu_label(starter_id))
+	var recipe := dropdown(card, "workshop_recipe", "Cổ Nhị chuyển", recipes,
+		maxi(0, Gu.RECIPES.find(run.battle.refined_gu)), Rect2(24, 18, 450, 46))
+	var starter := dropdown(card, "workshop_starter", "Cổ Nhất chuyển", starters,
+		maxi(0, Gu.STARTERS.find(run.battle.starter_gu)), Rect2(528, 18, 454, 46))
+	var blend := text(card, "", Rect2(24, 126, 948, 32), 24, GOLD, true)
+	var stats := text(card, "", Rect2(24, 170, 956, 54), 17)
+	var synergy := text(card, "", Rect2(24, 222, 952, 23), 16, GREEN)
+	var art_slot := text(card, "", Rect2(24, 246, 952, 23), 16, GOLD)
+	art_slot.name = "workshop_art_slot"
+	var refresh := func(_index: int):
+		var advanced_id: String = Gu.RECIPES[recipe.selected]
+		var first_id: String = Gu.STARTERS[starter.selected]
+		var family := Gu.build_family(advanced_id, first_id)
+		blend.text = "Phối hệ" if family.is_empty() else "Bộ " + str(Gu.FAMILIES[family])
+		stats.text = "%s\n%s" % [Gu.equip_description(advanced_id, revised), Gu.equip_description(first_id, revised)]
+		synergy.text = Gu.synergy_text(family, revised)
+		match run.art_for_build(advanced_id):
+			"moon_link":
+				art_slot.text = "Ô sát chiêu 8 · Liên Nguyệt · %d CN · Phụ trợ: Tiểu Quang Cổ" % Gu.MOON_LINK_COST
+			"white_light":
+				art_slot.text = "Ô sát chiêu 8 · %s · %d CN · Phụ trợ: Tiểu Quang Cổ" % [Gu.WHITE_LIGHT_NAME, Gu.WHITE_LIGHT_COST]
+			_:
+				art_slot.text = "Ô sát chiêu 8 · Trống"
+	recipe.item_selected.connect(refresh)
+	starter.item_selected.connect(refresh)
+	refresh.call(0)
+	var fight := button(card, "Vào trận với bộ này", Rect2(676, 270, 306, 44),
+		func(): equip_build(Gu.RECIPES[recipe.selected], Gu.STARTERS[starter.selected]))
+	fight.name = "equip_confirm"
+	if run.phase == "pulse_workshop":
+		var title := "Đã dưỡng mạch" if run.pulse_rite else "Dưỡng mạch · %d nguyên thạch" % Run.PULSE_RITE_PRICE
+		var rite := button(card, title, Rect2(24, 270, 302, 44), buy_pulse_rite)
+		rite.name = "pulse_rite"
+		rite.disabled = not run.can_buy_pulse_rite()
+		rite.tooltip_text = "+1 sức chứa, hồi đầy chân nguyên và hồi thêm tối đa %d sinh lực." % Run.PULSE_RITE_HEAL
+		text(card, "Túi · %d nguyên thạch" % run.stones, Rect2(348, 270, 302, 44), 17, GREEN)
+	var vitals: Dictionary = run.workshop_vitals()
+	text(menu, "Khi vào trận  ·  Sinh lực %d → %d  ·  Chân nguyên %d/%d → %d/%d  ·  Giữ Sinh Cơ Diệp ×%d" %
+		[run.battle.hp, vitals.hp, run.battle.qi, run.battle.max_qi, run.departure_qi(),
+			vitals.get("max_qi", run.battle.max_qi), vitals.leaves],
+		Rect2(96, 644, 1008, 39), 18, GREEN)
+
+
+func training_builds() -> Array:
+	var builds := [["Nhất chuyển", "", "moon"]]
+	for recipe in Gu.RECIPES:
+		for starter in Gu.STARTERS:
+			var family := Gu.build_family(recipe, starter)
+			var caption := "%s + %s" % [Gu.GU[recipe].name, Gu.GU[starter].name]
+			if not family.is_empty():
+				caption = "Bộ " + str(Gu.FAMILIES[family])
+			builds.append([caption, recipe, starter])
+	return builds
+
+
+func equip_build(recipe: String, starter: String) -> void:
+	if run.equip_build(recipe, starter):
+		persist()
+		show_run()
+
+
+func draw_vitals(y: float) -> void:
+	var vitals := "Sinh lực %d / %d     ·     Chân nguyên %d / %d" % [run.battle.hp, Rules.MAX_HP, run.battle.qi, run.battle.max_qi]
+	if run.battle.jade_skin:
+		vitals += "     ·     Ngọc Bì"
+	if run.battle.leaves > 0:
+		vitals += "     ·     Sinh Cơ ×%d" % run.battle.leaves
+	if run.version >= 7 and run.floor >= Run.RIDGE_FLOOR:
+		vitals += "     ·     %d nguyên thạch" % run.stones
+	text(menu, vitals, Rect2(96, y, 980, 40), 20, GREEN)
+
+
+func draw_routes() -> void:
+	var i := 0
+	for id in Run.ROUTES:
+		var stage: Dictionary = Run.ROUTES[id]
+		var elite: bool = id == "elite"
+		var fill := Color("#302823") if elite else Color("#1a2d26")
+		var edge := Color("#916c4d") if elite else Color("#577b64")
+		var card := panel(menu, Rect2(96 + i * 516, 307, 490, 295), fill, edge)
+		text(card, stage.name, Rect2(23, 22, 444, 45), 34, GOLD, true)
+		text(card, "%s  ·  %d sinh lực" % [stage.enemy, stage.hp], Rect2(24, 88, 441, 31), 22)
+		var danger := "%s  ·  %d sát thương" % [stage.heavy, stage.damage]
+		if run.version >= 3:
+			danger = "Vồ và lao xuyên hàng  ·  %d sát thương" % stage.damage if elite else "Vách đá chặn Nguyệt Quang"
+		text(card, danger, Rect2(24, 122, 441, 28), 18)
+		var heal := Run.ELITE_HEAL if elite else Run.NORMAL_HEAL
+		var energy := Run.ELITE_QI if elite else Run.NORMAL_QI
+		var benefit := "Hồi %d sinh lực hoặc %d chân nguyên" % [heal, energy]
+		if elite:
+			benefit += "\nCó món tăng sức chứa chân nguyên."
+		elif run.version >= 3:
+			benefit += "\nCó thể nhận Sinh Cơ Diệp sau trận."
+		text(card, benefit, Rect2(24, 164, 441, 57), 18, GREEN if not elite else GOLD)
+		var choose := button(card, "Chọn tuyến tinh anh" if elite else "Đi qua khe đá",
+			Rect2(23, 231, 444, 45), choose_route.bind(id))
+		choose.name = id
+		i += 1
+	draw_vitals(621)
+
+
+func draw_rewards() -> void:
+	var options: Dictionary = run.reward_options()
+	var i := 0
+	var width := (1008.0 - 15.0 * (options.size() - 1)) / options.size()
+	for id in options:
+		var option: Array = options[id]
+		var preview: Dictionary = run.reward_preview(id)
+		var card := panel(menu, Rect2(96 + i * (width + 15), 316, width, 269), Color("#1a2b25"), Color("#586c54"))
+		var inner := width - 36
+		text(card, option[0], Rect2(18, 18, inner, 66), 27, GOLD, true)
+		text(card, option[1], Rect2(18, 94, inner, 54), 17)
+		var delta := text(card, reward_delta(id, preview), Rect2(18, 160, inner, 44), 18, GREEN)
+		delta.name = id + "_delta"
+		var choose := button(card, "Nhận", Rect2(18, 207, inner, 44), choose_reward.bind(id))
+		choose.name = id
+		i += 1
+	draw_vitals(606)
+
+
+func reward_delta(id: String, preview: Dictionary) -> String:
+	match id:
+		"medicine":
+			return "Sinh lực %d → %d" % [run.battle.hp, preview.hp]
+		"stone":
+			return "Chân nguyên %d/%d → %d/%d" % [run.battle.qi, run.battle.max_qi, preview.qi, preview.max_qi]
+		"refine":
+			return "Sát thương %d → %d" % [run.battle.moon_damage, run.battle.moon_damage - run.moon_bonus + preview.moon_bonus]
+		"expand":
+			return "Sức chứa %d → %d" % [run.battle.max_qi, preview.max_qi]
+		"jade_skin":
+			return "Mở lệnh Ngọc Bì cho lượt chơi"
+		"vital_leaf":
+			return "Số lá %d → %d" % [run.battle.leaves, preview.leaves]
+	return ""
+
+
+func open_training(return_to: Callable) -> void:
+	training_return = return_to
+	show_training_setup()
+
+
+func dropdown(parent: Control, id: String, title: String, items: Array, selected: int, bounds: Rect2) -> OptionButton:
+	text(parent, title, Rect2(bounds.position, Vector2(bounds.size.x, 34)), 18)
+	var select := OptionButton.new()
+	select.name = id
+	select.position = bounds.position + Vector2(0, 42)
+	select.size = bounds.size
+	select.add_theme_font_size_override("font_size", 20)
+	for item in items:
+		select.add_item(item)
+	select.select(selected)
+	parent.add_child(select)
+	return select
+
+
+func show_training_setup() -> void:
+	menu = make_menu()
+	menu.name = "TrainingSetup"
+	switch_to(menu)
+	text(menu, "Luyện trận", Rect2(94, 75, 990, 95), 57, GOLD, true)
+	text(menu, "Chọn đối thủ, sinh lực và Cổ để tập với cùng luật của Vượt Thanh Mao.",
+		Rect2(96, 174, 1006, 56), 22)
+	var card := panel(menu, Rect2(96, 252, 1008, 355), Color("#1a2b25"), Color("#586c54"))
+	var opponent_items: Array = []
+	var unlocked_count := TRAINING_STAGES.size() - int(not boss_seal) - int(not pulse_seal)
+	for stage in TRAINING_STAGES.slice(0, unlocked_count):
+		opponent_items.append(stage.enemy + " · " + stage.name)
+	var opponent := dropdown(card, "training_opponent", "Đối thủ", opponent_items, training_options.opponent, Rect2(28, 27, 452, 48))
+	var hero := dropdown(card, "training_hero", "Nhân vật", ["Huyền bào", "Áo rêu"], training_options.hero, Rect2(525, 27, 452, 48))
+	var grades := dropdown(card, "training_grade", "Tư chất", TRAINING_GRADES, training_options.grade, Rect2(28, 147, 452, 48))
+	text(card, "Chân nguyên ban đầu", Rect2(525, 147, 452, 34), 18)
+	var qi := starting_value(card, "training_qi", Vector2(525, 189), 0, training_options.grade + 4, training_options.qi)
+	text(card, "Sinh lực ban đầu", Rect2(757, 147, 220, 34), 18)
+	var hp := starting_value(card, "training_hp", Vector2(757, 189), 1, Rules.MAX_HP, training_options.hp)
+	var build_labels: Array = []
+	for setup in training_builds():
+		build_labels.append(setup[0])
+	var build := dropdown(card, "training_build", "Bộ Cổ", build_labels, training_options.build, Rect2(28, 252, 452, 43))
+	var jade := training_check(card, "training_jade", "Thêm Ngọc Bì (Nhất chuyển)", Vector2(525, 258), training_options.jade_skin)
+	var leaf := training_check(card, "training_leaf", "Mang một Sinh Cơ Diệp", Vector2(525, 301), training_options.leaves > 0)
+	jade.disabled = build.selected != 0
+	build.item_selected.connect(func(index: int): jade.disabled = index != 0)
+	grades.item_selected.connect(func(index: int):
+		var was_full := qi.value == qi.max_value
+		qi.max_value = index + 4
+		qi.suffix = "/ %d" % int(qi.max_value)
+		if was_full:
+			qi.value = qi.max_value)
+	var back := button(menu, "Quay lại", Rect2(96, 631, 220, 52), training_return)
+	back.name = "training_back"
+	var begin := button(menu, "Bắt đầu luyện", Rect2(807, 631, 297, 52), func():
+		training_options = {"opponent": opponent.selected, "grade": grades.selected, "hero": hero.selected,
+			"qi": int(qi.value), "hp": int(hp.value), "jade_skin": jade.button_pressed, "leaves": int(leaf.button_pressed),
+			"build": build.selected}
+		show_training_battle())
+	begin.name = "training_begin"
+
+
+func starting_value(parent: Control, id: String, at: Vector2, minimum: int, maximum: int, value: int) -> SpinBox:
+	var input := SpinBox.new()
+	input.name = id
+	input.position = at
+	input.size = Vector2(204, 48)
+	input.min_value = minimum
+	input.max_value = maximum
+	input.value = value
+	input.suffix = "/ %d" % maximum
+	input.get_line_edit().add_theme_font_size_override("font_size", 20)
+	parent.add_child(input)
+	return input
+
+
+func training_check(parent: Control, id: String, title: String, at: Vector2, enabled: bool) -> CheckBox:
+	var check := CheckBox.new()
+	check.name = id
+	check.text = title
+	check.position = at
+	check.size = Vector2(450, 45)
+	check.button_pressed = enabled
+	check.add_theme_font_size_override("font_size", 20)
+	parent.add_child(check)
+	return check
+
+
+func show_training_battle() -> void:
+	var next := BattleScene.instantiate()
+	var grade_index: int = training_options.grade
+	var opponent: int = training_options.opponent
+	var build: Array = training_builds()[training_options.build]
+	next.configure_training({"stage": TRAINING_STAGES[opponent], "room": TRAINING_ROOMS[opponent],
+		"tactic": TRAINING_TACTICS[opponent], "hp": training_options.hp,
+		"moon_equipped": build[2] == "moon", "refined_gu": build[1], "starter_gu": build[2],
+		"jade_skin": build[2] == "jade_skin" or (build[1].is_empty() and training_options.jade_skin), "leaves": training_options.leaves,
+		"hero": "ao-reu" if training_options.hero == 1 else "huyen-bao",
+		"grade": TRAINING_GRADES[grade_index], "max_qi": grade_index + 4, "qi": training_options.qi})
+	next.training_setup_requested.connect(show_training_setup)
+	switch_to(next)

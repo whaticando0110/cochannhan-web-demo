@@ -1,0 +1,1444 @@
+extends RefCounted
+
+const Rules = preload("res://battle_rules.gd")
+const Awakening = preload("res://awakening_rules.gd")
+const Gu = preload("res://gu_catalog.gd")
+const Goods = preload("res://waypoint_goods.gd")
+const Pack = preload("res://kennel_pack.gd")
+const TinRefinement = preload("res://tin_refinement.gd")
+const BaoTrial = preload("res://bao_trial.gd")
+const CURRENT_VERSION := 28
+const KENNEL_SEVEN_VERSION := 28
+const KENNEL_SIX_VERSION := 27
+const KENNEL_FIVE_VERSION := 26
+const BAO_VERSION := 25
+const TIN_VERSION := 24
+const KENNEL_FOUR_VERSION := 23
+const OWNED_VEIL_VERSION := 22
+const FOUR_FLAVORS_VERSION := 21
+const WHITE_JADE_VERSION := 20
+const GU_BOOK_ACTIONS := ["refine_owned_jade", "study_white_light", "refine_owned_brew", "refine_owned_veil"]
+const GU_BOOK_VERSION := 19
+const GU_SHOP_VERSION := 18
+const RIDGE_FLOOR := 3
+const FORD_FLOOR := 4
+const AMBUSH_FLOOR := 5
+const BOSS_FLOOR := 6
+const BOSS_VERSION := 9
+const MARSH_FLOOR := 7
+const MARSH_VERSION := 10
+const WIND_FLOOR := 8
+const WIND_VERSION := 11
+const ALTAR_FLOOR := 9
+const ALTAR_VERSION := 12
+const PULSE_FLOOR := 10
+const PULSE_VERSION := 13
+const XOA_FLOOR := 11
+const XOA_VERSION := 14
+const NODO_FLOOR := 12
+const NODO_VERSION := 15
+const KENNEL_FLOOR := 13
+const KENNEL_VERSION := 16
+const KENNEL_TWO_FLOOR := 14
+const KENNEL_TWO_VERSION := 17
+const KENNEL_THREE_FLOOR := 15
+const KENNEL_THREE_VERSION := 18
+const KENNEL_FOUR_FLOOR := 16
+const TIN_FLOOR := 17
+const BAO_FLOOR := 18
+const KENNEL_FIVE_FLOOR := 19
+const KENNEL_SIX_FLOOR := 20
+const KENNEL_SEVEN_FLOOR := 21
+const FLOORS := [
+	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
+		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
+	{"name": "Khe đá Hoang Nha", "enemy": "Điện Lang tinh anh", "damage": 17, "bite": 11, "hp": 62,
+		"heavy": "Vồ xuyên khe", "pace": 2, "rooms": [[5, 12, 26, 36], [3, 10, 29, 38], [2, 11, 26, 35]]},
+	{"name": "Hang Cuồng Điện Lang", "enemy": "Cuồng Điện Lang", "damage": 23, "bite": 13, "hp": 84,
+		"heavy": "Cuồng lôi vồ", "pace": 2, "rooms": [[2, 11, 28, 35], [5, 10, 29, 34], [3, 13, 26, 36]]},
+]
+const ROUTES := {
+	"ravine": {"name": "Khe đá Hoang Nha", "enemy": "Điện Lang", "damage": 14, "bite": 9, "hp": 56,
+		"heavy": "Vồ qua khe", "pace": 1, "rooms": [[4, 11, 25, 30], [5, 12, 27, 37], [2, 13, 26, 35]]},
+	"elite": {"name": "Lối săn tinh anh", "enemy": "Điện Lang tinh anh", "damage": 17, "bite": 11, "hp": 62,
+		"heavy": "Vồ xuyên khe", "pace": 2, "rooms": [[5, 12, 26, 36], [3, 10, 29, 38], [2, 11, 26, 35]]},
+}
+const RAVINE_COVERS := [[4, 11, 20, 30], [5, 12, 19, 37], [2, 13, 18, 35]]
+const CHAPTER_TWO := {"name": "Sườn đá Mù Sương", "enemy": "Điện Lang phóng lôi", "damage": 16,
+	"bite": 9, "hp": 72, "heavy": "Hồ quang", "pace": 1, "wolf_cell": 22,
+	"rooms": [[4, 12, 26, 37], [5, 11, 29, 34], [3, 10, 27, 36]]}
+const THUNDER_FORD := {"name": "Bãi Đá Suối Sấm", "enemy": "Điện Lang dẫn lôi", "damage": 18,
+	"bite": 10, "hp": 76, "heavy": "Hồ quang", "pace": 1, "wolf_cell": 22,
+	"rooms": [[5, 11, 28, 35], [4, 12, 27, 38], [3, 13, 29, 34]],
+	"water": [[18, 19, 20, 21, 26, 27], [10, 11, 18, 19, 20, 21], [18, 19, 20, 21, 27, 28]]}
+const AMBUSH_PASS := {"name": "Hẻm Đá Phục Kích", "enemy": "Điện Lang phục kích", "damage": 17,
+	"bite": 10, "hp": 82, "heavy": "Vồ phục kích", "pace": 2, "wolf_cell": 22,
+	"rooms": [[4, 11, 13, 26, 35], [3, 12, 27, 29, 36], [2, 10, 14, 25, 34]],
+	"cracks": [[19, 20, 21, 27, 28], [18, 19, 20, 21, 28], [18, 19, 20, 21, 28, 29]]}
+const ELITE_DEN := {"name": "Ổ Điện Lang", "enemy": "Điện Lang đầu đàn", "damage": 21,
+	"bite": 12, "hp": 96, "heavy": "Vồ giữ ổ", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 11, 22, 27, 35], [5, 12, 19, 26, 38], [3, 13, 20, 29, 34]]}
+const THUNDER_GATE := {"name": "Lôi Nha Đài", "enemy": "Lôi Nha Trấn Ải", "damage": 20,
+	"bite": 12, "hp": 108, "heavy": "Lôi quét ngang", "pace": 2, "wolf_cell": 21,
+	"rooms": [[3, 12, 27, 35], [4, 11, 26, 37], [5, 13, 28, 34]]}
+const POISON_MARSH := {"name": "Đầm Rễ Độc", "enemy": "Điện Lang nhiễm độc", "damage": 18,
+	"bite": 10, "hp": 112, "heavy": "Phun độc", "pace": 1, "wolf_cell": 21,
+	"rooms": [[4, 12, 26, 37], [3, 13, 27, 36], [5, 11, 28, 35]],
+	"water": [[9, 10, 17, 18, 25, 29, 30, 33, 34, 38, 39],
+		[8, 9, 16, 17, 18, 22, 23, 30, 31, 34], [9, 10, 17, 18, 25, 22, 23, 30, 31, 38]]}
+const MARSH_HEAL := 30
+const MARSH_QI := 4
+const TONIC_HEAL := 18
+const TONIC_LEAVES := 2
+const MARSH_REWARDS := {"purifying_dew": "Tinh Lộ Tịnh Mạch", "marsh_tonic": "Cao giải độc"}
+const WIND_PASS := {"name": "Hẻm Hàn Phong", "enemy": "Điện Lang Hàn Phong", "damage": 19,
+	"bite": 12, "hp": 120, "heavy": "Gió cắt", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 10, 25, 35, 37], [3, 8, 19, 28, 37], [6, 10, 19, 24, 36]]}
+const WIND_HEAL := 24
+const WIND_QI := 3
+const WIND_SUPPLY_QI := 3
+const WIND_SUPPLY_LEAVES := 2
+const WIND_REWARDS := {"wind_seal": "Ấn Dẫn Phong", "wind_supplies": "Túi Hàn Dược"}
+const SEAL_ALTAR := {"name": "Đài Trấn Ấn", "enemy": "Thạch Giáp Lang", "damage": 18,
+	"bite": 12, "hp": 124, "heavy": "Chấn Ấn", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 11, 27, 35], [3, 13, 25, 35], [5, 10, 26, 36]],
+	"runes": [[19, 28], [1, 20], [19, 12]]}
+const ALTAR_HEAL := 24
+const ALTAR_QI := 2
+const ALTAR_STRIKE_BONUS := 3
+const ALTAR_CACHE_STONES := 6
+const ALTAR_REWARDS := {"stone_marrow": "Thạch Tủy Luyện Thể", "altar_cache": "Hộp tiếp tế cổ trận"}
+const PULSE_HALL := {"name": "Điện Trấn Mạch", "enemy": "Thạch Vương", "damage": 18,
+	"bite": 12, "hp": 140, "heavy": "Nội Chấn", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 10, 27, 35], [3, 12, 26, 37], [5, 11, 28, 34]]}
+const PULSE_HEAL := 30
+const PULSE_QI := 3
+const PULSE_RITE_PRICE := 8
+const PULSE_RITE_HEAL := 6
+const PULSE_CACHE_STONES := 8
+const PULSE_CACHE_LEAVES := 2
+const PULSE_SEAL := "Ấn Trấn Mạch"
+const PULSE_REWARDS := {"pulse_pearl": "Châu Hoàn Nguyên", "pulse_cache": "Rương Trấn Mạch"}
+const XOA_TRAIL := {"name": "Bãi đá chân núi Tam Xoa", "enemy": "Chó Thiết Giáp", "damage": 18,
+	"bite": 12, "hp": 132, "heavy": "Húc giáp", "pace": 2, "wolf_cell": 21,
+	"rooms": [[4, 11, 27, 35], [3, 13, 26, 37], [5, 10, 18, 34]]}
+const XOA_HEAL := 22
+const XOA_QI := 2
+const XOA_HIDE_PRICE := 7
+const XOA_REWARDS := {"iron_hide": "Giáp da Thiết Giáp", "sell_iron_hide": "Đổi da lấy nguyên thạch"}
+const NODO_ROAD := {"name": "Đường núi Tam Xoa", "enemy": "Cổ sư Nô đạo", "damage": 19,
+	"bite": 10, "hp": 104, "heavy": "Khuyển thú vồ", "pace": 2, "wolf_cell": 21, "hound_hp": 40,
+	"hound_cells": [29, 28, 25], "rooms": [[4, 11, 26, 35], [3, 14, 27, 37], [5, 10, 19, 34]]}
+const NODO_HEAL := 21
+const NODO_QI := 3
+const NODO_REST_HEAL := 10
+const NODO_SUPPLY_PRICE := 6
+const NODO_SUPPLY_LEAVES := 2
+const NODO_CAMP := {"nodo_rest": "Nghỉ lấy sức", "nodo_supplies": "Đổi lấy Sinh Cơ Diệp"}
+const KENNEL_TRIAL := {"name": "Bãi cỏ phúc địa", "enemy": "Chó hoang", "damage": 11,
+	"bite": 11, "hp": 32, "heavy": "Táp", "pace": 2,
+	"rooms": [[4, 11, 27, 35], [3, 19, 26, 37], [5, 12, 20, 35]]}
+const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
+const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
+const KENNEL_FOUR := {"name": "Khe đá hai lối", "enemy": "Đàn chó hoang"}
+const KENNEL_FIVE := {"name": "Hẻm Vọng Thanh", "enemy": "Đàn chó đầu khe"}
+const KENNEL_SIX := {"name": "Bãi đá Chặn Đường", "enemy": "Đàn chó chặn lối"}
+const KENNEL_SEVEN := {"name": "Khe đá Hàm Sói", "enemy": "Đàn chó phục kích"}
+const TIN_TRIAL := {"name": "Đài luyện trong sương", "enemy": "Người Lông"}
+const BAO_TRIAL := {"name": "Bãi đá núi lửa", "enemy": "Người Trứng Gà Đỏ"}
+const KENNEL_FORMATIONS := {
+	"ridge_hold": ["Giữ cửa khe", "Xuất phát ở cửa khe bên trái, nơi dễ chặn đường áp sát."],
+	"ridge_flank": ["Vòng qua mỏm phải", "Xuất phát ở mỏm phải, gần lối vòng qua sườn đá."],
+}
+const SMALL_LIGHT_BUNDLE := 3
+const SMALL_LIGHT_PRICE := 4
+const BREW_BUNDLE := 2
+const WINE_SET_PRICE := 2
+const GU_SHOP_STOCK := {
+	"buy_small_light": {"gu": "small_light", "count": SMALL_LIGHT_BUNDLE, "price": SMALL_LIGHT_PRICE, "version": GU_SHOP_VERSION},
+	"buy_jade_skin": {"gu": "jade_skin", "count": 1, "price": 3, "version": GU_BOOK_VERSION},
+	"buy_brew": {"gu": "brew", "count": BREW_BUNDLE, "price": 4, "version": FOUR_FLAVORS_VERSION},
+	"buy_stone_veil": {"gu": "stone_veil", "count": 1, "price": 3, "version": OWNED_VEIL_VERSION},
+	"buy_fish_scale": {"gu": "fish_scale", "count": 1, "price": 2, "version": OWNED_VEIL_VERSION},
+}
+const GU_LOOT := {
+	RIDGE_FLOOR: {"gu": "small_light", "count": 2, "detail": "Túi Cổ mắc trong khe đá sau trận."},
+	FORD_FLOOR: {"gu": "white_boar", "count": 1, "detail": "Hộp Cổ của người đi trước ở bến đá."},
+}
+const BOSS_SEAL := "Ấn Trấn Lôi"
+const BOSS_HEAL := 32
+const BOSS_QI := 4
+const CHAPTER_HEAL := 18
+const CHAPTER_QI := 3
+const FORD_HEAL := 20
+const AMBUSH_HEAL := 22
+const LEGACY_REWARDS := {
+	"medicine": ["Dược thảo", "Hồi tối đa 24 sinh lực"],
+	"stone": ["Nguyên thạch", "+1 sức chứa và hồi đầy chân nguyên"],
+	"refine": ["Luyện Nguyệt Quang", "+7 sát thương Nguyệt Quang trong lượt này"],
+}
+const REWARD_NAMES := {
+	"medicine": "Dược thảo",
+	"stone": "Nguyên thạch",
+	"refine": "Luyện Nguyệt Quang",
+	"expand": "Mở rộng Nguyên Hải",
+	"jade_skin": "Ngọc Bì Cổ",
+	"vital_leaf": "Sinh Cơ Diệp",
+}
+const REST_OPTIONS := {"rest_hp": "Băng bó", "rest_qi": "Tĩnh tọa", "rest_skip": "Đi tiếp"}
+const NORMAL_HEAL := 18
+const NORMAL_QI := 3
+const ELITE_HEAL := 22
+const ELITE_QI := 4
+const REFINE_BONUS := 7
+
+var profile: Dictionary
+var seed: int
+var version: int
+var floor := 0
+var route := ""
+var moon_bonus := 0
+var phase := "battle"
+var battle: Rules
+var journal: Array = []
+var stones := 0
+var relic := ""
+var stop := {}
+var visited_shop := {}
+var elite_room := false
+var elite_award := ""
+var marsh_award := ""
+var wind_award := ""
+var altar_award := ""
+var pulse_award := ""
+var pulse_rite := false
+var xoa_award := ""
+var strike_bonus := 0
+var owned_gu := {"moon": 1, "small_light": 0, "moon_edge": 0}
+var wine_sets := 0
+var gu_receipts: Array[Dictionary] = [{"gu": "moon", "change": 1, "source": "Khởi đầu lượt chơi"}]
+var gu_loot_claimed := {}
+var chapter_rules_before_book := 0
+var hound_gu: int:
+	get:
+		return owned_gu.get("dog_control", 0)
+var moon_link_known := false
+var white_light_known := false
+var outside_battle: Rules
+var tin_refinement: TinRefinement
+var bao_trial: BaoTrial
+
+
+func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
+	profile = awakened
+	seed = run_seed
+	version = save_version
+	battle = encounter(Rules.MAX_HP, profile.max_qi, profile.max_qi)
+
+
+func stage_at(index: int) -> Dictionary:
+	match index:
+		RIDGE_FLOOR:
+			return CHAPTER_TWO
+		FORD_FLOOR:
+			return THUNDER_FORD
+		AMBUSH_FLOOR:
+			return AMBUSH_PASS
+		BOSS_FLOOR:
+			return THUNDER_GATE
+		MARSH_FLOOR:
+			return POISON_MARSH
+		WIND_FLOOR:
+			return WIND_PASS
+		ALTAR_FLOOR:
+			return SEAL_ALTAR
+		PULSE_FLOOR:
+			return PULSE_HALL
+		XOA_FLOOR:
+			return XOA_TRAIL
+		NODO_FLOOR:
+			return NODO_ROAD
+		KENNEL_FLOOR:
+			return KENNEL_TRIAL
+		KENNEL_TWO_FLOOR:
+			return KENNEL_TWO
+		KENNEL_THREE_FLOOR:
+			return KENNEL_THREE
+		KENNEL_FOUR_FLOOR:
+			return KENNEL_FOUR
+		KENNEL_FIVE_FLOOR:
+			return KENNEL_FIVE
+		KENNEL_SIX_FLOOR:
+			return KENNEL_SIX
+		KENNEL_SEVEN_FLOOR:
+			return KENNEL_SEVEN
+		TIN_FLOOR:
+			return TIN_TRIAL
+		BAO_FLOOR:
+			return BAO_TRIAL
+	if index == 1 and version >= 2 and ROUTES.has(route):
+		return ROUTES[route]
+	return FLOORS[index]
+
+
+func current_stage() -> Dictionary:
+	return ELITE_DEN if elite_room else stage_at(floor)
+
+
+func encounter(hp: int, qi: int, max_qi: int, arsenal: Dictionary = {}) -> Rules:
+	if elite_room:
+		var den_variant := floori(seed / pow(3, AMBUSH_FLOOR)) % 3
+		return battle_for(ELITE_DEN, den_variant, hp, qi, max_qi, moon_bonus, arsenal, "den", true)
+	var stage := stage_at(floor)
+	var variant := floori(seed / pow(3, floor)) % 3
+	var tactic := ""
+	if version >= 3:
+		match floor:
+			1:
+				tactic = route
+			2:
+				tactic = "king"
+			RIDGE_FLOOR:
+				tactic = "storm"
+			FORD_FLOOR:
+				tactic = "ford"
+			AMBUSH_FLOOR:
+				tactic = "ambush"
+			BOSS_FLOOR:
+				tactic = "thunder_boss"
+			MARSH_FLOOR:
+				tactic = "marsh"
+			WIND_FLOOR:
+				tactic = "wind_pass"
+			ALTAR_FLOOR:
+				tactic = "seal_altar"
+			PULSE_FLOOR:
+				tactic = "pulse_boss"
+			XOA_FLOOR:
+				tactic = "armored_hound"
+			NODO_FLOOR:
+				tactic = "nodo"
+			KENNEL_FLOOR:
+				tactic = "kennel"
+	return battle_for(stage, variant, hp, qi, max_qi, moon_bonus, arsenal, tactic, revised_ward_rules())
+
+
+static func battle_for(stage: Dictionary, variant: int, hp: int, qi: int, max_qi: int, bonus: int = 0,
+		arsenal: Dictionary = {}, tactic: String = "", revised_ward: bool = false) -> Rules:
+	return Rules.new({"hp": hp, "qi": qi, "max_qi": max_qi, "wolf_hp": stage.hp,
+		"rocks": RAVINE_COVERS[variant] if tactic == "ravine" else stage.rooms[variant],
+		"water": stage.water[variant] if stage.has("water") else [],
+		"cracks": stage.cracks[variant] if stage.has("cracks") else [],
+		"runes": stage.runes[variant] if stage.has("runes") else [],
+		"heavy": stage.heavy, "damage": stage.damage,
+		"hound_cell": stage.hound_cells[variant] if stage.has("hound_cells") else -1,
+		"hound_hp": stage.get("hound_hp", 0),
+		"bite": stage.bite, "pace": stage.pace, "moon_bonus": bonus, "tactic": tactic,
+		"jade_skin": arsenal.get("jade_skin", false), "leaves": arsenal.get("leaves", 0),
+		"wolf_cell": stage.get("wolf_cell", 21), "moon_equipped": arsenal.get("moon_equipped", true),
+		"refined_gu": arsenal.get("refined_gu", ""), "starter_gu": arsenal.get("starter_gu", ""),
+		"strike_bonus": arsenal.get("strike_bonus", 0), "moon_link": arsenal.get("moon_link", false),
+		"white_light": arsenal.get("white_light", false),
+		"revised_ward": revised_ward, "relic": arsenal.get("relic", "")})
+
+
+func perform(action: String, target: int = -1) -> Dictionary:
+	if phase != "battle":
+		return {"error": "Trận đã kết thúc."}
+	var exchange: Dictionary = battle.take_turn(action, target)
+	if exchange.has("error"):
+		return exchange
+	journal.append([action, target])
+	if battle is Pack:
+		var pack := battle as Pack
+		if pack.gu_left < hound_gu:
+			change_owned_gu("dog_control", pack.gu_left - hound_gu, "Thu phục ở vòng %d Khuyển Vương" % pack.round_number)
+	if battle.result == Rules.DEFEAT:
+		phase = "death"
+	elif battle.result == Rules.VICTORY:
+		if elite_room:
+			phase = "elite_reward"
+		elif floor == BOSS_FLOOR:
+			phase = "chapter_cleared"
+		elif floor == MARSH_FLOOR:
+			phase = "marsh_reward"
+		elif floor == WIND_FLOOR:
+			phase = "wind_reward"
+		elif floor == ALTAR_FLOOR:
+			phase = "altar_reward"
+		elif floor == PULSE_FLOOR:
+			phase = "pulse_reward"
+		elif floor == XOA_FLOOR:
+			phase = "xoa_reward"
+		elif floor == NODO_FLOOR:
+			phase = "nodo_cleared"
+		elif floor == KENNEL_FLOOR:
+			phase = "kennel_cleared"
+			change_owned_gu("dog_control", -1, "Thu phục ở vòng 1 Khuyển Vương")
+			change_owned_gu("dog_control", 1, "Thưởng vòng 1 Khuyển Vương")
+		elif floor == KENNEL_TWO_FLOOR:
+			phase = "kennel_two_cleared"
+		elif floor == KENNEL_THREE_FLOOR:
+			phase = "kennel_three_cleared"
+		elif floor == KENNEL_FOUR_FLOOR:
+			phase = "kennel_four_cleared"
+		elif floor == KENNEL_FIVE_FLOOR:
+			phase = "kennel_five_cleared"
+		elif floor == KENNEL_SIX_FLOOR:
+			phase = "kennel_six_cleared"
+		elif floor == KENNEL_SEVEN_FLOOR:
+			phase = "kennel_seven_cleared"
+		elif floor >= FLOORS.size():
+			phase = "complete"
+			if version >= 7:
+				match floor:
+					RIDGE_FLOOR:
+						stones += Goods.RIDGE_STONES
+					FORD_FLOOR:
+						stones += Goods.FORD_STONES
+		elif floor == FLOORS.size() - 1:
+			phase = "victory"
+		else:
+			phase = "route" if floor == 0 and version >= 2 else "reward"
+	return exchange
+
+
+func choose_route(id: String) -> bool:
+	if phase != "route" or not ROUTES.has(id):
+		return false
+	route = id
+	phase = "reward"
+	journal.append([id])
+	return true
+
+
+func reward_options() -> Dictionary:
+	if phase != "reward":
+		return {}
+	if version == 1:
+		return LEGACY_REWARDS
+	var elite_reward := floor == 1 and route == "elite"
+	var hp := ELITE_HEAL if elite_reward else NORMAL_HEAL
+	var energy := ELITE_QI if elite_reward else NORMAL_QI
+	var options := {
+		"medicine": [REWARD_NAMES.medicine, "Hồi tối đa %d sinh lực." % hp],
+		"stone": [REWARD_NAMES.stone, "Hồi tối đa %d chân nguyên." % energy],
+	}
+	if moon_bonus == 0:
+		options.refine = [REWARD_NAMES.refine, "Nguyệt Quang mạnh hơn trong lượt chơi này."]
+	if elite_reward:
+		options.expand = [REWARD_NAMES.expand, "Thêm 1 sức chứa. Lượng chân nguyên giữ nguyên."]
+	if version >= 3:
+		if floor == 0:
+			options.jade_skin = [REWARD_NAMES.jade_skin, "Học tạo lớp ngọc chặn một đòn."]
+		elif route == "ravine":
+			options.vital_leaf = [REWARD_NAMES.vital_leaf, "Mang một lá trị thương vào hang."]
+	return options
+
+
+func reward_preview(id: String) -> Dictionary:
+	if not reward_options().has(id):
+		return {}
+	var outcome := {"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi, "moon_bonus": moon_bonus,
+		"jade_skin": battle.jade_skin, "leaves": battle.leaves}
+	var elite_reward := floor == 1 and route == "elite"
+	match id:
+		"medicine":
+			var healed := 24 if version == 1 else (ELITE_HEAL if elite_reward else NORMAL_HEAL)
+			outcome.hp = mini(Rules.MAX_HP, battle.hp + healed)
+		"stone":
+			if version == 1:
+				outcome.max_qi += 1
+				outcome.qi = outcome.max_qi
+			else:
+				outcome.qi = mini(battle.max_qi, battle.qi + (ELITE_QI if elite_reward else NORMAL_QI))
+		"refine":
+			outcome.moon_bonus += REFINE_BONUS
+		"expand":
+			outcome.max_qi += 1
+		"jade_skin":
+			outcome.jade_skin = true
+		"vital_leaf":
+			outcome.leaves += 1
+	return outcome
+
+
+func reward(id: String) -> bool:
+	var outcome := reward_preview(id)
+	if outcome.is_empty():
+		return false
+	moon_bonus = outcome.moon_bonus
+	if id == "jade_skin":
+		change_owned_gu(id, 1, "Thưởng · " + str(current_stage().name))
+	floor += 1
+	phase = "rest" if floor == 2 and version >= 3 else "battle"
+	battle = encounter(outcome.hp, outcome.qi, outcome.max_qi, outcome)
+	journal.append([id])
+	return true
+
+
+func rest_preview(id: String) -> Dictionary:
+	if phase != "rest" or not REST_OPTIONS.has(id):
+		return {}
+	return {
+		"hp": mini(Rules.MAX_HP, battle.hp + (8 if id == "rest_hp" else 0)),
+		"qi": mini(battle.max_qi, battle.qi + (1 if id == "rest_qi" else 0)),
+	}
+
+
+func rest(id: String) -> bool:
+	var outcome := rest_preview(id)
+	if outcome.is_empty():
+		return false
+	battle.hp = outcome.hp
+	battle.qi = outcome.qi
+	phase = "battle"
+	journal.append([id])
+	return true
+
+
+func can_begin_chapter() -> bool:
+	return phase == "victory" and version >= 3
+
+
+func begin_chapter() -> bool:
+	if not can_begin_chapter():
+		return false
+	if version == 3:
+		version = CURRENT_VERSION
+	phase = "refinement"
+	journal.append(["chapter_two"])
+	return true
+
+
+func workshop_vitals() -> Dictionary:
+	if not stop.is_empty():
+		return stop.duplicate()
+	if phase == "boss_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + BOSS_HEAL), "qi": mini(battle.max_qi, battle.qi + BOSS_QI),
+			"leaves": battle.leaves}
+	if phase == "marsh_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + MARSH_HEAL), "qi": mini(battle.max_qi, battle.qi + MARSH_QI),
+			"leaves": battle.leaves}
+	if phase == "wind_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + WIND_HEAL), "qi": mini(battle.max_qi, battle.qi + WIND_QI),
+			"leaves": battle.leaves}
+	if phase == "altar_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + ALTAR_HEAL), "qi": mini(battle.max_qi, battle.qi + ALTAR_QI),
+			"leaves": battle.leaves}
+	if phase == "pulse_workshop":
+		var capacity := battle.max_qi + int(pulse_rite)
+		var healed := PULSE_HEAL + (PULSE_RITE_HEAL if pulse_rite else 0)
+		return {"hp": mini(Rules.MAX_HP, battle.hp + healed),
+			"qi": capacity if pulse_rite else mini(capacity, battle.qi + PULSE_QI), "max_qi": capacity,
+			"leaves": battle.leaves}
+	if phase == "xoa_workshop":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + XOA_HEAL), "qi": mini(battle.max_qi, battle.qi + XOA_QI),
+			"leaves": battle.leaves}
+	if phase == "xoa_camp":
+		return {"hp": mini(Rules.MAX_HP, battle.hp + NODO_HEAL), "qi": mini(battle.max_qi, battle.qi + NODO_QI),
+			"leaves": battle.leaves}
+	var heal := CHAPTER_HEAL
+	if phase != "refinement":
+		heal = AMBUSH_HEAL if floor == FORD_FLOOR else FORD_HEAL
+	return {"hp": mini(Rules.MAX_HP, battle.hp + heal),
+		"qi": mini(battle.max_qi, battle.qi + CHAPTER_QI), "leaves": battle.leaves}
+
+
+func departure_qi() -> int:
+	var vitals := workshop_vitals()
+	return vitals.qi if phase == "pulse_workshop" and pulse_rite else starting_qi(vitals.qi)
+
+
+func starting_qi(qi: int) -> int:
+	return mini(battle.max_qi, qi + int(relic == "essence_pin"))
+
+
+func revised_ward_rules() -> bool:
+	return version >= 5 or floor >= FORD_FLOOR or phase == "ford_workshop"
+
+
+func change_owned_gu(id: String, quantity: int, source: String) -> void:
+	owned_gu[id] = int(owned_gu.get(id, 0)) + quantity
+	gu_receipts.append({"gu": id, "change": quantity, "source": source})
+
+
+func book_unavailable(id: String) -> String:
+	if floor >= KENNEL_FLOOR:
+		return "Chờ rời phúc địa."
+	if phase in ["battle", "death"]:
+		return "Chỉ thao tác khi đang chuẩn bị ngoài trận."
+	match id:
+		"refine_owned_jade":
+			if owned_gu.get("jade_skin", 0) < 1 or owned_gu.get("white_boar", 0) < 1:
+				return "Cần 1 Ngọc Bì và 1 Bạch Thỉ."
+		"study_white_light":
+			if white_light_known:
+				return "Đã phối thành sát chiêu."
+			if owned_gu.get("white_jade", 0) < 1 or owned_gu.small_light < 1:
+				return "Cần Bạch Ngọc và Tiểu Quang sở hữu."
+		"refine_owned_brew":
+			if owned_gu.get("brew", 0) < BREW_BUNDLE or wine_sets < 1:
+				return "Tửu Trùng %d/%d · Bộ rượu %d/1" % [owned_gu.get("brew", 0), BREW_BUNDLE, wine_sets]
+		"refine_owned_veil":
+			if owned_gu.get("stone_veil", 0) < 1 or owned_gu.get("fish_scale", 0) < 1:
+				return "Cần 1 Ẩn Thạch và 1 Ngư Lân sở hữu."
+		_:
+			return "Bí phương này chưa có trong sổ."
+	return ""
+
+
+func commit_book_action(id: String) -> bool:
+	if not book_unavailable(id).is_empty():
+		return false
+	match id:
+		"refine_owned_jade":
+			version = maxi(version, WHITE_JADE_VERSION)
+			var source := "Hợp luyện Bạch Ngọc"
+			change_owned_gu("jade_skin", -1, source)
+			change_owned_gu("white_boar", -1, source)
+			change_owned_gu("white_jade", 1, source)
+		"study_white_light":
+			version = maxi(version, WHITE_JADE_VERSION)
+			white_light_known = true
+		"refine_owned_brew":
+			version = maxi(version, FOUR_FLAVORS_VERSION)
+			var source := "Hợp luyện Tứ Vị Tửu Trùng"
+			wine_sets -= 1
+			change_owned_gu("brew", -BREW_BUNDLE, source)
+			change_owned_gu("four_flavors", 1, source)
+		"refine_owned_veil":
+			version = maxi(version, OWNED_VEIL_VERSION)
+			var source := "Hợp luyện Ẩn Lân"
+			change_owned_gu("stone_veil", -1, source)
+			change_owned_gu("fish_scale", -1, source)
+			change_owned_gu("scale_veil", 1, source)
+	journal.append([id])
+	return true
+
+
+func gu_loot() -> Dictionary:
+	return GU_LOOT.get(floor, {}) if phase == "complete" else {}
+
+
+func claim_gu_loot() -> bool:
+	var loot := gu_loot()
+	if loot.is_empty() or gu_loot_claimed.has(floor):
+		return false
+	if version < 7:
+		chapter_rules_before_book = version
+	version = maxi(version, GU_BOOK_VERSION)
+	change_owned_gu(loot.gu, loot.count, "Chiến lợi phẩm · " + str(current_stage().name))
+	gu_loot_claimed[floor] = true
+	journal.append(["claim_gu_loot"])
+	return true
+
+
+func can_cross_ford() -> bool:
+	return phase == "complete" and floor == RIDGE_FLOOR
+
+
+func cross_ford() -> bool:
+	if not can_cross_ford():
+		return false
+	enter_waypoint("ford_workshop")
+	journal.append(["cross_ford"])
+	return true
+
+
+func can_enter_pass() -> bool:
+	return phase == "complete" and floor == FORD_FLOOR
+
+
+func enter_pass() -> bool:
+	if not can_enter_pass():
+		return false
+	enter_waypoint("ambush_workshop")
+	journal.append(["enter_pass"])
+	return true
+
+
+func can_enter_boss() -> bool:
+	return version >= 8 and phase == "complete" and floor == AMBUSH_FLOOR
+
+
+func enter_boss() -> bool:
+	if not can_enter_boss():
+		return false
+	version = maxi(version, BOSS_VERSION)
+	phase = "boss_workshop"
+	journal.append(["enter_boss"])
+	return true
+
+
+func enter_marsh() -> bool:
+	if phase != "chapter_cleared":
+		return false
+	version = maxi(version, MARSH_VERSION)
+	phase = "marsh_workshop"
+	journal.append(["enter_marsh"])
+	return true
+
+
+func marsh_reward_preview(id: String) -> Dictionary:
+	if phase != "marsh_reward" or not MARSH_REWARDS.has(id):
+		return {}
+	var next := {"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi, "leaves": battle.leaves}
+	if id == "purifying_dew":
+		next.max_qi += 1
+		next.qi = next.max_qi
+	else:
+		next.hp = mini(Rules.MAX_HP, next.hp + TONIC_HEAL)
+		next.leaves += TONIC_LEAVES
+	return next
+
+
+func claim_marsh_reward(id: String) -> bool:
+	var next := marsh_reward_preview(id)
+	if next.is_empty():
+		return false
+	battle.hp = next.hp
+	battle.qi = next.qi
+	battle.max_qi = next.max_qi
+	battle.leaves = next.leaves
+	marsh_award = id
+	phase = "marsh_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_wind_pass() -> bool:
+	if phase != "marsh_cleared":
+		return false
+	version = maxi(version, WIND_VERSION)
+	phase = "wind_workshop"
+	journal.append(["enter_wind_pass"])
+	return true
+
+
+func wind_reward_preview(id: String) -> Dictionary:
+	if phase != "wind_reward" or not WIND_REWARDS.has(id):
+		return {}
+	var next := {"qi": battle.qi, "leaves": battle.leaves, "relic": relic}
+	if id == "wind_seal":
+		next.relic = id
+	else:
+		next.qi = mini(battle.max_qi, battle.qi + WIND_SUPPLY_QI)
+		next.leaves += WIND_SUPPLY_LEAVES
+	return next
+
+
+func claim_wind_reward(id: String) -> bool:
+	var next := wind_reward_preview(id)
+	if next.is_empty():
+		return false
+	battle.qi = next.qi
+	battle.leaves = next.leaves
+	relic = next.relic
+	wind_award = id
+	phase = "wind_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_altar() -> bool:
+	if phase != "wind_cleared":
+		return false
+	version = maxi(version, ALTAR_VERSION)
+	phase = "altar_workshop"
+	journal.append(["enter_altar"])
+	return true
+
+
+func claim_altar_reward(id: String) -> bool:
+	if phase != "altar_reward" or not ALTAR_REWARDS.has(id):
+		return false
+	if id == "stone_marrow":
+		strike_bonus += ALTAR_STRIKE_BONUS
+	else:
+		stones += ALTAR_CACHE_STONES
+		battle.leaves += 1
+	altar_award = id
+	phase = "altar_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_pulse_hall() -> bool:
+	if phase != "altar_cleared":
+		return false
+	version = maxi(version, PULSE_VERSION)
+	phase = "pulse_workshop"
+	journal.append(["enter_pulse_hall"])
+	return true
+
+
+func can_buy_pulse_rite() -> bool:
+	return phase == "pulse_workshop" and not pulse_rite and stones >= PULSE_RITE_PRICE
+
+
+func buy_pulse_rite() -> bool:
+	if not can_buy_pulse_rite():
+		return false
+	stones -= PULSE_RITE_PRICE
+	pulse_rite = true
+	journal.append(["pulse_rite"])
+	return true
+
+
+func claim_pulse_reward(id: String) -> bool:
+	if phase != "pulse_reward" or not PULSE_REWARDS.has(id):
+		return false
+	if id == "pulse_pearl":
+		relic = id
+	else:
+		stones += PULSE_CACHE_STONES
+		battle.leaves += PULSE_CACHE_LEAVES
+	pulse_award = id
+	phase = "rank_three_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_xoa_trail() -> bool:
+	if phase != "rank_three_cleared":
+		return false
+	version = maxi(version, XOA_VERSION)
+	phase = "xoa_workshop"
+	journal.append(["enter_xoa_trail"])
+	return true
+
+
+func claim_xoa_reward(id: String) -> bool:
+	if phase != "xoa_reward" or not XOA_REWARDS.has(id):
+		return false
+	if id == "iron_hide":
+		relic = id
+	else:
+		stones += XOA_HIDE_PRICE
+	xoa_award = id
+	phase = "xoa_cleared"
+	journal.append([id])
+	return true
+
+
+func enter_xoa_camp() -> bool:
+	if phase != "xoa_cleared":
+		return false
+	version = maxi(version, NODO_VERSION)
+	phase = "xoa_camp"
+	journal.append(["enter_xoa_camp"])
+	return true
+
+
+func nodo_camp_preview(id: String) -> Dictionary:
+	if phase != "xoa_camp" or not NODO_CAMP.has(id):
+		return {}
+	var next := workshop_vitals()
+	next.stones = stones
+	next.reason = ""
+	if id == "nodo_rest":
+		next.hp = mini(Rules.MAX_HP, next.hp + NODO_REST_HEAL)
+	else:
+		next.stones -= NODO_SUPPLY_PRICE
+		next.leaves += NODO_SUPPLY_LEAVES
+		if next.stones < 0:
+			next.reason = "Cần %d nguyên thạch để đổi." % NODO_SUPPLY_PRICE
+	return next
+
+
+func choose_nodo_camp(id: String) -> bool:
+	var next := nodo_camp_preview(id)
+	if next.is_empty() or not next.reason.is_empty():
+		return false
+	stones = next.stones
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	phase = "nodo_workshop"
+	journal.append([id])
+	return true
+
+
+func reach_tam_xoa_gate() -> bool:
+	if phase != "nodo_cleared":
+		return false
+	version = maxi(version, TIN_VERSION)
+	phase = "tam_xoa_gate"
+	journal.append(["reach_tam_xoa_gate"])
+	return true
+
+
+func reach_tin_gate() -> bool:
+	if phase != "tam_xoa_gate":
+		return false
+	change_owned_gu("paper_crane", 1, "Đoàn buôn Tam Xoa")
+	phase = "tin_gate"
+	journal.append(["reach_tin_gate"])
+	return true
+
+
+func enter_tin_trial() -> bool:
+	if phase != "tin_gate" or owned_gu.get("paper_crane", 0) != 1:
+		return false
+	floor = TIN_FLOOR
+	tin_refinement = TinRefinement.new(seed % TinRefinement.RECIPES.size())
+	phase = "tin_trial"
+	journal.append(["enter_tin_trial"])
+	return true
+
+
+func act_tin_refinement(action: String) -> bool:
+	if phase != "tin_trial" or not tin_refinement.apply(action):
+		return false
+	journal.append([action])
+	if tin_refinement.won:
+		phase = "tin_cleared"
+	elif tin_refinement.lost:
+		phase = "death"
+	return true
+
+
+func reach_bao_gate() -> bool:
+	if phase != "tam_xoa_gate":
+		return false
+	version = maxi(version, BAO_VERSION)
+	change_owned_gu("exploding_egg", 1, "Đoàn buôn Tam Xoa")
+	phase = "bao_gate"
+	journal.append(["reach_bao_gate"])
+	return true
+
+
+func enter_bao_trial() -> bool:
+	if phase != "bao_gate" or owned_gu.get("exploding_egg", 0) != 1:
+		return false
+	floor = BAO_FLOOR
+	bao_trial = BaoTrial.new(seed % BaoTrial.BOARD.size(), battle.hp, battle.qi, battle.max_qi)
+	phase = "bao_trial"
+	journal.append(["enter_bao_trial"])
+	return true
+
+
+func act_bao_trial(action: String, target: int) -> bool:
+	if phase != "bao_trial" or not bao_trial.apply(action, target):
+		return false
+	journal.append([action, target])
+	if action == "bao_cast":
+		change_owned_gu("exploding_egg", -1, "Thi triển ở Bãi đá núi lửa")
+	if bao_trial.won:
+		phase = "bao_cleared"
+	elif bao_trial.lost:
+		phase = "death"
+	return true
+
+
+func reach_kennel_gate() -> bool:
+	if phase not in ["nodo_cleared", "tam_xoa_gate"]:
+		return false
+	version = maxi(version, KENNEL_VERSION)
+	phase = "kennel_gate"
+	journal.append(["reach_kennel_gate"])
+	return true
+
+
+func refine_hound_gu() -> bool:
+	if phase != "kennel_gate":
+		return false
+	change_owned_gu("dog_control", 1, "Đoàn buôn Tam Xoa")
+	phase = "kennel_ready"
+	journal.append(["refine_hound_gu"])
+	return true
+
+
+func enter_kennel() -> bool:
+	if phase != "kennel_ready" or hound_gu != 1:
+		return false
+	outside_battle = battle
+	floor = KENNEL_FLOOR
+	battle = encounter(outside_battle.hp, maxi(outside_battle.qi, Rules.BIND_COST), outside_battle.max_qi,
+		{"moon_equipped": false})
+	phase = "battle"
+	journal.append(["enter_kennel"])
+	return true
+
+
+func enter_kennel_two() -> bool:
+	if phase != "kennel_cleared" or hound_gu != 1:
+		return false
+	version = maxi(version, KENNEL_TWO_VERSION)
+	floor = KENNEL_TWO_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.BOARD.size()
+	battle = Pack.new({"hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi,
+		"dog_hp": battle.wolf_hp, "dog_max": battle.wolf_max}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_two"])
+	return true
+
+
+func enter_kennel_three() -> bool:
+	if phase != "kennel_two_cleared":
+		return false
+	var previous := battle as Pack
+	var companions: Array[Dictionary] = [previous.dogs[0]]
+	if previous.bound_id >= 0:
+		companions.append(previous.dogs[previous.bound_id])
+	version = maxi(version, KENNEL_THREE_VERSION)
+	floor = KENNEL_THREE_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.PIT_BOARD.size()
+	battle = Pack.new({"round": 3, "hp": battle.hp, "qi": battle.qi, "max_qi": battle.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_three"])
+	return true
+
+
+func enter_kennel_four(formation: String) -> bool:
+	if phase != "kennel_three_cleared" or not KENNEL_FORMATIONS.has(formation):
+		return false
+	var previous := battle as Pack
+	var companions: Array[Dictionary] = [previous.dogs[0]]
+	if previous.bound_id >= 0:
+		companions.append(previous.dogs[previous.bound_id])
+	version = maxi(version, KENNEL_FOUR_VERSION)
+	floor = KENNEL_FOUR_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.RIDGE_BOARD.size()
+	battle = Pack.new({"round": 4, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu, "formation": formation}, layout)
+	phase = "battle"
+	journal.append([formation])
+	return true
+
+
+func enter_kennel_five() -> bool:
+	if phase != "kennel_four_cleared":
+		return false
+	var previous := battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	version = maxi(version, KENNEL_FIVE_VERSION)
+	floor = KENNEL_FIVE_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.HOWL_BOARD.size()
+	battle = Pack.new({"round": 5, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_five"])
+	return true
+
+
+func enter_kennel_six() -> bool:
+	if phase != "kennel_five_cleared":
+		return false
+	var previous := battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	version = maxi(version, KENNEL_SIX_VERSION)
+	floor = KENNEL_SIX_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.COVER_BOARD.size()
+	battle = Pack.new({"round": 6, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_six"])
+	return true
+
+
+func enter_kennel_seven() -> bool:
+	if phase != "kennel_six_cleared":
+		return false
+	var previous := battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	version = maxi(version, KENNEL_SEVEN_VERSION)
+	floor = KENNEL_SEVEN_FLOOR
+	var layout := seed % Pack.CHARGE_BOARD.size()
+	battle = Pack.new({"round": 7, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_seven"])
+	return true
+
+
+func workshop_size() -> int:
+	if version >= 6 or phase == "ambush_workshop":
+		return 4
+	return 3 if revised_ward_rules() else 2
+
+
+func enter_waypoint(next_workshop: String) -> void:
+	if version >= 7:
+		phase = "waypoint"
+		stop = workshop_vitals()
+	else:
+		phase = next_workshop
+
+
+func waypoint_options() -> Array:
+	if phase != "waypoint":
+		return []
+	if floor == RIDGE_FLOOR:
+		return ["camp", "merchant", "salvage"]
+	var options := ["camp", "merchant", "spring"]
+	if version >= 8:
+		options.append("elite_detour")
+	return options
+
+
+func waypoint_preview(id: String) -> Dictionary:
+	if id not in waypoint_options():
+		return {}
+	var next := stop.duplicate()
+	next.stones = stones
+	next.reason = ""
+	match id:
+		"camp":
+			next.hp = mini(Rules.MAX_HP, next.hp + Goods.CAMP_HEAL)
+		"salvage":
+			if next.hp <= Goods.CACHE_COST:
+				next.reason = "Cần hơn %d sinh lực." % Goods.CACHE_COST
+			next.hp -= Goods.CACHE_COST
+			next.stones += Goods.CACHE_STONES
+		"spring":
+			if next.qi < Goods.SPRING_COST:
+				next.reason = "Cần %d chân nguyên." % Goods.SPRING_COST
+			next.qi -= Goods.SPRING_COST
+			next.leaves += 1
+	next.departure_qi = starting_qi(next.qi)
+	return next
+
+
+func choose_waypoint(id: String) -> bool:
+	var next := waypoint_preview(id)
+	if next.is_empty() or not next.reason.is_empty():
+		return false
+	stones = next.stones
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	match id:
+		"merchant":
+			phase = "shop"
+		"elite_detour":
+			phase = "elite_workshop"
+		_:
+			leave_waypoint()
+	journal.append([id])
+	return true
+
+
+func elite_reward_preview(id: String) -> Dictionary:
+	if phase != "elite_reward" or not Goods.ELITE_REWARDS.has(id):
+		return {}
+	var remedy := id == "elite_remedy"
+	return {"hp": mini(Rules.MAX_HP, battle.hp + Goods.DEN_HEAL + (Goods.REMEDY_HEAL if remedy else 0)),
+		"qi": mini(battle.max_qi, battle.qi + Goods.DEN_QI),
+		"leaves": battle.leaves + int(remedy), "relic": relic if remedy else "elite_fang"}
+
+
+func claim_elite_reward(id: String) -> bool:
+	var next := elite_reward_preview(id)
+	if next.is_empty():
+		return false
+	relic = next.relic
+	stop = {"hp": next.hp, "qi": next.qi, "leaves": next.leaves}
+	elite_award = id
+	elite_room = false
+	phase = "ambush_workshop"
+	journal.append([id])
+	return true
+
+
+func shop_relic() -> String:
+	var index := (seed + floor - RIDGE_FLOOR) % Goods.RELIC_ORDER.size()
+	return Goods.RELIC_ORDER[index]
+
+
+func shop_price(id: String) -> int:
+	if id == "buy_leaf":
+		return Goods.LEAF_PRICE
+	if id == "buy_wine_set":
+		return WINE_SET_PRICE
+	if GU_SHOP_STOCK.has(id):
+		return GU_SHOP_STOCK[id].price
+	return Goods.RELIC_TRADE_PRICE if not relic.is_empty() and relic != shop_relic() else Goods.RELIC_PRICE
+
+
+func shop_unavailable(id: String) -> String:
+	if phase != "shop" or (id not in ["buy_leaf", "buy_relic", "buy_wine_set"] and not GU_SHOP_STOCK.has(id)):
+		return "Món hàng không còn được bán."
+	if visited_shop.has(id):
+		return "Đã mua món này tại quầy."
+	if id == "buy_relic" and relic == shop_relic():
+		return "Bạn đang mang bảo vật này."
+	if id == "buy_jade_skin" and owned_gu.get("jade_skin", 0) > 0:
+		return "Đã có Ngọc Bì trong sổ."
+	var price := shop_price(id)
+	if stones < price:
+		return "Cần %d nguyên thạch." % price
+	return ""
+
+
+func buy(id: String) -> bool:
+	if not shop_unavailable(id).is_empty():
+		return false
+	stones -= shop_price(id)
+	visited_shop[id] = true
+	if id == "buy_leaf":
+		stop.leaves += 1
+	elif id == "buy_wine_set":
+		version = maxi(version, FOUR_FLAVORS_VERSION)
+		wine_sets += 1
+	elif GU_SHOP_STOCK.has(id):
+		var offer: Dictionary = GU_SHOP_STOCK[id]
+		version = maxi(version, offer.version)
+		var shop := "Quầy dừng bên Suối Sấm" if floor == RIDGE_FLOOR else "Quầy dưới Hẻm Đá"
+		change_owned_gu(offer.gu, offer.count, shop)
+	else:
+		relic = shop_relic()
+	journal.append([id])
+	return true
+
+
+func gu_work_unavailable(id: String) -> String:
+	if phase != "shop":
+		return "Cần tới quầy trước."
+	match id:
+		"refine_owned_moon":
+			if owned_gu.moon == 0 or owned_gu.small_light < 2:
+				return "Cần 1 Nguyệt Quang và 2 Tiểu Quang."
+		"study_moon_link":
+			if moon_link_known:
+				return "Đã phối thành sát chiêu."
+			if owned_gu.moon_edge == 0 or owned_gu.small_light == 0:
+				return "Cần có Nguyệt Mang và 1 Tiểu Quang."
+		_:
+			return "Bí phương không có tại quầy."
+	return ""
+
+
+func commit_shop_action(id: String) -> bool:
+	match id:
+		"leave_shop":
+			return leave_shop()
+		"refine_owned_moon", "study_moon_link":
+			if not gu_work_unavailable(id).is_empty():
+				return false
+			version = maxi(version, GU_SHOP_VERSION)
+			if id == "refine_owned_moon":
+				change_owned_gu("moon", -1, "Hợp luyện Nguyệt Mang")
+				change_owned_gu("small_light", -2, "Hợp luyện Nguyệt Mang")
+				change_owned_gu("moon_edge", 1, "Hợp luyện Nguyệt Mang")
+			else:
+				moon_link_known = true
+			journal.append([id])
+			return true
+	return buy(id)
+
+
+func leave_shop() -> bool:
+	if phase != "shop":
+		return false
+	leave_waypoint()
+	visited_shop.clear()
+	journal.append(["leave_shop"])
+	return true
+
+
+func leave_waypoint() -> void:
+	phase = "ford_workshop" if floor == RIDGE_FLOOR else "ambush_workshop"
+
+
+func art_for_build(recipe: String) -> String:
+	if owned_gu.small_light <= 0 or owned_gu.get(recipe, 0) <= 0:
+		return ""
+	match recipe:
+		"moon_edge":
+			return "moon_link" if moon_link_known else ""
+		"white_jade":
+			return "white_light" if white_light_known else ""
+	return ""
+
+
+func equip_build(recipe: String, starter: String) -> bool:
+	if phase not in ["refinement", "ford_workshop", "ambush_workshop", "elite_workshop", "boss_workshop", "marsh_workshop", "wind_workshop", "altar_workshop", "pulse_workshop", "xoa_workshop", "nodo_workshop"]:
+		return false
+	var count := workshop_size()
+	if recipe not in Gu.RECIPES.slice(0, count) or starter not in Gu.STARTERS.slice(0, count):
+		return false
+	var vitals := workshop_vitals()
+	var art := art_for_build(recipe)
+	var arsenal := {"refined_gu": recipe, "moon_equipped": starter == "moon",
+		"jade_skin": starter == "jade_skin", "starter_gu": starter, "leaves": vitals.leaves,
+		"relic": relic, "strike_bonus": strike_bonus, "moon_link": art == "moon_link", "white_light": art == "white_light"}
+	match phase:
+		"ford_workshop":
+			floor = FORD_FLOOR
+		"ambush_workshop":
+			floor = AMBUSH_FLOOR
+		"boss_workshop":
+			floor = BOSS_FLOOR
+		"marsh_workshop":
+			floor = MARSH_FLOOR
+		"wind_workshop":
+			floor = WIND_FLOOR
+		"altar_workshop":
+			floor = ALTAR_FLOOR
+		"pulse_workshop":
+			floor = PULSE_FLOOR
+		"xoa_workshop":
+			floor = XOA_FLOOR
+		"nodo_workshop":
+			floor = NODO_FLOOR
+		"elite_workshop":
+			elite_room = true
+		_:
+			floor = RIDGE_FLOOR
+	battle = encounter(vitals.hp, vitals.qi, vitals.get("max_qi", battle.max_qi), arsenal)
+	stop.clear()
+	phase = "battle"
+	journal.append(["equip", recipe, starter])
+	return true
+
+
+func reward_history() -> PackedStringArray:
+	var picked: PackedStringArray = []
+	for command in journal:
+		if command.size() == 1 and REWARD_NAMES.has(command[0]):
+			picked.append(REWARD_NAMES[command[0]])
+	return picked
+
+
+func snapshot() -> Dictionary:
+	var saved := {"version": version, "hero": profile.hero, "depth": profile.depth, "seed": seed, "journal": journal}
+	var schema := version
+	if phase == "ambush_workshop" or floor >= AMBUSH_FLOOR:
+		schema = maxi(schema, 6)
+	elif version == 4 and (phase == "ford_workshop" or floor >= FORD_FLOOR):
+		schema = 5
+	if schema != version:
+		saved.version = schema
+		saved.chapter_rules = version
+	elif chapter_rules_before_book > 0:
+		saved.chapter_rules = chapter_rules_before_book
+	return saved
+
+
+static func restore(saved: Variant) -> RefCounted:
+	if not saved is Dictionary or not finite_integer(saved.get("version"), 1, CURRENT_VERSION) or not saved.get("journal") is Array:
+		return null
+	if not saved.get("hero") is String or not finite_integer(saved.get("depth"), 12, 49):
+		return null
+	if not finite_integer(saved.get("seed"), 0, 0xffffffff):
+		return null
+	var profile_data := Awakening.profile_for(saved.hero, int(saved.depth))
+	if profile_data.is_empty():
+		return null
+	var rules_version := int(saved.version)
+	if saved.has("chapter_rules"):
+		var schema := int(saved.version)
+		var valid_rules := finite_integer(saved.chapter_rules, 4, mini(6, schema - 1))
+		if not valid_rules or (schema not in [5, 6] and schema < GU_BOOK_VERSION):
+			return null
+		rules_version = int(saved.chapter_rules)
+	var run = load("res://run_state.gd").new(profile_data, int(saved.seed), rules_version)
+	for command in saved.journal:
+		if not command is Array or command.is_empty() or not command[0] is String:
+			return null
+		if command.size() == 3:
+			if command[0] != "equip" or not command[1] is String or not command[2] is String or not run.equip_build(command[1], command[2]):
+				return null
+		elif command.size() == 1:
+			if command[0] in GU_BOOK_ACTIONS:
+				if not run.commit_book_action(command[0]):
+					return null
+				continue
+			var committed: bool
+			match run.phase:
+				"route":
+					committed = run.choose_route(command[0])
+				"rest":
+					committed = run.rest(command[0])
+				"waypoint":
+					committed = run.choose_waypoint(command[0])
+				"shop":
+					committed = run.commit_shop_action(command[0])
+				"elite_reward":
+					committed = run.claim_elite_reward(command[0])
+				"chapter_cleared":
+					committed = command[0] == "enter_marsh" and run.enter_marsh()
+				"marsh_reward":
+					committed = run.claim_marsh_reward(command[0])
+				"marsh_cleared":
+					committed = command[0] == "enter_wind_pass" and run.enter_wind_pass()
+				"wind_reward":
+					committed = run.claim_wind_reward(command[0])
+				"wind_cleared":
+					committed = command[0] == "enter_altar" and run.enter_altar()
+				"altar_reward":
+					committed = run.claim_altar_reward(command[0])
+				"altar_cleared":
+					committed = command[0] == "enter_pulse_hall" and run.enter_pulse_hall()
+				"pulse_workshop":
+					committed = command[0] == "pulse_rite" and run.buy_pulse_rite()
+				"pulse_reward":
+					committed = run.claim_pulse_reward(command[0])
+				"rank_three_cleared":
+					committed = command[0] == "enter_xoa_trail" and run.enter_xoa_trail()
+				"xoa_reward":
+					committed = run.claim_xoa_reward(command[0])
+				"xoa_cleared":
+					committed = command[0] == "enter_xoa_camp" and run.enter_xoa_camp()
+				"xoa_camp":
+					committed = run.choose_nodo_camp(command[0])
+				"nodo_cleared":
+					committed = (command[0] == "reach_tam_xoa_gate" and run.reach_tam_xoa_gate()
+						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate())
+				"tam_xoa_gate":
+					committed = (command[0] == "reach_tin_gate" and run.reach_tin_gate()
+						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate()
+						or command[0] == "reach_bao_gate" and run.reach_bao_gate())
+				"bao_gate":
+					committed = command[0] == "enter_bao_trial" and run.enter_bao_trial()
+				"tin_gate":
+					committed = command[0] == "enter_tin_trial" and run.enter_tin_trial()
+				"tin_trial":
+					committed = run.act_tin_refinement(command[0])
+				"kennel_gate":
+					committed = command[0] == "refine_hound_gu" and run.refine_hound_gu()
+				"kennel_ready":
+					committed = command[0] == "enter_kennel" and run.enter_kennel()
+				"kennel_cleared":
+					committed = command[0] == "enter_kennel_two" and run.enter_kennel_two()
+				"kennel_two_cleared":
+					committed = command[0] == "enter_kennel_three" and run.enter_kennel_three()
+				"kennel_three_cleared":
+					committed = run.enter_kennel_four(command[0])
+				"kennel_four_cleared":
+					committed = command[0] == "enter_kennel_five" and run.enter_kennel_five()
+				"kennel_five_cleared":
+					committed = command[0] == "enter_kennel_six" and run.enter_kennel_six()
+				"kennel_six_cleared":
+					committed = command[0] == "enter_kennel_seven" and run.enter_kennel_seven()
+				"victory":
+					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
+				"complete":
+					if command[0] == "claim_gu_loot":
+						committed = run.claim_gu_loot()
+					elif command[0] == "cross_ford":
+						committed = saved.version >= 5 and run.cross_ford()
+					elif command[0] == "enter_pass":
+						committed = saved.version >= 6 and run.enter_pass()
+					elif command[0] == "enter_boss":
+						committed = run.enter_boss()
+				_:
+					committed = run.reward(command[0])
+			if not committed:
+				return null
+		elif command.size() == 2 and finite_integer(command[1], -1, 39):
+			var target := int(command[1])
+			if run.phase == "bao_trial":
+				if not run.act_bao_trial(command[0], target):
+					return null
+			elif run.perform(command[0], target).has("error"):
+				return null
+		else:
+			return null
+	var restored: Dictionary = run.snapshot()
+	if restored.version != saved.version or restored.get("chapter_rules") != saved.get("chapter_rules"):
+		return null
+	return run
+
+
+static func finite_integer(value: Variant, lower: int, upper: int) -> bool:
+	return (value is int or value is float) and value >= lower and value <= upper and floorf(float(value)) == value
