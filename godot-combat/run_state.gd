@@ -7,7 +7,8 @@ const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
 const TinRefinement = preload("res://tin_refinement.gd")
 const BaoTrial = preload("res://bao_trial.gd")
-const CURRENT_VERSION := 26
+const CURRENT_VERSION := 27
+const KENNEL_SIX_VERSION := 27
 const KENNEL_FIVE_VERSION := 26
 const BAO_VERSION := 25
 const TIN_VERSION := 24
@@ -45,6 +46,7 @@ const KENNEL_FOUR_FLOOR := 16
 const TIN_FLOOR := 17
 const BAO_FLOOR := 18
 const KENNEL_FIVE_FLOOR := 19
+const KENNEL_SIX_FLOOR := 20
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -138,6 +140,7 @@ const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
 const KENNEL_FOUR := {"name": "Khe đá hai lối", "enemy": "Đàn chó hoang"}
 const KENNEL_FIVE := {"name": "Hẻm Vọng Thanh", "enemy": "Đàn chó đầu khe"}
+const KENNEL_SIX := {"name": "Bãi đá Chặn Đường", "enemy": "Đàn chó chặn lối"}
 const TIN_TRIAL := {"name": "Đài luyện trong sương", "enemy": "Người Lông"}
 const BAO_TRIAL := {"name": "Bãi đá núi lửa", "enemy": "Người Trứng Gà Đỏ"}
 const KENNEL_FORMATIONS := {
@@ -262,6 +265,8 @@ func stage_at(index: int) -> Dictionary:
 			return KENNEL_FOUR
 		KENNEL_FIVE_FLOOR:
 			return KENNEL_FIVE
+		KENNEL_SIX_FLOOR:
+			return KENNEL_SIX
 		TIN_FLOOR:
 			return TIN_TRIAL
 		BAO_FLOOR:
@@ -374,6 +379,8 @@ func perform(action: String, target: int = -1) -> Dictionary:
 			phase = "kennel_four_cleared"
 		elif floor == KENNEL_FIVE_FLOOR:
 			phase = "kennel_five_cleared"
+		elif floor == KENNEL_SIX_FLOOR:
+			phase = "kennel_six_cleared"
 		elif floor >= FLOORS.size():
 			phase = "complete"
 			if version >= 7:
@@ -1008,6 +1015,21 @@ func enter_kennel_five() -> bool:
 	return true
 
 
+func enter_kennel_six() -> bool:
+	if phase != "kennel_five_cleared":
+		return false
+	var previous := battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	version = maxi(version, KENNEL_SIX_VERSION)
+	floor = KENNEL_SIX_FLOOR
+	var layout := floori(seed / pow(3, floor)) % Pack.COVER_BOARD.size()
+	battle = Pack.new({"round": 6, "hp": previous.hp, "qi": previous.qi, "max_qi": previous.max_qi,
+		"companions": companions, "gu_left": hound_gu}, layout)
+	phase = "battle"
+	journal.append(["enter_kennel_six"])
+	return true
+
+
 func workshop_size() -> int:
 	if version >= 6 or phase == "ambush_workshop":
 		return 4
@@ -1362,6 +1384,8 @@ static func restore(saved: Variant) -> RefCounted:
 					committed = run.enter_kennel_four(command[0])
 				"kennel_four_cleared":
 					committed = command[0] == "enter_kennel_five" and run.enter_kennel_five()
+				"kennel_five_cleared":
+					committed = command[0] == "enter_kennel_six" and run.enter_kennel_six()
 				"victory":
 					committed = run.version >= 4 and command[0] == "chapter_two" and run.begin_chapter()
 				"complete":

@@ -721,6 +721,37 @@ func play_pack_exchange(exchange: Dictionary) -> void:
 func play_pack_event(event: Dictionary) -> void:
 	var dog := pack_pieces[int(event.actor)]
 	match event.kind:
+		"cover":
+			var swaps_hero: bool = event.partner == Pack.HERO_ID
+			var other := {} if swaps_hero else pack_pieces[int(event.partner)]
+			var from: Vector2 = dog.point
+			var to: Vector2 = hero_point if swaps_hero else Vector2(other.point)
+			var offset := (to - from).orthogonal().normalized() * 10.0
+			if to.x != from.x:
+				dog.face = 1 if to.x > from.x else -1
+				if not swaps_hero:
+					other.face = -dog.face
+			if swaps_hero:
+				hero_art = "move"
+			var swap := create_tween()
+			swap.tween_method(func(weight: float):
+				var side := offset * sin(weight * PI)
+				dog.point = from.lerp(to, weight) + side
+				dog.frame = 4 + mini(3, int(weight * 4))
+				var retreat := to.lerp(from, weight) - side
+				if swaps_hero:
+					hero_point = retreat
+					hero_frame = mini(7, int(weight * 8))
+				else:
+					other.point = retreat
+					other.frame = dog.frame
+				queue_redraw(), 0.0, 1.0, .28)
+			await swap.finished
+			dog.frame = 0
+			if swaps_hero:
+				hero_art = "ready"
+			else:
+				other.frame = 0
 		"move":
 			var walk := create_tween()
 			var from: Vector2 = dog.point

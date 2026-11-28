@@ -12,6 +12,8 @@ const LEAD_MOVE := "lead_move"
 const LEAD_BITE := "lead_bite"
 const BOUND_MOVE := "bound_move"
 const BOUND_BITE := "bound_bite"
+const LEAD_COVER := "lead_cover"
+const BOUND_COVER := "bound_cover"
 const BOARD := [
 	{"rocks": [10, 14, 27, 33], "wild": [3, 16, 22]},
 	{"rocks": [11, 25, 29, 37], "wild": [2, 21, 35]},
@@ -40,6 +42,13 @@ const HOWL_FORMATION := [35, 27, 36]
 const HOWL_TURN := 2
 const RESERVE_TURN := 6
 
+const COVER_BOARD := [
+	{"rocks": [9, 14, 18, 21, 26, 29, 33, 38], "wild": [20, 12, 23, 7]},
+	{"rocks": [8, 15, 18, 22, 26, 29, 32, 39], "wild": [20, 5, 11, 6]},
+	{"rocks": [8, 13, 18, 22, 26, 29, 34, 39], "wild": [19, 6, 12, 0]},
+]
+const COVER_FORMATION := [35, 27, 28]
+
 var round_number := 2
 var first_wild_id := 1
 var dogs: Array[Dictionary] = []
@@ -56,6 +65,8 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 		boards = RIDGE_BOARD
 	elif round_number == 5:
 		boards = HOWL_BOARD
+	elif round_number == 6:
+		boards = COVER_BOARD
 	var board: Dictionary = boards[layout]
 	super({"hp": vitals.get("hp", MAX_HP), "qi": vitals.get("qi", MAX_QI),
 		"max_qi": vitals.get("max_qi", MAX_QI), "rocks": board.rocks,
@@ -66,6 +77,8 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 			formation = [PIT_CELL, PIT_FLANKS[0], PIT_FLANKS[1]]
 		elif round_number == 4:
 			formation = RIDGE_FORMATIONS[vitals.formation]
+		elif round_number == 6:
+			formation = COVER_FORMATION
 		hero = formation[0]
 		gu_left = vitals.get("gu_left", 0)
 		var companions: Array = vitals.get("companions", [])
@@ -180,9 +193,9 @@ func forecast() -> void:
 
 func command_actor(action: String) -> int:
 	match action:
-		LEAD_MOVE, LEAD_BITE:
+		LEAD_MOVE, LEAD_BITE, LEAD_COVER:
 			return 0
-		BOUND_MOVE, BOUND_BITE:
+		BOUND_MOVE, BOUND_BITE, BOUND_COVER:
 			return bound_id
 	return HERO_ID
 
@@ -213,6 +226,12 @@ func targets_for(action: String) -> Array:
 				return []
 			return living_dogs(false).map(func(id: int): return dogs[id].cell).filter(
 				func(cell: int): return bite_origin(actor, cell) >= 0)
+		LEAD_COVER, BOUND_COVER:
+			if round_number < 6 or actor == NO_ACTOR or dogs[actor].hp <= 0:
+				return []
+			return neighbors(actor_cell(actor)).filter(func(cell: int):
+				var partner := actor_at(cell)
+				return partner == HERO_ID or (partner >= 0 and dogs[partner].allied))
 		"bind_hound":
 			if gu_left == 0 or qi < BIND_COST:
 				return []
@@ -232,7 +251,7 @@ func unavailable(action: String, target: int = -1) -> String:
 				return "Đã dùng Ngự Khuyển Cổ của vòng này."
 			if qi < BIND_COST:
 				return "Cần %d chân nguyên để thu phục." % BIND_COST
-		"move", LEAD_MOVE, LEAD_BITE, BOUND_MOVE, BOUND_BITE:
+		"move", LEAD_MOVE, LEAD_BITE, BOUND_MOVE, BOUND_BITE, LEAD_COVER, BOUND_COVER:
 			var dog := command_actor(action)
 			if dog == NO_ACTOR or (dog >= 0 and dogs[dog].hp <= 0):
 				return "Chó này không thể nhận lệnh."
@@ -245,6 +264,8 @@ func unavailable(action: String, target: int = -1) -> String:
 		return "Chưa có chó hoang trong tầm và đường phóng thông." if action == "bind_hound" else "Chưa có ô hợp lệ cho lệnh này."
 	if target in options:
 		return ""
+	if action in [LEAD_COVER, BOUND_COVER]:
+		return "Yểm hộ cần một đồng minh còn sống đứng kề." if round_number >= 6 else "Yểm hộ mở từ vòng sáu."
 	if action == "bind_hound" and target >= 0 and target < COLUMNS * ROWS:
 		var victim := actor_at(target)
 		if victim < 0 or dogs[victim].allied:
@@ -273,6 +294,8 @@ func preview_action(action: String, target: int = -1) -> Dictionary:
 			while next != origin:
 				steps.push_front(next)
 				next = parents[next]
+		LEAD_COVER, BOUND_COVER:
+			return {"path": steps, "dealt": 0, "actor": actor, "swap_with": actor_at(target)}
 		LEAD_BITE, BOUND_BITE:
 			dealt = mini(ALLY_BITE, dogs[actor_at(target)].hp)
 			var strike_from := bite_origin(actor, target)
@@ -324,6 +347,16 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			dogs[bound_id].allied = true
 			exchange.player_events.append({"kind": "bind", "actor": bound_id})
 			notes.append("Thu phục thành công. Chó giữ nguyên sinh lực.")
+		LEAD_COVER, BOUND_COVER:
+			var partner: int = preview.swap_with
+			var origin := actor_cell(actor)
+			dogs[actor].cell = target
+			if partner == HERO_ID:
+				hero = origin
+			else:
+				dogs[partner].cell = origin
+			exchange.player_events.append({"kind": "cover", "actor": actor, "partner": partner})
+			notes.append("%s đổi chỗ yểm hộ %s." % [actor_name(actor), actor_name(partner).to_lower()])
 		LEAD_BITE, BOUND_BITE:
 			var wild := actor_at(target)
 			apply_bite(exchange.player_events, notes, actor, wild, preview.dealt, false)

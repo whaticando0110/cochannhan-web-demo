@@ -1553,6 +1553,7 @@ func play_kennel_four() -> void:
 			"The saved victory must retain its surviving pack")
 		await capture("godot-v23-ket-qua-vong-bon-%s.png" % id)
 		await play_kennel_five(id)
+		await play_kennel_six(id)
 
 
 func play_kennel_five(formation: String) -> void:
@@ -1616,6 +1617,84 @@ func play_kennel_five(formation: String) -> void:
 	check(flow.run.phase == "kennel_five_cleared" and flow.run.battle.dogs == survivors,
 		"Both routes through rounds four and five must win and retain their own result after reload")
 	await capture("godot-v26-vuot-vong-nam-%s.png" % formation)
+
+
+func play_kennel_six(formation: String) -> void:
+	var previous := flow.run.battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	var checkpoint: Dictionary = flow.run.snapshot().duplicate(true)
+	check(checkpoint.version == Run.KENNEL_FIVE_VERSION and Run.restore(checkpoint).phase == "kennel_five_cleared",
+		"The previous version must still open the next trial from the saved round-five result")
+	await click_button("enter_kennel_six")
+	await launch()
+	var pack := flow.run.battle as Pack
+	check(flow.run.version == Run.KENNEL_SIX_VERSION and flow.run.floor == Run.KENNEL_SIX_FLOOR
+		and pack.round_number == 6 and pack.hp == previous.hp and pack.qi == previous.qi and pack.max_qi == previous.max_qi
+		and pack.gu_left == previous.gu_left and pack.first_wild_id == companions.size(),
+		"The new round must keep the caster's vitals, stored Gu and pack size")
+	for index in range(companions.size()):
+		check(pack.dogs[index].hp == companions[index].hp and pack.dogs[index].max_hp == companions[index].max_hp,
+			"Each path must carry each dog's exact health and maximum into the sixth round")
+	var wrong_version: Dictionary = flow.run.snapshot().duplicate(true)
+	wrong_version.version = Run.KENNEL_FIVE_VERSION
+	check(Run.restore(wrong_version) == null and not flow.run.enter_kennel_six(),
+		"The sixth round cannot replay in the old journal or be entered twice")
+	check(flow.current.actions.has("dog_cover") and 28 in pack.intent.cells and 27 not in pack.intent.cells,
+		"The first enemy attack must threaten the wounded dog and expose the yểm hộ control")
+	var cut_howl := formation == "ridge_hold"
+	var cover_target := 28 if cut_howl else 27
+	if not cut_howl:
+		key(KEY_6)
+	key(KEY_7)
+	await process_frame
+	var expected_order := Pack.LEAD_COVER if cut_howl else Pack.BOUND_COVER
+	check(flow.current.pack_order == expected_order and cover_target in flow.current.field.available,
+		"Yểm hộ must let either selected dog target the other allied tile on the board")
+	await capture("godot-v27-yem-ho-%s.png" % formation)
+	key(KEY_7)
+	await shoot(KEY_7, cover_target)
+	var swapped := pack.dogs.duplicate(true)
+	var forecast := pack.intent.duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	check(pack.dogs == swapped and pack.intent == forecast and pack.turn == 2 and pack.qi == previous.qi
+		and pack.dogs[0].cell == 28 and pack.dogs[0].hp == companions[0].hp - Pack.WILD_BITE
+		and pack.dogs[1].cell == 27 and pack.dogs[1].hp == companions[1].hp and pack.hp == previous.hp,
+		"After reload the incoming bite must still hit the covering dog, leaving the wounded dog untouched")
+	await shoot(KEY_2, 37 if cut_howl else 36)
+	key(KEY_6)
+	await play_commands([[KEY_5, 20], [KEY_5, 19], [KEY_5, 20], [KEY_5, 19], [KEY_4]])
+	await shoot(KEY_1, 28 if cut_howl else 34)
+	await play_commands([[KEY_5, 4], [KEY_2, 5], [KEY_5, 7], [KEY_5, 7]])
+	var survivors := pack.dogs.duplicate(true)
+	await launch()
+	check(flow.run.phase == "kennel_six_cleared" and flow.run.battle.dogs == survivors,
+		"Both round-five outcomes must lead to a winnable sixth round with a replayable result")
+	await capture("godot-v27-vuot-vong-sau-%s.png" % formation)
+
+
+func check_kennel_six_rules() -> void:
+	var carried := [{"hp": 10, "max_hp": 32}, {"hp": 0, "max_hp": 18}]
+	var profile := Awakening.profile_for("huyen-bao", 12)
+	var run := Run.new(profile, 0)
+	run.battle = Pack.new({"round": 5, "hp": 1, "qi": 1, "companions": carried})
+	run.phase = "kennel_five_cleared"
+	check(run.battle.preview_action(Pack.LEAD_COVER, 35).has("error"), "Yểm hộ must stay locked in earlier rounds")
+	check(run.enter_kennel_six(), "A survivor must carry the run into round six even if the other dog fell")
+	var pack := run.battle as Pack
+	check(pack.living_dogs(true) == [0] and pack.dogs[1].hp == 0 and pack.dogs[1].max_hp == 18
+		and not pack.unavailable(Pack.LEAD_COVER, 28).is_empty() and not pack.unavailable(Pack.BOUND_COVER, 27).is_empty(),
+		"A dead companion must remain dead and cannot be selected or ordered")
+	pack.dogs[pack.first_wild_id].cell = 36
+	pack.forecast()
+	var positions := pack.dogs.duplicate(true)
+	var peek := pack.preview_action(Pack.LEAD_COVER, pack.hero)
+	check(peek.get("swap_with") == Pack.HERO_ID and pack.dogs == positions and pack.turn == 1,
+		"The cover forecast must identify the caster without mutating the battle")
+	var exchange := pack.take_turn(Pack.LEAD_COVER, pack.hero)
+	check(not exchange.has("error") and exchange.hero_damage == 0 and pack.hero == 27 and pack.hp == 1
+		and pack.dogs[0].cell == 35 and pack.dogs[0].hp == 10 - Pack.WILD_BITE,
+		"A lone dog can swap with the caster to take the intended bite")
 
 
 func check_kennel_five_carryover() -> void:
@@ -2100,6 +2179,7 @@ func exercise() -> void:
 	check_kennel_rules()
 	check_pack_rules()
 	check_kennel_five_carryover()
+	check_kennel_six_rules()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -2195,5 +2275,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, five Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, six Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
 	quit(1 if failed else 0)

@@ -305,6 +305,8 @@ func build_hud() -> void:
 			["bind_hound", "3   Ngự Khuyển Cổ\nTầm %d ô · −%d CN" % [Rules.BIND_RANGE, Rules.BIND_COST]],
 			["dog_bite", "5   Lệnh táp\nÁp một ô rồi táp"],
 		])
+		if (state as Pack).round_number >= 6:
+			descriptions.append(["dog_cover", "7   Yểm hộ\nĐổi chỗ đồng minh"])
 	elif state.tactic == "kennel":
 		descriptions.append(["bind_hound", "3   Ngự Khuyển Cổ\nTầm %d ô · −%d CN" % [Rules.BIND_RANGE, Rules.BIND_COST]])
 	else:
@@ -551,6 +553,8 @@ func pack_action(action: String) -> String:
 			return Pack.LEAD_MOVE if pack_choice == 0 else Pack.BOUND_MOVE
 		"dog_bite":
 			return Pack.LEAD_BITE if pack_choice == 0 else Pack.BOUND_BITE
+		"dog_cover":
+			return Pack.LEAD_COVER if pack_choice == 0 else Pack.BOUND_COVER
 	return action
 
 
@@ -618,7 +622,10 @@ func show_hint() -> void:
 		return
 	if state is Pack:
 		if selecting:
-			hint_label.text = "Chọn ô sáng trên sân hoặc dùng phím mũi tên và Enter."
+			hint_label.text = "Chọn đồng minh đứng kề để đổi chỗ. Đòn đã báo vẫn đánh vào ô cũ." if pack_order in [Pack.LEAD_COVER, Pack.BOUND_COVER] else (
+				"Chọn ô sáng trên sân hoặc dùng phím mũi tên và Enter.")
+		elif (state as Pack).round_number >= 6:
+			hint_label.text = "Phím 7 yểm hộ bằng chó đang chọn. Nhấn 6 hoặc chọn A/B để đổi chó."
 		else:
 			hint_label.text = "Phím 2 và 5 ra lệnh cho chó đang chọn. Chọn A/B trên sân hoặc nhấn 6 để đổi chó."
 		return
@@ -753,6 +760,13 @@ func inspect_cell(cell: int) -> void:
 			hint_label.text = "%s · %s" % [Rules.cell_name(cell), preview.error]
 		elif pack_order == "bind_hound":
 			hint_label.text = "%s · Thu phục, giữ nguyên sinh lực." % Rules.cell_name(cell)
+		elif preview.has("swap_with"):
+			var pack := state as Pack
+			var old_cell := pack.actor_cell(preview.actor)
+			var swap := "Đổi chỗ với %s." % pack.actor_name(preview.swap_with).to_lower()
+			if cell in state.intent.cells or old_cell in state.intent.cells:
+				swap += " Đòn vẫn đánh ô đã báo."
+			hint_label.text = "%s · %s" % [Rules.cell_name(cell), swap]
 		elif preview.dealt > 0:
 			hint_label.text = "%s · Táp gây %d sát thương." % [Rules.cell_name(cell), preview.dealt]
 		else:
@@ -883,6 +897,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			choose(orders[event.keycode])
 		elif event.keycode == KEY_6:
 			select_pack_dog(1 - pack_choice)
+		elif event.keycode == KEY_7 and actions.has("dog_cover"):
+			choose("dog_cover")
 		else:
 			return
 		get_viewport().set_input_as_handled()
