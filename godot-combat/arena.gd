@@ -224,6 +224,7 @@ func paint_tiles() -> void:
 	var wind_pass := rules != null and rules.tactic == "wind_pass"
 	var kennel := rules != null and rules.tactic in ["kennel", "kennel_pack"]
 	var pit := rules is Pack and (rules as Pack).round_number == 3
+	var charge_cells: Array = rules.intent.get("charge_cells", []) if rules is Pack else []
 	for cell in range(Rules.ROWS * Rules.COLUMNS):
 		var point := Rules.grid(cell)
 		var rect := Rect2(ORIGIN + Vector2(point) * TILE, TILE)
@@ -261,7 +262,10 @@ func paint_tiles() -> void:
 				draw_texture_rect(ROCK, Rect2(rect.get_center() - Vector2(39, 40), Vector2(78, 78)), false)
 		var danger := cell in threatened
 		var accessible := selecting and cell in available
-		if danger and point.y == warned_row:
+		if cell in charge_cells:
+			draw_rect(rect.grow(-1), Color("#904ca16d"))
+			paint_marker(rect, Color("#f1baff"), false, accessible)
+		elif danger and point.y == warned_row:
 			var column := point.x if charge_direction > 0 else Rules.COLUMNS - 1 - point.x
 			var tile := 0 if column == 0 else 2 if column == Rules.COLUMNS - 1 else 1
 			terrain_frame(Art.TELEGRAPHS, rect, Vector2i(tile, 2 if room == 2 else 1), Color.WHITE, charge_direction > 0)
@@ -535,9 +539,12 @@ func paint_pack() -> void:
 		if id == int(pack.intent.get("howler", Pack.NO_ACTOR)):
 			marker = "HÚ"
 			draw_arc(center + Vector2(0, 8), 29, 0, TAU, 32, Color("#ffd48e"), 2, true)
+		elif id == int(pack.intent.get("charger", Pack.NO_ACTOR)):
+			marker = "LAO"
+			draw_arc(center + Vector2(0, 4), 24, 0, TAU, 32, Color("#f1baff"), 2, true)
 		elif pack.round_number == 5 and not dog.allied and pack.turn < int(pack.dogs[id].get("wake_turn", 1)):
 			marker = "CHỜ"
-		elif pack.round_number == 5 and id == pack.first_wild_id and not dog.allied:
+		elif pack.round_number in [5, 7] and id == pack.first_wild_id and not dog.allied:
 			marker = "ĐẦU"
 		draw_string(ThemeDB.fallback_font, Vector2(center.x - 20, hp_y - 5), marker,
 			HORIZONTAL_ALIGNMENT_CENTER, 40, 14, tone)
@@ -752,15 +759,16 @@ func play_pack_event(event: Dictionary) -> void:
 				hero_art = "ready"
 			else:
 				other.frame = 0
-		"move":
+		"move", "charge":
 			var walk := create_tween()
 			var from: Vector2 = dog.point
+			var duration := .08 if event.kind == "charge" else .14
 			for cell: int in event.path:
 				var to := cell_center(cell)
 				if to.x != from.x:
 					walk.tween_callback((func(face: int): dog.face = face).bind(1 if to.x > from.x else -1))
-				walk.tween_method(func(value: Vector2): dog.point = value; queue_redraw(), from, to, .14)
-				walk.parallel().tween_method(func(value: float): dog.frame = int(value), 4.0, 7.9, .14)
+				walk.tween_method(func(value: Vector2): dog.point = value; queue_redraw(), from, to, duration)
+				walk.parallel().tween_method(func(value: float): dog.frame = int(value), 4.0, 7.9, duration)
 				from = to
 			await walk.finished
 			dog.frame = 0

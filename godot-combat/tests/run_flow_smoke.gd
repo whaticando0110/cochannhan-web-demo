@@ -1554,6 +1554,7 @@ func play_kennel_four() -> void:
 		await capture("godot-v23-ket-qua-vong-bon-%s.png" % id)
 		await play_kennel_five(id)
 		await play_kennel_six(id)
+		await play_kennel_seven(id)
 
 
 func play_kennel_five(formation: String) -> void:
@@ -1671,6 +1672,106 @@ func play_kennel_six(formation: String) -> void:
 	check(flow.run.phase == "kennel_six_cleared" and flow.run.battle.dogs == survivors,
 		"Both round-five outcomes must lead to a winnable sixth round with a replayable result")
 	await capture("godot-v27-vuot-vong-sau-%s.png" % formation)
+
+
+func play_kennel_seven(formation: String) -> void:
+	var previous := flow.run.battle as Pack
+	var companions := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	var checkpoint: Dictionary = flow.run.snapshot().duplicate(true)
+	check(checkpoint.version == Run.KENNEL_SIX_VERSION and Run.restore(checkpoint).phase == "kennel_six_cleared",
+		"Both saved sixth-round results must still open the next trial")
+	await click_button("enter_kennel_seven")
+	await launch()
+	var pack := flow.run.battle as Pack
+	check(flow.run.version == Run.KENNEL_SEVEN_VERSION and flow.run.floor == Run.KENNEL_SEVEN_FLOOR
+		and pack.round_number == 7 and pack.hp == previous.hp and pack.qi == previous.qi and pack.max_qi == previous.max_qi
+		and pack.gu_left == previous.gu_left and pack.first_wild_id == companions.size()
+		and pack.unavailable("moon").contains("phong cấm"), "The new trial must retain vitals, Gu and the phúc địa rules")
+	for index in range(companions.size()):
+		check(pack.dogs[index].hp == companions[index].hp and pack.dogs[index].max_hp == companions[index].max_hp,
+			"Each allied dog must retain its exact wounds and health cap from round six")
+	var old_header: Dictionary = flow.run.snapshot().duplicate(true)
+	old_header.version = Run.KENNEL_SIX_VERSION
+	check(Run.restore(old_header) == null and not flow.run.enter_kennel_seven(),
+		"The new round must reject an old journal header or a repeated transition")
+	await shoot(KEY_4)
+	var forecast := pack.intent.duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	var leader := pack.first_wild_id
+	check(pack.intent == forecast and pack.intent.charger == leader and pack.intent.charge_cells == [28, 36]
+		and flow.current.field.threatened == [28, 36] and flow.current.intent_name.text == "Chó đầu đàn sắp lao",
+		"The announced charge lane must be drawn and replay before the player reacts")
+	await capture("godot-v28-bao-lao-%s.png" % formation)
+
+	var cut_howl := formation == "ridge_hold"
+	if cut_howl:
+		await shoot(KEY_7, 28)
+	else:
+		key(KEY_6)
+		await shoot(KEY_2, 29)
+	var positions := pack.dogs.duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	check(pack.dogs == positions and pack.turn == 3 and pack.hp == previous.hp and pack.dogs[1].hp == companions[1].hp,
+		"The saved charge reaction must retain all positions and the wounded dog's health")
+	if cut_howl:
+		check(pack.dogs[0].hp == companions[0].hp - Pack.CHARGE_DAMAGE and pack.dogs[0].cell == 28
+			and pack.dogs[leader].cell == 20, "Yểm hộ must take the hit and stop the charge at the first obstacle")
+		await play_commands([[KEY_2, 21], [KEY_5, 5], [KEY_5, 5], [KEY_5, 6], [KEY_5, 12], [KEY_5, 12], [KEY_5, 6], [KEY_5, 6]])
+	else:
+		check(pack.dogs[0].hp == companions[0].hp and pack.dogs[1].cell == 29 and pack.dogs[leader].cell == 36,
+			"Sidestepping must preserve both dogs and let the leader reach the end of the announced lane")
+		await shoot(KEY_1, 33)
+		key(KEY_6)
+		await play_commands([[KEY_5, 36], [KEY_5, 35]])
+		key(KEY_6)
+		await play_commands([[KEY_5, 20], [KEY_5, 20], [KEY_5, 3], [KEY_2, 4], [KEY_5, 6], [KEY_5, 6]])
+	var survivors := pack.dogs.duplicate(true)
+	await launch()
+	check(flow.run.phase == "kennel_seven_cleared" and flow.run.battle.dogs == survivors,
+		"Both routes must win and reconstruct the surviving pack after reload")
+	await capture("godot-v28-vuot-vong-bay-%s.png" % formation)
+
+
+func check_kennel_seven_rules() -> void:
+	var profile := Awakening.profile_for("huyen-bao", 12)
+	for seed in range(Pack.CHARGE_BOARD.size()):
+		var run := Run.new(profile, seed)
+		run.battle = Pack.new({"round": 6, "hp": 13, "companions": [{"hp": 0, "max_hp": 32}, {"hp": 8, "max_hp": 18}]})
+		run.phase = "kennel_six_cleared"
+		check(run.enter_kennel_seven(), "The new round must accept a single surviving ally")
+		var next := run.battle as Pack
+		check(next.rocks == Pack.CHARGE_BOARD[seed].rocks, "Distinct seeds must reach all three layouts through progression")
+		check(next.living_dogs(true) == [1] and next.dogs[0].hp == 0 and next.dogs[0].max_hp == 32,
+			"A fallen dog must remain fallen at the new round")
+
+	var pack := Pack.new({"round": 7, "hp": 13, "companions": [{"hp": 11, "max_hp": 32}, {"hp": 8, "max_hp": 18}]})
+	pack.hero = 36
+	var leader := pack.first_wild_id
+	for index in range(leader + 1, pack.dogs.size()):
+		pack.dogs[index].hp = 0
+	pack.turn = 2
+	pack.rocks = [20]
+	pack.forecast()
+	check(not pack.intent.has("charger"), "A rock must stop the charge forecast")
+	pack.rocks = [21]
+	pack.dogs[0].cell = 20
+	pack.dogs[1].cell = 28
+	pack.forecast()
+	check(pack.intent.charge_cells == [20, 28, 36], "A clear lane should announce up to three cells")
+	var reply := pack.take_turn("guard")
+	check(reply.hero_damage == 0 and pack.hp == 13 and pack.dogs[0].hp == 11 - Pack.CHARGE_DAMAGE
+		and pack.dogs[1].hp == 8 and pack.dogs[leader].cell == 12,
+		"Only the first occupant of the locked line can take the charge")
+
+	pack.turn = 5
+	pack.dogs[leader].hp = Pack.ALLY_BITE
+	pack.forecast()
+	check(pack.intent.charger == leader, "A surviving aligned leader should prepare another charge")
+	reply = pack.take_turn(Pack.LEAD_BITE, 12)
+	check(reply.enemy_events.is_empty() and pack.result == Rules.VICTORY,
+		"Removing the leader before the reply must cancel its charge")
 
 
 func check_kennel_six_rules() -> void:
@@ -2180,6 +2281,7 @@ func exercise() -> void:
 	check_pack_rules()
 	check_kennel_five_carryover()
 	check_kennel_six_rules()
+	check_kennel_seven_rules()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -2275,5 +2377,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, six Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, seven Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
 	quit(1 if failed else 0)

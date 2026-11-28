@@ -525,7 +525,9 @@ func update_pack_hud(pack: Pack) -> void:
 	var wild_count := pack.living_dogs(false).size()
 	var delayed: int = wild_count - state.intent.get("orders", []).size()
 	var howler: int = state.intent.get("howler", Pack.NO_ACTOR)
-	if howler >= 0:
+	if state.intent.has("charge_cells"):
+		intent_copy.text = "Lao qua các ô sáng. Mục tiêu đầu tiên chịu %d sát thương." % Pack.CHARGE_DAMAGE
+	elif howler >= 0:
 		intent_copy.text = "Táp ô %s để trì hoãn tiếp viện." % Rules.cell_name(pack.actor_cell(howler))
 	elif not threats.is_empty():
 		intent_copy.text = "Ô bị nhắm táp · %s" % ", ".join(threats)

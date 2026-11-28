@@ -49,6 +49,15 @@ const COVER_BOARD := [
 ]
 const COVER_FORMATION := [35, 27, 28]
 
+const CHARGE_BOARD := [
+	{"rocks": [8, 14, 18, 22, 26, 30, 32, 39], "wild": [12, 4, 23, 7]},
+	{"rocks": [9, 15, 18, 21, 26, 29, 32, 39], "wild": [11, 5, 23, 6]},
+	{"rocks": [8, 13, 18, 22, 26, 29, 34, 39], "wild": [12, 3, 23, 0]},
+]
+const CHARGE_PERIOD := 3
+const CHARGE_RANGE := 3
+const CHARGE_DAMAGE := 7
+
 var round_number := 2
 var first_wild_id := 1
 var dogs: Array[Dictionary] = []
@@ -67,6 +76,8 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 		boards = HOWL_BOARD
 	elif round_number == 6:
 		boards = COVER_BOARD
+	elif round_number == 7:
+		boards = CHARGE_BOARD
 	var board: Dictionary = boards[layout]
 	super({"hp": vitals.get("hp", MAX_HP), "qi": vitals.get("qi", MAX_QI),
 		"max_qi": vitals.get("max_qi", MAX_QI), "rocks": board.rocks,
@@ -77,7 +88,7 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 			formation = [PIT_CELL, PIT_FLANKS[0], PIT_FLANKS[1]]
 		elif round_number == 4:
 			formation = RIDGE_FORMATIONS[vitals.formation]
-		elif round_number == 6:
+		elif round_number in [6, 7]:
 			formation = COVER_FORMATION
 		hero = formation[0]
 		gu_left = vitals.get("gu_left", 0)
@@ -110,7 +121,7 @@ func actor_name(id: int) -> String:
 		return "Chó vòng đầu"
 	if id == bound_id:
 		return "Chó mới"
-	if round_number == 5 and id == first_wild_id:
+	if round_number in [5, 7] and id == first_wild_id:
 		return "Chó đầu đàn"
 	return "Chó hoang %d" % wild_label(id)
 
@@ -160,11 +171,40 @@ func move_targets() -> Array:
 	return targets_for("move")
 
 
+func charge_lane(origin: int, allies: Array[int]) -> Array[int]:
+	var targets: Array[int] = [hero]
+	for ally in allies:
+		targets.append(actor_cell(ally))
+	var best: Array[int] = []
+	var closest := CHARGE_RANGE + 1
+	for next in neighbors(origin):
+		var ray: Array[int] = []
+		var cell := next
+		var step := next - origin
+		while ray.size() < CHARGE_RANGE and cell >= 0 and cell < COLUMNS * ROWS:
+			var previous: int = origin if ray.is_empty() else ray.back()
+			if distance(cell, previous) != 1 or cell in rocks:
+				break
+			var occupant := actor_at(cell)
+			if occupant >= 0 and not dogs[occupant].allied:
+				break
+			ray.append(cell)
+			cell += step
+		for index in range(mini(ray.size(), closest - 1)):
+			if ray[index] in targets:
+				best = ray
+				closest = index + 1
+				break
+	return best
+
+
 func forecast() -> void:
 	var orders: Array[Dictionary] = []
 	var cells: Array[int] = []
 	var allies := living_dogs(true)
 	var howler := NO_ACTOR
+	var charger := NO_ACTOR
+	var lane: Array[int] = []
 	for id in living_dogs(false):
 		if turn < int(dogs[id].get("wake_turn", 1)):
 			continue
@@ -173,6 +213,15 @@ func forecast() -> void:
 			orders.append({"dog": id, "howl": true})
 			continue
 		var from := actor_cell(id)
+		if round_number == 7 and turn % CHARGE_PERIOD == 2 and id == first_wild_id:
+			lane = charge_lane(from, allies)
+			if not lane.is_empty():
+				charger = id
+				orders.append({"dog": id, "charge": lane})
+				for cell in lane:
+					if cell not in cells:
+						cells.append(cell)
+				continue
 		var target := HERO_ID
 		var gap := distance(from, hero)
 		for ally in allies:
@@ -189,6 +238,10 @@ func forecast() -> void:
 	if howler >= 0:
 		intent.name = "Chó đầu đàn sắp hú"
 		intent.howler = howler
+	if charger >= 0:
+		intent.name = "Chó đầu đàn sắp lao"
+		intent.charger = charger
+		intent.charge_cells = lane
 
 
 func command_actor(action: String) -> int:
@@ -376,7 +429,9 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 			continue
 		if dogs[wild].allied or dogs[wild].hp <= 0:
 			continue
-		if order.bite:
+		if order.has("charge"):
+			resolve_charge(exchange, wild, order.charge)
+		elif order.bite:
 			var victim := actor_at(order.cell)
 			if victim == HERO_ID or (victim >= 0 and dogs[victim].allied):
 				apply_bite(exchange.enemy_events, notes, wild, victim, WILD_BITE, exchange.hero_guard)
@@ -402,6 +457,22 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	else:
 		intent = {}
 	return exchange
+
+
+func resolve_charge(exchange: Dictionary, wild: int, lane: Array[int]) -> void:
+	var victim := NO_ACTOR
+	var path: Array[int] = []
+	for cell in lane:
+		victim = actor_at(cell)
+		if victim != NO_ACTOR:
+			break
+		path.append(cell)
+	if not path.is_empty():
+		dogs[wild].cell = path.back()
+		exchange.enemy_events.append({"kind": "charge", "actor": wild, "path": path})
+	exchange.notes.append("Chó đầu đàn lao theo hàng đã báo.")
+	if victim == HERO_ID or (victim >= 0 and dogs[victim].allied):
+		apply_bite(exchange.enemy_events, exchange.notes, wild, victim, CHARGE_DAMAGE, exchange.hero_guard)
 
 
 func apply_bite(events: Array, notes: Array[String], attacker: int, victim: int, damage: int, guard: bool) -> void:

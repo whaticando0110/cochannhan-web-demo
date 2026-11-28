@@ -385,7 +385,10 @@ func show_result() -> void:
 			description = "Đã dẹp đàn chó đầu khe. Một đàn khác đóng lối ở bãi đá."
 		"kennel_six_cleared":
 			title = "Vượt vòng sáu Khuyển Vương"
-			description = "Đàn chó đã mở được đường. Chó sống sót giữ nguyên thương thế."
+			description = "Đàn chó đã mở được đường. Một con đầu đàn chặn khe đá phía trước."
+		"kennel_seven_cleared":
+			title = "Vượt vòng bảy Khuyển Vương"
+			description = "Đã vượt khe phục kích. Chó sống sót giữ nguyên thương thế."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -554,7 +557,7 @@ func show_result() -> void:
 			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
 			enter.name = "enter_kennel_two"
 			enter.grab_focus()
-		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared", "kennel_five_cleared", "kennel_six_cleared"]:
+		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared", "kennel_five_cleared", "kennel_six_cleared", "kennel_seven_cleared"]:
 			var pack := run.battle as Run.Pack
 			var rows: PackedStringArray = []
 			for id in pack.living_dogs(true):
@@ -588,6 +591,11 @@ func show_result() -> void:
 				text(menu, "Vòng sáu · Đổi chỗ để yểm hộ đồng minh đang bị nhắm táp.", Rect2(96, 411, 1008, 40), 18)
 				var enter := button(menu, "Vào Bãi đá Chặn Đường", Rect2(432, 480, 338, 54), advance_kennel.bind("sixth"))
 				enter.name = "enter_kennel_six"
+				enter.grab_focus()
+			elif run.phase == "kennel_six_cleared":
+				text(menu, "Vòng bảy · Né đường lao của chó đầu đàn hoặc đổi chó chịu đòn.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Vào Khe đá Hàm Sói", Rect2(432, 480, 338, 54), advance_kennel.bind("seventh"))
+				enter.name = "enter_kennel_seven"
 				enter.grab_focus()
 	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
 	report_save_problem()
@@ -1185,6 +1193,8 @@ func advance_kennel(step: String) -> void:
 			changed = run.enter_kennel_five()
 		"sixth":
 			changed = run.enter_kennel_six()
+		"seventh":
+			changed = run.enter_kennel_seven()
 		_:
 			changed = run.enter_kennel_four(step)
 	if changed:

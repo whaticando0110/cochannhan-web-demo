@@ -297,6 +297,14 @@ Nhấn `7` để chó A hoặc B đang chọn **Yểm hộ**, rồi chọn một
 
 Nhật ký v27 phát lại vị trí sau đổi chỗ, đòn táp và thương thế phát sinh. Đã qua vòng sáu từ cả kết quả ngắt hú và để hú hoàn tất, tải lại lúc mới vào, sau yểm hộ và khi thắng. Mô phỏng có đường thắng cho 21 cấu hình gồm ba bố cục và bảy mức thương thế, gồm trường hợp chỉ còn một chó hoặc cổ sư chỉ còn 1 sinh lực.
 
+## Vòng bảy Khuyển Vương · Khe đá Hàm Sói
+
+Từ kết quả vòng sáu, chọn **Vào Khe đá Hàm Sói**. Cả hai đường qua Hẻm Vọng Thanh đều giữ đúng sinh lực và trần sinh lực của từng con chó, kể cả chó đã gục. Cổ sư giữ sinh lực, chân nguyên và số Ngự Khuyển còn lại.
+
+Đến lượt 2, 5, 8 và các lượt cách ba sau đó, chó đầu đàn báo **LAO** nếu có đối thủ thẳng hàng hoặc cột trong tầm ba ô. Sân tô tím đường đã báo. Đá hoặc chó hoang phía trước cắt đường. Cú lao khóa vào những ô đã báo và dừng ở mục tiêu đầu tiên, gây 7 sát thương cơ bản. Nếu không còn mục tiêu trên đường, chó đầu đàn tiến đến cuối dải. Di chuyển để né toàn bộ dải, Yểm hộ để đổi con chịu đòn, hoặc hạ hay thu phục chó đầu đàn trước khi nó đáp trả. Quy tắc cú lao là thiết kế demo dựa trên đột kích của đàn chó trong truyện. [Chương 425](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-425)
+
+Nhật ký v28 phát lại đường báo, vị trí sau cú lao, thương thế và kết quả. Cả đường ngắt hú và đường để hú hoàn tất đã chơi đến hết vòng bảy. Đã thử Yểm hộ chắn cú lao ở đường đầu và điều chó né dải tím ở đường còn lại. Ba bố cục đều có thể gặp theo mã lượt. Mô phỏng tìm được đường thắng cho 21 cấu hình gồm ba bố cục và bảy tình trạng thương thế.
+
 ## Cửa Tam Vương và vòng đầu Tín Vương
 
 Chương 392 ghi ba cột sáng ở Tam Xoa. Ngự Khuyển Cổ mở cửa vàng Khuyển Vương, Hạc Giấy Cổ mở cửa lam Tín Vương, Bạo Trứng Cổ mở cửa đỏ Bạo Vương. Chương 438 kể Hạc Giấy dẫn đường vào sương mù. Cổ sư và người Lông nhận cùng một phần nguyên liệu rồi so tài luyện Cổ trong phúc địa. [Chương 392](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-392.html) · [Chương 438](https://medoctruyencv.com/truyen/co-chan-nhan-1000000016/1000014158)
@@ -317,13 +325,13 @@ Nhật ký v25 ghi cột sáng, chìa khóa và từng lượt để tải lại
 
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v27 | Mốc tiếp |
+| Phần | Đã chơi được trong v28 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
 | Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
 | Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc, Tứ Vị Tửu Trùng và Ẩn Lân trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở Cổ bậc cao hơn. |
 | Tạo sát chiêu | Liên Nguyệt và Bạch Quang Hộ Thể dùng chung ô 8, chỉ cấp theo Cổ Nhị chuyển cùng Tiểu Quang đang sở hữu. Đã so chi phí và hiệu quả đến Đường núi Tam Xoa. | Dùng cùng cấu trúc ô khi mở sát chiêu cho hệ khác. |
-| Truyền thừa | Sáu vòng Khuyển Vương và vòng đầu mỗi nhánh Tín Vương, Bạo Vương. Cửa Tam Vương dùng chìa khóa riêng từng nhánh. | Phát triển các vòng kế và chuẩn bị quyền chọn đối thủ từ vòng mười Khuyển Vương. |
+| Truyền thừa | Bảy vòng Khuyển Vương và vòng đầu mỗi nhánh Tín Vương, Bạo Vương. Cửa Tam Vương dùng chìa khóa riêng từng nhánh. | Phát triển các vòng kế và chuẩn bị quyền chọn đối thủ từ vòng mười Khuyển Vương. |
 
 Mỗi lần thêm bí phương hoặc màn mới, kiểm cả bộ sở hữu và bộ cấp sẵn. Tách luật của mỗi nhánh truyền thừa trước khi mở thêm cửa.
 
