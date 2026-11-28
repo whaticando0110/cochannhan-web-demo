@@ -43,6 +43,8 @@ Sau khi nhận thưởng Điện Trấn Mạch, chọn **Sang Tứ chuyển**. N
 
 Sau bãi đá, **trại tạm Tam Xoa** cho chọn nghỉ lấy sức hoặc đổi 6 nguyên thạch lấy 2 Sinh Cơ Diệp. Trên **Đường núi Tam Xoa**, chọn đánh cổ sư Nô đạo để ngắt lệnh, hoặc hạ khuyển thú trước. Cả hai chiếm ô riêng và có thể chắn đường phóng Cổ. Khi khuyển đã khóa ô, di chuyển để né hoặc thủ thế. Thắng mở đường đến cửa truyền thừa.
 
+Sau khi thắng cổ sư Nô đạo, vào **cửa Tam Vương** để chọn truyền thừa. Cột lam **Tín Vương** dùng Hạc Giấy Cổ. Tại Đài luyện trong sương, điều lửa theo bí phương và hoàn thành ba công đoạn trước người Lông. Cột đỏ Bạo Vương còn chờ thử thách Viêm đạo.
+
 Tại **cột sáng vàng của Khuyển Vương**, luyện hóa Ngự Khuyển Cổ nhất chuyển rồi bước vào vòng đầu. Phúc địa phong cấm bộ Cổ chiến đấu và bảo vật. Tiến vào tầm hai ô có đường thông, dùng phím `3` để thu phục chó hoang bằng 1 chân nguyên. Chó giữ nguyên sinh lực và cùng một Ngự Khuyển Cổ mới đi vào vòng hai.
 
 Tại **Gò cỏ úa**, ba chó hoang áp sát từ ba phía. Ra lệnh cho chó vòng đầu bằng `2` để di chuyển hoặc `5` để táp. Dùng `3` chọn một chó hoang để thu phục. Sau khi thu phục, chọn chó A hoặc B trên sân, ở bảng bên phải hoặc đổi bằng `6`. Sân báo trước ô bị táp và giữ nguyên sinh lực còn lại của các chó sống khi qua vòng.

@@ -818,6 +818,7 @@ func play_thunder_boss(checkpoint: Dictionary) -> void:
 	await play_pulse_boss()
 	await play_xoa_trail()
 	await play_nodo_road()
+	await play_tin_refinement()
 	await play_kennel_trial()
 	await play_kennel_two()
 	await play_kennel_three()
@@ -1229,6 +1230,63 @@ func play_nodo_road() -> void:
 		"The camp, target choices and victory must replay in the saved run")
 
 
+func play_tin_refinement() -> void:
+	var road: Dictionary = flow.run.snapshot().duplicate(true)
+	await click_button("reach_tam_xoa_gate")
+	await launch()
+	check(flow.run.version == Run.TIN_VERSION and flow.run.phase == "tam_xoa_gate",
+		"The old road result must open the new selection and restore it")
+	var kennel := Run.restore(flow.run.snapshot()) as Run
+	check(kennel != null and kennel.reach_kennel_gate() and kennel.phase == "kennel_gate"
+		and not kennel.reach_tin_gate() and not kennel.owned_gu.has("paper_crane"),
+		"Khuyển Vương must stay accessible from the new gate without granting the lam key")
+	await capture("godot-v24-cua-tam-vuong.png")
+	await click_button("reach_tin_gate")
+	await launch()
+	check(flow.run.phase == "tin_gate" and flow.run.owned_gu.paper_crane == 1
+		and not flow.run.reach_tin_gate() and not flow.run.hound_gu,
+		"The lam gate must grant one key, with no crossover into the kennel")
+	await click_button("enter_tin_trial")
+	await launch()
+	check(flow.run.phase == "tin_trial" and flow.run.floor == Run.TIN_FLOOR
+		and flow.run.book_unavailable("refine_owned_veil").contains("phúc địa")
+		and flow.run.perform("moon").has("error"), "The trial must seal outside Gu and crafting")
+	await capture("godot-v24-dai-luyen-tin-vuong.png")
+	var entry: Dictionary = flow.run.snapshot().duplicate(true)
+	var forged := entry.duplicate(true)
+	forged.version = Run.KENNEL_FOUR_VERSION
+	check(Run.restore(forged) == null, "The new gate and trial must not replay with a v23 header")
+	forged = entry.duplicate(true)
+	forged.journal.append(["buy_wine_set"])
+	check(Run.restore(forged) == null, "Unrelated shop actions cannot replay as furnace actions")
+	await click_button("tin_refine")
+	check(flow.run.tin_refinement.turns == 1 and flow.run.tin_refinement.progress == 0,
+		"A wrong temperature must spend time without advancing the player")
+	await click_button("tin_heat_up")
+	await click_button("tin_refine")
+	await launch()
+	check(flow.run.tin_refinement.heat == 1 and flow.run.tin_refinement.turns == 3
+		and flow.run.tin_refinement.progress == 1 and flow.run.tin_refinement.opponent_progress() == 1,
+		"Reload must restore both competitors' progress, furnace heat and remaining turns")
+	for action: String in ["tin_heat_up", "tin_refine", "tin_heat_down", "tin_refine"]:
+		await click_button(action)
+	await launch()
+	check(flow.run.phase == "tin_cleared" and flow.run.tin_refinement.won and flow.run.owned_gu.paper_crane == 1
+		and not flow.run.act_tin_refinement("tin_refine"), "A final-turn win and the retained key must replay once")
+	await capture("godot-v24-vuot-tin-vuong.png")
+	flow.run = Run.restore(entry)
+	flow.persist()
+	flow.show_run()
+	for step in range(Run.TinRefinement.TURN_LIMIT):
+		await click_button("tin_refine")
+	await launch()
+	check(flow.run.phase == "death" and flow.run.tin_refinement.lost
+		and flow.find_child("rebirth", true, false) != null, "A lost duel must replay and offer the existing rebirth flow")
+	flow.run = Run.restore(road)
+	flow.persist()
+	flow.show_run()
+
+
 func play_kennel_trial() -> void:
 	var saved_v15: Dictionary = flow.run.snapshot().duplicate(true)
 	check(saved_v15.version == Run.NODO_VERSION, "The road remains v15 before going to the pillar")
@@ -1238,7 +1296,9 @@ func play_kennel_trial() -> void:
 	var old_relic: String = flow.run.battle.relic
 	var old_leaves: int = flow.run.battle.leaves
 	var old_refined: String = flow.run.battle.refined_gu
-	await click_button("reach_kennel_gate")
+	check(flow.run.reach_kennel_gate(), "The legacy direct route must remain valid in existing journals")
+	flow.persist()
+	flow.show_run()
 	await launch()
 	check(flow.run.phase == "kennel_gate" and flow.run.version == Run.KENNEL_VERSION and flow.run.hound_gu == 0
 		and not flow.run.enter_kennel(), "Entering Tam Xoa must upgrade the save and require refining the first Gu")
@@ -1725,6 +1785,21 @@ func play_route(id: String, second_room: Array, boss: Array) -> void:
 		await capture("godot-ket-qua-tuyen.png")
 
 
+func check_tin_recipes() -> void:
+	var Tin = Run.TinRefinement
+	for layout in range(Tin.RECIPES.size()):
+		var trial = Tin.new(layout)
+		var wrong: String = Tin.HEAT_DOWN if trial.heat == 0 else Tin.HEAT_UP if trial.heat == 2 else "guard"
+		check(not trial.apply(wrong) and trial.turns == 0 and trial.progress == 0,
+			"Blocked heat controls cannot advance the opponent")
+		for temperature: int in trial.recipe:
+			var direction: String = Tin.HEAT_UP if trial.heat < temperature else Tin.HEAT_DOWN
+			for step in range(absi(trial.heat - temperature)):
+				check(trial.apply(direction), "The recipe's required temperature must be reachable")
+			check(trial.apply(Tin.REFINE), "The recipe's current step must be available")
+		check(trial.won and not trial.lost and trial.turns <= Tin.TURN_LIMIT, "Every seeded recipe must have a winning line")
+
+
 func check_owned_brew_recipe() -> void:
 	var run := Run.new(Awakening.profile_for("huyen-bao", 12), 0)
 	run.phase = "ford_workshop"
@@ -1837,6 +1912,7 @@ func exercise() -> void:
 	path = data.path_join("run-flow-%d.json" % Time.get_ticks_usec())
 	check_gu_and_tactics()
 	check_owned_brew_recipe()
+	check_tin_recipes()
 	check_owned_art_slots()
 	check_white_light_balance()
 	check_third_save()
@@ -1942,5 +2018,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts and four Khuyển Vương trials")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, four Khuyển Vương trials and the Tín Vương duel")
 	quit(1 if failed else 0)

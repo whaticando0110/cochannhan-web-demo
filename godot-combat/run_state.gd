@@ -5,7 +5,9 @@ const Awakening = preload("res://awakening_rules.gd")
 const Gu = preload("res://gu_catalog.gd")
 const Goods = preload("res://waypoint_goods.gd")
 const Pack = preload("res://kennel_pack.gd")
-const CURRENT_VERSION := 23
+const TinRefinement = preload("res://tin_refinement.gd")
+const CURRENT_VERSION := 24
+const TIN_VERSION := 24
 const KENNEL_FOUR_VERSION := 23
 const OWNED_VEIL_VERSION := 22
 const FOUR_FLAVORS_VERSION := 21
@@ -37,6 +39,7 @@ const KENNEL_TWO_VERSION := 17
 const KENNEL_THREE_FLOOR := 15
 const KENNEL_THREE_VERSION := 18
 const KENNEL_FOUR_FLOOR := 16
+const TIN_FLOOR := 17
 const FLOORS := [
 	{"name": "Rìa rừng Thanh Mao", "enemy": "Điện Lang", "damage": 12, "bite": 8, "hp": 48,
 		"heavy": "Vồ mồi", "pace": 1, "rooms": [[3, 12, 30, 34], [4, 10, 27, 36], [2, 13, 25, 37]]},
@@ -129,6 +132,7 @@ const KENNEL_TRIAL := {"name": "Bãi cỏ phúc địa", "enemy": "Chó hoang", 
 const KENNEL_TWO := {"name": "Gò cỏ úa", "enemy": "Đàn chó hoang"}
 const KENNEL_THREE := {"name": "Hố đá dưới gò cỏ", "enemy": "Đàn chó hoang"}
 const KENNEL_FOUR := {"name": "Khe đá hai lối", "enemy": "Đàn chó hoang"}
+const TIN_TRIAL := {"name": "Đài luyện trong sương", "enemy": "Người Lông"}
 const KENNEL_FORMATIONS := {
 	"ridge_hold": ["Giữ cửa khe", "Xuất phát ở cửa khe bên trái, nơi dễ chặn đường áp sát."],
 	"ridge_flank": ["Vòng qua mỏm phải", "Xuất phát ở mỏm phải, gần lối vòng qua sườn đá."],
@@ -208,6 +212,7 @@ var hound_gu: int:
 var moon_link_known := false
 var white_light_known := false
 var outside_battle: Rules
+var tin_refinement: TinRefinement
 
 
 func _init(awakened: Dictionary, run_seed: int, save_version: int = CURRENT_VERSION) -> void:
@@ -247,6 +252,8 @@ func stage_at(index: int) -> Dictionary:
 			return KENNEL_THREE
 		KENNEL_FOUR_FLOOR:
 			return KENNEL_FOUR
+		TIN_FLOOR:
+			return TIN_TRIAL
 	if index == 1 and version >= 2 and ROUTES.has(route):
 		return ROUTES[route]
 	return FLOORS[index]
@@ -823,8 +830,47 @@ func choose_nodo_camp(id: String) -> bool:
 	return true
 
 
-func reach_kennel_gate() -> bool:
+func reach_tam_xoa_gate() -> bool:
 	if phase != "nodo_cleared":
+		return false
+	version = maxi(version, TIN_VERSION)
+	phase = "tam_xoa_gate"
+	journal.append(["reach_tam_xoa_gate"])
+	return true
+
+
+func reach_tin_gate() -> bool:
+	if phase != "tam_xoa_gate":
+		return false
+	change_owned_gu("paper_crane", 1, "Đoàn buôn Tam Xoa")
+	phase = "tin_gate"
+	journal.append(["reach_tin_gate"])
+	return true
+
+
+func enter_tin_trial() -> bool:
+	if phase != "tin_gate" or owned_gu.get("paper_crane", 0) != 1:
+		return false
+	floor = TIN_FLOOR
+	tin_refinement = TinRefinement.new(seed % TinRefinement.RECIPES.size())
+	phase = "tin_trial"
+	journal.append(["enter_tin_trial"])
+	return true
+
+
+func act_tin_refinement(action: String) -> bool:
+	if phase != "tin_trial" or not tin_refinement.apply(action):
+		return false
+	journal.append([action])
+	if tin_refinement.won:
+		phase = "tin_cleared"
+	elif tin_refinement.lost:
+		phase = "death"
+	return true
+
+
+func reach_kennel_gate() -> bool:
+	if phase not in ["nodo_cleared", "tam_xoa_gate"]:
 		return false
 	version = maxi(version, KENNEL_VERSION)
 	phase = "kennel_gate"
@@ -1230,7 +1276,15 @@ static func restore(saved: Variant) -> RefCounted:
 				"xoa_camp":
 					committed = run.choose_nodo_camp(command[0])
 				"nodo_cleared":
-					committed = command[0] == "reach_kennel_gate" and run.reach_kennel_gate()
+					committed = (command[0] == "reach_tam_xoa_gate" and run.reach_tam_xoa_gate()
+						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate())
+				"tam_xoa_gate":
+					committed = (command[0] == "reach_tin_gate" and run.reach_tin_gate()
+						or command[0] == "reach_kennel_gate" and run.reach_kennel_gate())
+				"tin_gate":
+					committed = command[0] == "enter_tin_trial" and run.enter_tin_trial()
+				"tin_trial":
+					committed = run.act_tin_refinement(command[0])
 				"kennel_gate":
 					committed = command[0] == "refine_hound_gu" and run.refine_hound_gu()
 				"kennel_ready":

@@ -231,7 +231,11 @@ func show_result() -> void:
 		section = "TAM CHUYỂN    /    MÀN 3"
 	if run.floor == Run.PULSE_FLOOR or run.phase == "pulse_workshop":
 		section = "TAM CHUYỂN    /    BOSS CUỐI"
-	if run.floor in [Run.KENNEL_FLOOR, Run.KENNEL_TWO_FLOOR, Run.KENNEL_THREE_FLOOR] or run.phase in ["kennel_gate", "kennel_ready"]:
+	if run.floor == Run.TIN_FLOOR or run.phase == "tin_gate":
+		section = "TỨ CHUYỂN    /    TRUYỀN THỪA TÍN VƯƠNG"
+	elif run.phase == "tam_xoa_gate":
+		section = "TỨ CHUYỂN    /    NAM CƯƠNG · NÚI TAM XOA"
+	elif run.floor >= Run.KENNEL_FLOOR or run.phase in ["kennel_gate", "kennel_ready"]:
 		section = "TỨ CHUYỂN    /    TRUYỀN THỪA KHUYỂN VƯƠNG"
 	elif run.floor == Run.NODO_FLOOR or run.phase in ["xoa_camp", "nodo_workshop"]:
 		section = "TỨ CHUYỂN    /    MÀN 2 · NAM CƯƠNG"
@@ -332,7 +336,19 @@ func show_result() -> void:
 			description = "Một cổ sư Nô đạo chặn lối. Đánh trúng lúc hắn ra lệnh, hoặc hạ khuyển thú trước."
 		"nodo_cleared":
 			title = "Qua đường núi Tam Xoa"
-			description = "Đã giành được lối lên cửa truyền thừa. Đoàn buôn nhắc chuẩn bị Ngự Khuyển Cổ trước khi vào phúc địa."
+			description = "Đã giành được lối lên cửa truyền thừa. Đoàn buôn chờ bạn dưới những cột sáng."
+		"tam_xoa_gate":
+			title = "Cửa truyền thừa Tam Vương"
+			description = "Mỗi cột sáng cần một Cổ dẫn đường và mở một thử thách riêng."
+		"tin_gate":
+			title = "Cột sáng Tín Vương"
+			description = "Đoàn buôn trao Hạc Giấy Cổ. Nó dẫn bạn vào sương mù của phúc địa."
+		"tin_trial":
+			title = Run.TIN_TRIAL.name
+			description = "Người Lông đã nhóm lửa. Hoàn tất mẻ của bạn trước khi đối thủ luyện thành."
+		"tin_cleared":
+			title = "Vượt vòng đầu Tín Vương"
+			description = "Phôi Cổ của bạn thành hình trước. Hạc Giấy Cổ vẫn ở trong Không Khiếu."
 		"kennel_gate":
 			title = "Cột sáng Khuyển Vương"
 			description = "Đoàn buôn tặng bạn một Ngự Khuyển Cổ nhất chuyển để đáp công dẹp đường."
@@ -360,7 +376,9 @@ func show_result() -> void:
 		"death":
 			title = "Bạn đã gục"
 			description = "Bạn gục ở %s. Hồi sinh đưa bạn về màn đầu." % floor.name
-			if run.battle is Run.Pack and run.battle.hp > 0:
+			if run.floor == Run.TIN_FLOOR:
+				description = "Người Lông luyện thành trước khi phôi của bạn ổn định. Hồi sinh đưa bạn về màn đầu."
+			elif run.battle is Run.Pack and run.battle.hp > 0:
 				description = "Đàn chó đã gục và Ngự Khuyển Cổ đã dùng hết. Hồi sinh đưa bạn về màn đầu."
 		"complete":
 			title = "Vượt qua " + str(floor.name)
@@ -401,6 +419,16 @@ func show_result() -> void:
 		draw_nodo_camp()
 	elif run.phase in ["kennel_gate", "kennel_ready"]:
 		draw_kennel_gate()
+	elif run.phase == "tam_xoa_gate":
+		draw_tam_xoa_gate()
+	elif run.phase == "tin_gate":
+		text(menu, "Hai bên nhận cùng một phần nguyên liệu. Cổ ngoài truyền thừa bị phong cấm. Vào đài là nhận lời thi.",
+			Rect2(96, 320, 1008, 58), 20)
+		var enter := button(menu, "Thôi động Hạc Giấy", Rect2(96, 421, 320, 54), advance_tin.bind("enter_tin_trial"))
+		enter.name = "enter_tin_trial"
+		enter.grab_focus()
+	elif run.phase == "tin_trial":
+		draw_tin_refinement()
 	elif run.phase == "waypoint":
 		draw_waypoint()
 	elif run.phase == "shop":
@@ -480,9 +508,12 @@ func show_result() -> void:
 			camp.grab_focus()
 		elif run.phase == "nodo_cleared":
 			draw_vitals(355)
-			var gate := button(menu, "Tới cột sáng vàng", Rect2(432, 480, 310, 54), advance_kennel.bind("gate"))
-			gate.name = "reach_kennel_gate"
+			var gate := button(menu, "Tới cửa Tam Vương", Rect2(432, 480, 310, 54), advance_tin.bind("reach_tam_xoa_gate"))
+			gate.name = "reach_tam_xoa_gate"
 			gate.grab_focus()
+		elif run.phase == "tin_cleared":
+			text(menu, "Mẻ hoàn tất sau %d/%d lượt" % [run.tin_refinement.turns, Run.TinRefinement.TURN_LIMIT],
+				Rect2(96, 320, 1008, 51), 23, GOLD)
 		elif run.phase == "kennel_cleared":
 			text(menu, "Chó hoang · %d/%d sinh lực     |     Ngự Khuyển Cổ ×%d" % [
 				run.battle.wolf_hp, run.battle.wolf_max, run.hound_gu], Rect2(96, 308, 1008, 43), 22, GOLD)
@@ -916,6 +947,76 @@ func enter_xoa_camp() -> void:
 	if run.enter_xoa_camp():
 		persist()
 		show_result()
+
+
+func draw_tam_xoa_gate() -> void:
+	var gates := [
+		["Khuyển Vương", "Cột sáng vàng · Ngự Khuyển Cổ", "Chỉ huy đàn chó và thu phục chó hoang.",
+			Color("#bd9a5b"), "reach_kennel_gate", advance_kennel.bind("gate")],
+		["Tín Vương", "Cột sáng lam · Hạc Giấy Cổ", "So tài luyện Cổ với người Lông.",
+			Color("#91c3e5"), "reach_tin_gate", advance_tin.bind("reach_tin_gate")],
+		["Bạo Vương", "Cột sáng đỏ · Bạo Trứng Cổ", "Thử thách Viêm đạo chưa mở.",
+			Color("#c89587"), "", Callable()],
+	]
+	for index in range(gates.size()):
+		var gate: Array = gates[index]
+		var card := panel(menu, Rect2(96 + index * 341, 305, 326, 223), Color("#1a2b25"), gate[3])
+		text(card, gate[0], Rect2(16, 16, 294, 43), 29, gate[3], true)
+		text(card, gate[1], Rect2(16, 64, 294, 31), 16, PALE)
+		text(card, gate[2], Rect2(16, 106, 294, 45), 18)
+		if not str(gate[4]).is_empty():
+			var choose := button(card, "Đến cột sáng", Rect2(16, 166, 294, 39), gate[5])
+			choose.name = gate[4]
+			if index == 0:
+				choose.grab_focus()
+
+
+func draw_tin_refinement() -> void:
+	var trial := run.tin_refinement as Run.TinRefinement
+	var bench := panel(menu, Rect2(96, 293, 647, 295), Color("#1a2b25"), Color("#688091"))
+	text(bench, "Bí phương của đài", Rect2(16, 9, 615, 44), 25, GOLD, true)
+	for index in range(Run.TinRefinement.STAGES.size()):
+		var y := 62 + index * 53
+		var done := index < trial.progress
+		var active := index == trial.progress
+		var stage: String = Run.TinRefinement.STAGES[index]
+		var required: String = Run.TinRefinement.HEAT_NAMES[trial.recipe[index]]
+		var label := "Đã xong" if done else "Đang chờ" if active else ""
+		var tint := GREEN if done else GOLD if active else PALE
+		text(bench, "%s · Lửa %s" % [stage, required.to_lower()], Rect2(16, y, 420, 41), 21, tint)
+		text(bench, label, Rect2(465, y, 165, 41), 17, tint)
+	text(bench, trial.report, Rect2(16, 229, 615, 49), 17, PALE)
+	var status_card := panel(menu, Rect2(761, 293, 343, 295), Color("#1a2b25"), Color("#688091"))
+	text(status_card, "Lửa hiện tại", Rect2(16, 13, 311, 31), 16, PALE)
+	text(status_card, Run.TinRefinement.HEAT_NAMES[trial.heat], Rect2(16, 49, 311, 56), 32, GOLD, true)
+	text(status_card, "Người Lông · %d/%d công đoạn" % [trial.opponent_progress(), Run.TinRefinement.STAGES.size()],
+		Rect2(16, 129, 311, 36), 18, Color("#91c3e5"))
+	text(status_card, "Còn %d lượt" % [Run.TinRefinement.TURN_LIMIT - trial.turns], Rect2(16, 181, 311, 36), 20, GREEN)
+	text(status_card, "Mỗi thao tác tốn một lượt.", Rect2(16, 230, 311, 38), 16)
+	var actions := [[Run.TinRefinement.HEAT_DOWN, "Hạ lửa"], [Run.TinRefinement.HEAT_UP, "Tăng lửa"],
+		[Run.TinRefinement.REFINE, "Luyện công đoạn"]]
+	for index in range(actions.size()):
+		var action: Array = actions[index]
+		var control := button(menu, action[1], Rect2(96 + index * 341, 606, 326, 46), advance_tin.bind(action[0]))
+		control.name = action[0]
+		control.tooltip_text = trial.unavailable(action[0])
+		control.disabled = not control.tooltip_text.is_empty()
+
+
+func advance_tin(step: String) -> void:
+	var changed: bool
+	match step:
+		"reach_tam_xoa_gate":
+			changed = run.reach_tam_xoa_gate()
+		"reach_tin_gate":
+			changed = run.reach_tin_gate()
+		"enter_tin_trial":
+			changed = run.enter_tin_trial()
+		_:
+			changed = run.act_tin_refinement(step)
+	if changed:
+		persist()
+		show_run()
 
 
 func advance_kennel(step: String) -> void:

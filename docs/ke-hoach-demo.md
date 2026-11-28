@@ -247,7 +247,7 @@ Sau khi xử lý da Thiết Giáp, **Đến trại tạm** nâng bản lưu từ
 
 Trận nằm trên đường ngoài phúc địa. Cổ sư Nô đạo vô danh và khuyển thú là đối thủ của demo. Giữa trận có thể đổi mục tiêu bằng nút bên phải hoặc bấm ô đứng của địch. Hai đối thủ chặn di chuyển, chắn đường phóng và nhận Nguyệt Ấn riêng. Đòn trúng cổ sư lúc ra lệnh làm ngắt lệnh. Nếu nhận lệnh, khuyển vồ ô đã khóa trong tầm 5 ô có đường thông. Nếu bị chắn hoặc ngoài tầm, nó áp sát một ô. Hạ khuyển sẽ hủy đòn vồ đang chờ. Hạ cổ sư sẽ kết thúc trận. Màn dùng địa hình và atlas của demo với hai dấu phe, nhãn máu và vị trí riêng.
 
-Sau trận, đoàn buôn chỉ lối lên cột sáng Khuyển Vương.
+Sau trận, đoàn buôn chỉ lối lên cửa truyền thừa Tam Vương.
 
 ## Truyền thừa Khuyển Vương · Vòng đầu
 
@@ -281,15 +281,23 @@ Vòng bốn lấy đúng sinh lực và chân nguyên của cổ sư, thương t
 
 Cả hai thế được chơi qua từ cùng bản lưu cuối vòng ba. Mô phỏng thêm 42 cấu hình gồm hai thế, ba bố cục và bảy mức thương thế. Tất cả có đường thắng, gồm các trường hợp chỉ còn một chó chiến đấu và các trường hợp cổ sư còn 1 sinh lực. Đây là đường tìm được trong mô phỏng, dùng để kiểm khả năng vượt vòng.
 
+## Cửa Tam Vương và vòng đầu Tín Vương
+
+Chương 392 ghi ba cột sáng ở Tam Xoa. Ngự Khuyển Cổ mở cửa vàng Khuyển Vương, Hạc Giấy Cổ mở cửa lam Tín Vương, Bạo Trứng Cổ mở cửa đỏ Bạo Vương. Chương 438 kể Hạc Giấy dẫn đường vào sương mù. Cổ sư và người Lông nhận cùng một phần nguyên liệu rồi so tài luyện Cổ trong phúc địa. [Chương 392](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-392.html) · [Chương 438](https://medoctruyencv.com/truyen/co-chan-nhan-1000000016/1000014158)
+
+Trong demo, thắng cổ sư Nô đạo mở cửa Tam Vương. Có thể đi tiếp qua cột vàng hoặc nhận một Hạc Giấy từ đoàn buôn để vào cột lam. Cột đỏ đang chờ thử thách Viêm đạo. Đài luyện trong sương có ba công đoạn. Người chơi đọc mức lửa, tăng hoặc hạ từng nấc rồi luyện công đoạn tương ứng. Mỗi thao tác hợp lệ tốn một lượt. Luyện sai nhiệt tốn lượt và giữ nguyên tiến độ phôi. Người Lông hoàn thành sau bảy lượt, còn người chơi được tính công đoạn cuối trước ở lượt thứ bảy. Thua dùng luồng Hồi sinh hiện có.
+
+Bí phương của đài, mức lửa và giới hạn lượt thuộc thiết kế demo. Mã lượt chọn một trong ba bí phương. Bộ Cổ chiến đấu, bảo vật và việc hợp luyện trong Sổ bị phong cấm khi vào phúc địa. Hạc Giấy vẫn được ghi trong Sổ sau thử thách. Nhật ký v24 giữ chọn cửa, Hạc Giấy, nhiệt lò và tiến độ hai bên. Nhật ký cũ đi thẳng từ đường núi tới cột vàng vẫn phát lại.
+
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v23 | Mốc tiếp |
+| Phần | Đã chơi được trong v24 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
 | Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
 | Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc, Tứ Vị Tửu Trùng và Ẩn Lân trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở Cổ bậc cao hơn. |
 | Tạo sát chiêu | Liên Nguyệt và Bạch Quang Hộ Thể dùng chung ô 8, chỉ cấp theo Cổ Nhị chuyển cùng Tiểu Quang đang sở hữu. Đã so chi phí và hiệu quả đến Đường núi Tam Xoa. | Dùng cùng cấu trúc ô khi mở sát chiêu cho hệ khác. |
-| Truyền thừa | Bốn vòng Khuyển Vương, giữ đàn và thương thế giữa các vòng. Khe đá hai lối có hai cách đặt đàn. | Chuẩn bị quyền chọn đối thủ từ vòng mười và tách luật Tín Vương, Bạo Vương thành hai nhánh riêng. |
+| Truyền thừa | Bốn vòng Khuyển Vương và vòng đầu Tín Vương. Cửa Tam Vương dùng chìa khóa riêng từng nhánh. | Mở thử thách Viêm đạo Bạo Vương và chuẩn bị quyền chọn đối thủ từ vòng mười Khuyển Vương. |
 
 Mỗi lần thêm bí phương hoặc màn mới, kiểm cả bộ sở hữu và bộ cấp sẵn. Tách luật của mỗi nhánh truyền thừa trước khi mở thêm cửa.
 
