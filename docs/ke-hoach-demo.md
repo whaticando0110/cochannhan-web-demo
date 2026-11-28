@@ -281,6 +281,14 @@ Vòng bốn lấy đúng sinh lực và chân nguyên của cổ sư, thương t
 
 Cả hai thế được chơi qua từ cùng bản lưu cuối vòng ba. Mô phỏng thêm 42 cấu hình gồm hai thế, ba bố cục và bảy mức thương thế. Tất cả có đường thắng, gồm các trường hợp chỉ còn một chó chiến đấu và các trường hợp cổ sư còn 1 sinh lực. Đây là đường tìm được trong mô phỏng, dùng để kiểm khả năng vượt vòng.
 
+## Vòng năm Khuyển Vương · Hẻm Vọng Thanh
+
+Sau khi thắng Khe đá hai lối, chọn **Vào Hẻm Vọng Thanh**. Cả hai thế xuất phát của vòng bốn đều nối tới đây. Vòng mới giữ sinh lực hiện tại, sức chứa chân nguyên và lượng chân nguyên của cổ sư, sinh lực hiện tại và tối đa của từng chó, cùng số Ngự Khuyển còn lại. Chó đã gục vẫn nằm trong đàn với 0 sinh lực và không chiếm ô. Phúc địa tiếp tục phong cấm các Cổ ngoài thử thách.
+
+Đầu lượt hai, chó đầu đàn báo **HÚ** trên sân. Táp trúng hoặc thu phục đúng con đang hú sẽ ngắt lệnh, kể cả khi đòn táp chưa hạ nó. Nếu tiếng hú hoàn tất, hai con chờ tiếp viện bắt đầu hành động ở lượt ba. Nếu ngắt được, chúng tới lượt sáu. Hẻm có ba bố cục theo mã lượt. Địa hình, tiếng hú và mốc lượt là thiết kế demo dựa trên vai trò điều đàn trong truyện. [Chương 425](https://vietnamthuquan.eu/TacPham/co-chan-nhan-25730/chuong-425)
+
+Nhật ký v26 phát lại thương thế, lượt báo hú, thời điểm tiếp viện và kết quả. Hai thế vòng bốn đã được chơi tiếp qua vòng năm với một lượt ngắt hú và một lượt để hú hoàn tất. Mô phỏng tìm được đường thắng cho 21 cấu hình gồm ba bố cục và bảy mức thương thế, có trường hợp chỉ còn một chó hoặc cổ sư chỉ còn 1 sinh lực.
+
 ## Cửa Tam Vương và vòng đầu Tín Vương
 
 Chương 392 ghi ba cột sáng ở Tam Xoa. Ngự Khuyển Cổ mở cửa vàng Khuyển Vương, Hạc Giấy Cổ mở cửa lam Tín Vương, Bạo Trứng Cổ mở cửa đỏ Bạo Vương. Chương 438 kể Hạc Giấy dẫn đường vào sương mù. Cổ sư và người Lông nhận cùng một phần nguyên liệu rồi so tài luyện Cổ trong phúc địa. [Chương 392](https://tangthuvienhd.com/truyen/co-chan-nhan/chuong-392.html) · [Chương 438](https://medoctruyencv.com/truyen/co-chan-nhan-1000000016/1000014158)
@@ -301,13 +309,13 @@ Nhật ký v25 ghi cột sáng, chìa khóa và từng lượt để tải lại
 
 ## Kiểm tra cơ chế và thứ tự làm tiếp
 
-| Phần | Đã chơi được trong v25 | Mốc tiếp |
+| Phần | Đã chơi được trong v26 | Mốc tiếp |
 | --- | --- | --- |
 | Mua đồ | Quầy trừ đúng nguyên thạch khi mua Sinh Cơ Diệp hoặc đổi bảo vật. Tải lại giữ túi, giá và món đã mua. | Kiểm thêm lối bỏ qua quầy và nhánh giữ nguyên thạch khi mở vùng mới. |
 | Mua và nhận Cổ | Sổ ghi số còn lại và nguồn nhận. Quầy bán 3 Tiểu Quang với 4 nguyên thạch cùng Ngọc Bì giá 3. Chiến lợi phẩm ở hai màn Nhị chuyển cấp Tiểu Quang và Bạch Thỉ. | Kiểm giá và nguồn khi thêm bí phương của hệ khác. |
 | Luyện Cổ | Đã có Nguyệt Mang tại quầy, Bạch Ngọc, Tứ Vị Tửu Trùng và Ẩn Lân trong Sổ Cổ. Mẻ thử thành công cố định. | Đối chiếu nguồn nguyên liệu khi mở Cổ bậc cao hơn. |
 | Tạo sát chiêu | Liên Nguyệt và Bạch Quang Hộ Thể dùng chung ô 8, chỉ cấp theo Cổ Nhị chuyển cùng Tiểu Quang đang sở hữu. Đã so chi phí và hiệu quả đến Đường núi Tam Xoa. | Dùng cùng cấu trúc ô khi mở sát chiêu cho hệ khác. |
-| Truyền thừa | Bốn vòng Khuyển Vương và vòng đầu mỗi nhánh Tín Vương, Bạo Vương. Cửa Tam Vương dùng chìa khóa riêng từng nhánh. | Phát triển các vòng kế và chuẩn bị quyền chọn đối thủ từ vòng mười Khuyển Vương. |
+| Truyền thừa | Năm vòng Khuyển Vương và vòng đầu mỗi nhánh Tín Vương, Bạo Vương. Cửa Tam Vương dùng chìa khóa riêng từng nhánh. | Phát triển các vòng kế và chuẩn bị quyền chọn đối thủ từ vòng mười Khuyển Vương. |
 
 Mỗi lần thêm bí phương hoặc màn mới, kiểm cả bộ sở hữu và bộ cấp sẵn. Tách luật của mỗi nhánh truyền thừa trước khi mở thêm cửa.
 

@@ -31,6 +31,15 @@ const RIDGE_BOARD := [
 ]
 const RIDGE_FORMATIONS := {"ridge_hold": [35, 27, 34], "ridge_flank": [37, 28, 36]}
 
+const HOWL_BOARD := [
+	{"rocks": [9, 14, 18, 21, 26, 29, 33, 38], "wild": [11, 4, 22, 0, 7]},
+	{"rocks": [10, 15, 18, 22, 26, 30, 32, 39], "wild": [12, 2, 21, 1, 7]},
+	{"rocks": [8, 13, 18, 22, 26, 29, 34, 39], "wild": [11, 6, 20, 0, 15]},
+]
+const HOWL_FORMATION := [35, 27, 36]
+const HOWL_TURN := 2
+const RESERVE_TURN := 6
+
 var round_number := 2
 var first_wild_id := 1
 var dogs: Array[Dictionary] = []
@@ -45,12 +54,18 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 		boards = PIT_BOARD
 	elif round_number == 4:
 		boards = RIDGE_BOARD
+	elif round_number == 5:
+		boards = HOWL_BOARD
 	var board: Dictionary = boards[layout]
 	super({"hp": vitals.get("hp", MAX_HP), "qi": vitals.get("qi", MAX_QI),
 		"max_qi": vitals.get("max_qi", MAX_QI), "rocks": board.rocks,
 		"moon_equipped": false, "tactic": "kennel_pack"})
 	if round_number >= 3:
-		var formation: Array = [PIT_CELL, PIT_FLANKS[0], PIT_FLANKS[1]] if round_number == 3 else RIDGE_FORMATIONS[vitals.formation]
+		var formation: Array = HOWL_FORMATION
+		if round_number == 3:
+			formation = [PIT_CELL, PIT_FLANKS[0], PIT_FLANKS[1]]
+		elif round_number == 4:
+			formation = RIDGE_FORMATIONS[vitals.formation]
 		hero = formation[0]
 		gu_left = vitals.get("gu_left", 0)
 		var companions: Array = vitals.get("companions", [])
@@ -62,8 +77,11 @@ func _init(vitals: Dictionary = {}, layout: int = 0) -> void:
 			bound_id = 1
 		for index in range(board.wild.size()):
 			var injury := index >= (2 if round_number == 3 else 3)
+			var wake := 3 + (index % 2) if injury else 1
+			if round_number == 5 and injury:
+				wake = RESERVE_TURN
 			dogs.append({"cell": board.wild[index], "hp": 8 if injury else DOG_HP, "max_hp": DOG_HP,
-				"allied": false, "wake_turn": 3 + (index % 2) if injury else 1})
+				"allied": false, "wake_turn": wake})
 	else:
 		hero = 19
 		dogs.append({"cell": 18, "hp": vitals.get("dog_hp", 32), "max_hp": vitals.get("dog_max", 32), "allied": true})
@@ -79,6 +97,8 @@ func actor_name(id: int) -> String:
 		return "Chó vòng đầu"
 	if id == bound_id:
 		return "Chó mới"
+	if round_number == 5 and id == first_wild_id:
+		return "Chó đầu đàn"
 	return "Chó hoang %d" % wild_label(id)
 
 
@@ -131,8 +151,13 @@ func forecast() -> void:
 	var orders: Array[Dictionary] = []
 	var cells: Array[int] = []
 	var allies := living_dogs(true)
+	var howler := NO_ACTOR
 	for id in living_dogs(false):
 		if turn < int(dogs[id].get("wake_turn", 1)):
+			continue
+		if round_number == 5 and turn == HOWL_TURN and id == first_wild_id:
+			howler = id
+			orders.append({"dog": id, "howl": true})
 			continue
 		var from := actor_cell(id)
 		var target := HERO_ID
@@ -148,6 +173,9 @@ func forecast() -> void:
 			cells.append(tile)
 	intent = {"kind": "pack", "name": "Đàn chó áp sát" if cells.is_empty() else "Đàn chó chuẩn bị táp",
 		"cells": cells, "damage": WILD_BITE, "orders": orders}
+	if howler >= 0:
+		intent.name = "Chó đầu đàn sắp hú"
+		intent.howler = howler
 
 
 func command_actor(action: String) -> int:
@@ -274,6 +302,8 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 	var exchange := {"action": action, "hero_path": [], "hero_damage": 0, "notes": notes,
 		"player_events": [], "enemy_events": [], "hero_guard": action == "guard"}
 	var actor: int = preview.actor
+	var howler: int = intent.get("howler", NO_ACTOR)
+	var interrupted_howl := howler >= 0 and action in [LEAD_BITE, BOUND_BITE, "bind_hound"] and actor_at(target) == howler
 	var steps: Array = preview.path
 	if not steps.is_empty():
 		if actor == HERO_ID:
@@ -302,6 +332,15 @@ func take_turn(action: String, target: int = -1) -> Dictionary:
 		if hp == 0:
 			break
 		var wild: int = order.dog
+		if order.get("howl", false):
+			if interrupted_howl:
+				notes.append("Đã ngắt tiếng hú. Tiếp viện tới ở lượt %d." % RESERVE_TURN)
+			else:
+				for reserve in living_dogs(false):
+					if dogs[reserve].wake_turn > turn:
+						dogs[reserve].wake_turn = turn + 1
+				notes.append("Tiếng hú gọi tiếp viện tới lượt sau.")
+			continue
 		if dogs[wild].allied or dogs[wild].hp <= 0:
 			continue
 		if order.bite:

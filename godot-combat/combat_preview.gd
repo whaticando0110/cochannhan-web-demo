@@ -522,8 +522,13 @@ func update_pack_hud(pack: Pack) -> void:
 		threats.append(Rules.cell_name(cell))
 	var wild_count := pack.living_dogs(false).size()
 	var delayed: int = wild_count - state.intent.get("orders", []).size()
-	if not threats.is_empty():
+	var howler: int = state.intent.get("howler", Pack.NO_ACTOR)
+	if howler >= 0:
+		intent_copy.text = "Táp ô %s để trì hoãn tiếp viện." % Rules.cell_name(pack.actor_cell(howler))
+	elif not threats.is_empty():
 		intent_copy.text = "Ô bị nhắm táp · %s" % ", ".join(threats)
+	elif pack.round_number == 5 and delayed > 0 and state.result.is_empty():
+		intent_copy.text = "%d con áp sát, %d con chờ tiếp viện." % [wild_count - delayed, delayed]
 	elif pack.round_number >= 3 and delayed > 0 and state.result.is_empty():
 		intent_copy.text = "%d con áp sát, %d con bị thương đến sau." % [wild_count - delayed, delayed]
 	else:

@@ -532,8 +532,15 @@ func paint_pack() -> void:
 		hp_bar.size.x *= float(dog.hp) / float(dog.max_hp)
 		draw_rect(hp_bar, tone)
 		var marker := ("A" if id == 0 else "B") if dog.allied else str(pack.wild_label(id))
-		draw_string(ThemeDB.fallback_font, Vector2(center.x - 12, hp_y - 5), marker,
-			HORIZONTAL_ALIGNMENT_CENTER, 24, 14, tone)
+		if id == int(pack.intent.get("howler", Pack.NO_ACTOR)):
+			marker = "HÚ"
+			draw_arc(center + Vector2(0, 8), 29, 0, TAU, 32, Color("#ffd48e"), 2, true)
+		elif pack.round_number == 5 and not dog.allied and pack.turn < int(pack.dogs[id].get("wake_turn", 1)):
+			marker = "CHỜ"
+		elif pack.round_number == 5 and id == pack.first_wild_id and not dog.allied:
+			marker = "ĐẦU"
+		draw_string(ThemeDB.fallback_font, Vector2(center.x - 20, hp_y - 5), marker,
+			HORIZONTAL_ALIGNMENT_CENTER, 40, 14, tone)
 
 
 func set_hero_frame(frame: float) -> void:

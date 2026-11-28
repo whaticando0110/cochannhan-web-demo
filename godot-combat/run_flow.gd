@@ -379,7 +379,10 @@ func show_result() -> void:
 			description = "Đã dẹp sáu chó hoang ở hố đá. Đàn chó sống sót được lưu với thương thế hiện tại."
 		"kennel_four_cleared":
 			title = "Vượt vòng bốn Khuyển Vương"
-			description = "Đàn chó hoang đã tan. Những con còn theo bạn mang nguyên thương thế."
+			description = "Đàn chó hoang đã tan. Hẻm phía trước vọng tiếng gọi đàn."
+		"kennel_five_cleared":
+			title = "Vượt vòng năm Khuyển Vương"
+			description = "Đã dẹp đàn chó đầu khe. Những con còn theo bạn mang nguyên thương thế."
 		"waypoint":
 			title = "Dừng chân bên Suối Sấm" if run.floor == Run.RIDGE_FLOOR else "Dừng chân dưới Hẻm Đá"
 			description = "Chọn một điểm dừng. Có thể xem trước chi phí và tài nguyên khi rời đi."
@@ -548,7 +551,7 @@ func show_result() -> void:
 			var enter := button(menu, "Vào vòng hai", Rect2(432, 480, 310, 54), advance_kennel.bind("second"))
 			enter.name = "enter_kennel_two"
 			enter.grab_focus()
-		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared"]:
+		elif run.phase in ["kennel_two_cleared", "kennel_three_cleared", "kennel_four_cleared", "kennel_five_cleared"]:
 			var pack := run.battle as Run.Pack
 			var rows: PackedStringArray = []
 			for id in pack.living_dogs(true):
@@ -573,6 +576,11 @@ func show_result() -> void:
 					place.name = id
 					if id == "ridge_hold":
 						place.grab_focus()
+			elif run.phase == "kennel_four_cleared":
+				text(menu, "Vòng năm · Táp chó đầu đàn để ngắt tiếng hú gọi tiếp viện.", Rect2(96, 411, 1008, 40), 18)
+				var enter := button(menu, "Vào Hẻm Vọng Thanh", Rect2(432, 480, 338, 54), advance_kennel.bind("fifth"))
+				enter.name = "enter_kennel_five"
+				enter.grab_focus()
 	status = text(menu, "", Rect2(96, 713 if run.phase == "shop" else 674, 1000, 42), 17, PALE)
 	report_save_problem()
 
@@ -1165,6 +1173,8 @@ func advance_kennel(step: String) -> void:
 			changed = run.enter_kennel_two()
 		"third":
 			changed = run.enter_kennel_three()
+		"fifth":
+			changed = run.enter_kennel_five()
 		_:
 			changed = run.enter_kennel_four(step)
 	if changed:

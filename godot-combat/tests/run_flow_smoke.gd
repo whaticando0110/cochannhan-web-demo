@@ -1551,7 +1551,95 @@ func play_kennel_four() -> void:
 		await launch()
 		check(flow.run.phase == "kennel_four_cleared" and flow.run.battle.dogs == survivors,
 			"The saved victory must retain its surviving pack")
-	await capture("godot-v23-ket-qua-vong-bon.png")
+		await capture("godot-v23-ket-qua-vong-bon-%s.png" % id)
+		await play_kennel_five(id)
+
+
+func play_kennel_five(formation: String) -> void:
+	var previous := flow.run.battle as Pack
+	var inherited := previous.dogs.filter(func(dog: Dictionary): return dog.allied)
+	await click_button("enter_kennel_five")
+	await launch()
+	var pack := flow.run.battle as Pack
+	check(flow.run.version == Run.KENNEL_FIVE_VERSION and flow.run.floor == Run.KENNEL_FIVE_FLOOR
+		and pack.round_number == 5 and pack.hp == previous.hp and pack.qi == previous.qi
+		and pack.max_qi == previous.max_qi and pack.gu_left == previous.gu_left and pack.first_wild_id == inherited.size() and not flow.run.enter_kennel_five()
+		and pack.unavailable("moon_link").contains("phong cấm"), "The fifth round must keep vitals, reserves and phúc địa restrictions")
+	for index in range(inherited.size()):
+		check(pack.dogs[index].hp == inherited[index].hp and pack.dogs[index].max_hp == inherited[index].max_hp,
+			"Each allied dog must enter with its exact wounds and health cap")
+	var forged: Dictionary = flow.run.snapshot().duplicate(true)
+	forged.version = Run.BAO_VERSION
+	check(Run.restore(forged) == null, "The fifth round must require the new journal version")
+	await shoot(KEY_4)
+	var forecast := pack.intent.duplicate(true)
+	await launch()
+	pack = flow.run.battle as Pack
+	var howler := pack.first_wild_id
+	check(pack.intent == forecast and pack.intent.get("howler") == howler
+		and flow.current.intent_name.text == "Chó đầu đàn sắp hú", "The howl must be shown and survive reload before the reaction")
+	await capture("godot-v26-bao-tieng-hu-%s.png" % formation)
+	var cut_off := formation == "ridge_hold"
+	if cut_off:
+		await shoot(KEY_5, pack.actor_cell(howler))
+	else:
+		await shoot(KEY_4)
+	await launch()
+	pack = flow.run.battle as Pack
+	var rally_turn := Pack.RESERVE_TURN if cut_off else Pack.HOWL_TURN + 1
+	check(pack.turn == Pack.HOWL_TURN + 1 and not pack.intent.has("howler") and pack.dogs[howler].hp > 0
+		and pack.dogs[-1].wake_turn == rally_turn and pack.dogs[-2].wake_turn == rally_turn
+		and pack.intent.orders.size() == (3 if cut_off else 5),
+		"Biting without killing must delay both reserves, while a completed howl must advance both")
+	if cut_off:
+		await play_commands([[KEY_5, 20], [KEY_5, 19]])
+		key(KEY_6)
+		await shoot(KEY_5, 20)
+		check(pack.turn == Pack.RESERVE_TURN and pack.intent.orders.any(func(order: Dictionary): return order.dog == pack.dogs.size() - 1),
+			"The delayed reserve must join at turn six")
+		key(KEY_6)
+		await shoot(KEY_2, 11)
+		key(KEY_6)
+		await play_commands([[KEY_2, 12], [KEY_5, 5]])
+		key(KEY_6)
+		await shoot(KEY_5, 3)
+		key(KEY_6)
+		await play_commands([[KEY_2, 6], [KEY_5, 15], [KEY_5, 15]])
+	else:
+		await play_commands([[KEY_5, 20], [KEY_5, 19], [KEY_5, 20], [KEY_5, 19], [KEY_2, 13], [KEY_5, 5], [KEY_5, 4]])
+		key(KEY_6)
+		await shoot(KEY_2, 20)
+		key(KEY_6)
+		await play_commands([[KEY_5, 7], [KEY_5, 7]])
+	var survivors := pack.dogs.duplicate(true)
+	await launch()
+	check(flow.run.phase == "kennel_five_cleared" and flow.run.battle.dogs == survivors,
+		"Both routes through rounds four and five must win and retain their own result after reload")
+	await capture("godot-v26-vuot-vong-nam-%s.png" % formation)
+
+
+func check_kennel_five_carryover() -> void:
+	var run := Run.new(Awakening.profile_for("huyen-bao", 12), 0)
+	var pack := Pack.new({"round": 4, "formation": "ridge_hold", "hp": 5, "qi": 0,
+		"companions": [{"hp": 0, "max_hp": 32}, {"hp": 4, "max_hp": 18}]})
+	run.battle = pack
+	run.phase = "kennel_four_cleared"
+	check(run.enter_kennel_five(), "One fallen ally must not block entering round five")
+	pack = run.battle as Pack
+	check(pack.living_dogs(true) == [1] and pack.dogs[0].hp == 0 and pack.dogs[0].max_hp == 32
+		and pack.dogs[1].hp == 4 and pack.actor_at(pack.dogs[0].cell) == Pack.NO_ACTOR,
+		"A dead dog must stay dead and cannot occupy its newly assigned tile")
+
+	var binder := Pack.new({"round": 5, "qi": 1, "gu_left": 1,
+		"companions": [{"hp": 10, "max_hp": 32}]})
+	binder.hero = 19
+	binder.turn = Pack.HOWL_TURN
+	binder.forecast()
+	var leader := binder.first_wild_id
+	var bound := binder.take_turn("bind_hound", binder.actor_cell(leader))
+	check(not bound.has("error") and binder.bound_id == leader and binder.gu_left == 0
+		and binder.dogs[leader].hp == Pack.DOG_HP and binder.dogs[-1].wake_turn == Pack.RESERVE_TURN,
+		"Binding a howler must cancel its signal without changing its wounds or rallying the reserve")
 
 
 func check_pack_rules() -> void:
@@ -2011,6 +2099,7 @@ func exercise() -> void:
 	check_nodo_targets()
 	check_kennel_rules()
 	check_pack_rules()
+	check_kennel_five_carryover()
 	for row in [[12, 24, 4], [20, 40, 5], [30, 60, 6], [40, 80, 7], [49, 97, 7]]:
 		var profile := Awakening.profile_for("huyen-bao", row[0])
 		check(profile.sea_pct == row[1] and profile.max_qi == row[2], "Incorrect aptitude boundary")
@@ -2106,5 +2195,5 @@ func exercise() -> void:
 	await play_elite_detour()
 	DirAccess.remove_absolute(path)
 	if not failed:
-		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, four Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
+		print("Godot run passed: legacy journals, Rank III boss, Tam Xoa camp, lunge replay, both hide routes, Gu ledger, owned Gu recipes, both arts, five Khuyển Vương trials, Tín Vương duel and Bạo Vương blast trial")
 	quit(1 if failed else 0)
